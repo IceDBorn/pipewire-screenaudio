@@ -1,4 +1,4 @@
 # screenaudio-mic
-Tool to create a virtual microphone and continuously link nodes with a given name to it
+Extension to passthrough pipewire audio to WebRTC Screenshare
 
-Based on https://github.com/Soundux/rohrkabel/tree/master/examples/link-app-to-mic
+Based on [link-app-to-mic](https://github.com/Soundux/rohrkabel/tree/master/examples/link-app-to-mic) and [Screenshare-with-audio-on-Discord-with-Linux](https://github.com/edisionnano/Screenshare-with-audio-on-Discord-with-Linux)
