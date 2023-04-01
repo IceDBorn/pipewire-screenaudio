@@ -4,8 +4,10 @@ export LC_ALL=C
 projectRoot="$( cd -- "$(dirname "$0")" > /dev/null 2>&1 ; pwd -P )"
 
 function intToHex () {
-  printf '%08x' $1 |
-    sed 's/\(.\)\(.\)\(.\)\(.\)\(.\)\(.\)\(.\)\(.\)/\7\8\n\5\6\n\3\4\n\1\2/'
+  printf '%08x' $1 |                          # Convert integer to 8 digit hex
+    sed 's/\(..\)/\1 /g' |                    # Split hex to pairs
+    awk '{printf $4 " " $3 " " $2 " " $1}' |  # Reverse order of pairs
+    tr ' ' '\n'                               # Replace spaces with new lines
 }
 
 function toMessage () {
