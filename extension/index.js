@@ -5,6 +5,8 @@ function overrideGdm () {
     await navigator.mediaDevices.getUserMedia({
       audio: true
     })
+
+    // eslint-disable-next-line promise/param-names
     await new Promise(r => setTimeout(r, 1000))
     const devices = await navigator.mediaDevices.enumerateDevices()
     const audioDevice = devices.find(({

@@ -27,10 +27,6 @@
     }
   ],
 
-  "background": {
-    "scripts": ["background.js"]
-  },
-
   "permissions": [
     "nativeMessaging"
   ]
