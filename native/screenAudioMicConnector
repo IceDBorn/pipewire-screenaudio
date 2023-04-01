@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+
+export LANG=C
+projectRoot="$( cd -- "$(dirname "$0")" > /dev/null 2>&1 ; pwd -P )"
+
+function intToHex () {
+  printf '%08x' $1 |
+    sed 's/\(.\)\(.\)\(.\)\(.\)\(.\)\(.\)\(.\)\(.\)/\7\8\n\5\6\n\3\4\n\1\2/'
+}
+
+function toMessage () {
+  local message="$1"
+  local messageLength=`printf "$message" | wc -c`
+  local messageLengthHex=`intToHex "$messageLength"`
+
+  printf "$messageLengthHex\n" | while IFS= read -r line; do
+    sh -c "printf '\\x$line'"
+  done
+
+  printf "$message"
+}
+
+function GetNodes () {
+  local nodes=`pw-cli ls Node | grep node.name | awk '{print $3}' | sort | uniq | sed 's|\"||g' | jq -R . | jq -s . | jq -c`
+  toMessage "$nodes"
+  exit
+}
+
+function StartVirtmic () {
+  local args="$1"
+  local node=`echo $args | jq -r '.[].node' | head -n 1`
+
+  echo $node | nohup ~/git/screenaudio-mic/build/screenaudio-mic > /dev/null &
+  local micPid=$!
+
+  toMessage '{"micPid":'$micPid'}'
+
+  exit
+}
+
+function StopVirtmic () {
+  local args="$1"
+  local micPid=`echo $args | jq '.[].micPid' | head -n 1`
+
+  kill "$micPid" && toMessage '{"success":true}' && exit
+
+  toMessage '{"success":false}'
+  exit
+}
+
+payload=`$projectRoot/a.out`
+cmd=`echo "$payload" | jq -r .cmd`
+args=`echo "$payload" | jq .args`
+
+case $cmd in
+  'GetNodes')
+    GetNodes "$args"
+    ;;
+  'StartVirtmic')
+    StartVirtmic "$args"
+    ;;
+  'StopVirtmic')
+    StopVirtmic "$args"
+    ;;
+esac
