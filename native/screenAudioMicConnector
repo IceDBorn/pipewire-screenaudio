@@ -35,13 +35,14 @@ function GetNodes () {
 
 function StartVirtmic () {
   local args="$1"
+
   local node=`echo $args | jq -r '.[].node' | head -n 1`
-
   echo $node | nohup $projectRoot/out/screenaudio-mic > /dev/null &
+
   local micPid=$!
+  local micId=`pw-cli ls Node | grep -B 3 'screenaudio-mic' | grep 'object.serial' | awk '{print $3}' | jq -r`
 
-  toMessage '{"micPid":'$micPid'}'
-
+  toMessage '{"micPid":'$micPid',"micId":'$micId'}'
   exit
 }
 
