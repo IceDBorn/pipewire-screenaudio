@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-export LANG=C
+export LC_ALL=C
 projectRoot="$( cd -- "$(dirname "$0")" > /dev/null 2>&1 ; pwd -P )"
 
 function intToHex () {
