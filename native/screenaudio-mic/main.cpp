@@ -69,7 +69,7 @@ int main()
 
     auto virtual_mic = core.create("adapter",
                                    {
-                                       {"node.name", "Rohrkabel Virtual Mic"},      //
+                                       {"node.name", "screenaudio-mic"},            //
                                        {"media.class", "Audio/Source/Virtual"},     //
                                        {"factory.name", "support.null-audio-sink"}, //
                                        {"audio.channels", "2"},                     //
