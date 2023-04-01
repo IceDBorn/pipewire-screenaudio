@@ -16,9 +16,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 17 CXX_EXTENSIONS 
 # Supply rohrkabel if example is built stand-alone
 # --------------------------------------------------------------------------------------------------------
 
-include(FetchContent)
-FetchContent_Declare(rohrkabel GIT_REPOSITORY "https://github.com/Soundux/rohrkabel")
-FetchContent_MakeAvailable(rohrkabel)
+add_subdirectory(rohrkabel)
 
 # --------------------------------------------------------------------------------------------------------
 # Link required libraries
