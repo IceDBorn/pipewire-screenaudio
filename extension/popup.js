@@ -16,7 +16,7 @@ function onResponse (response) {
   }
 
   document.getElementById('share-btn').addEventListener('click', () => {
-
+    browser.runtime.sendNativeMessage('screenAudioMicConnector', { cmd: 'StartVirtmic', args: [{ node: dropdown.value }] })
   })
 }
 
