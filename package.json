@@ -1,0 +1,9 @@
+{
+  "name": "screenaudio-mic",
+  "devDependencies": {
+    "standard": "^16.0.0"
+  },
+  "standard": {
+    "globals": ["browser"]
+  }
+}

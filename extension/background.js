@@ -1,25 +1,30 @@
-function onResponse(response) {
-    let dropdown = document.getElementById('dropdown');
+function onResponse (response) {
+  const ALL_DESKTOP_AUDIO_TEXT = 'All Desktop Audio'
 
-    let allDesktopAudioOption = document.createElement('option');
-    let allDesktopAudioText = 'All Desktop Audio';
-    allDesktopAudioOption.innerHTML = allDesktopAudioText;
-    allDesktopAudioOption.value = allDesktopAudioText;
-    dropdown.appendChild(allDesktopAudioOption);
+  const dropdown = document.getElementById('dropdown')
+  const allDesktopAudioOption = document.createElement('option')
 
-    for (const element of response) {
-        let option = document.createElement('option');
-        option.innerHTML = element;
-        option.value = element;
-        dropdown.appendChild(option);
-    }
+  allDesktopAudioOption.innerText = ALL_DESKTOP_AUDIO_TEXT
+  allDesktopAudioOption.value = ALL_DESKTOP_AUDIO_TEXT
+  dropdown.appendChild(allDesktopAudioOption)
+
+  for (const element of response) {
+    const option = document.createElement('option')
+    option.innerText = element
+    option.value = element
+    dropdown.appendChild(option)
+  }
+
+  document.getElementById('share-btn').addEventListener('click', () => {
+
+  })
 }
 
-function onError(error) {
-    console.error(error)
+function onError (error) {
+  console.error(error)
 }
 
-//let sending = browser.runtime.sendNativeMessage("screenAudioMicConnector", { cmd: "StartVirtmic", args: [{ node: '' }] });
-//let sending = browser.runtime.sendNativeMessage("screenAudioMicConnector", { cmd: "StopVirtmic", args: [{ micPid: 0 }] });
-let sending = browser.runtime.sendNativeMessage("screenAudioMicConnector", { cmd: "GetNodes", args:[]} );
-sending.then(onResponse, onError);
+// let sending = browser.runtime.sendNativeMessage("screenAudioMicConnector", { cmd: "StartVirtmic", args: [{ node: '' }] });
+// let sending = browser.runtime.sendNativeMessage("screenAudioMicConnector", { cmd: "StopVirtmic", args: [{ micPid: 0 }] });
+const sending = browser.runtime.sendNativeMessage('screenAudioMicConnector', { cmd: 'GetNodes', args: [] })
+sending.then(onResponse, onError)

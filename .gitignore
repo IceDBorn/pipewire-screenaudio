@@ -31,5 +31,8 @@
 *.out
 *.app
 
-# VSCodium histort
+# VSCodium history
 .history/
+
+# Node deps
+/node_modules
