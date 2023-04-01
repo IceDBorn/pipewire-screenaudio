@@ -11,6 +11,14 @@ function intToBin () {
     xargs -I {} sh -c "printf '{}'" # Return raw bytes
 }
 
+function binToInt () {
+  head -c 4 |                           # Read 4 bytes
+    hexdump |                           # Read raw bytes as hex
+    head -n 1 |                         # Discard new line
+    awk '{print "0x"$3$2}' |            # Format hex number
+    xargs -I {} sh -c 'echo $(( {} ))'  # Return int
+}
+
 function toMessage () {
   local message="$1"
   local messageLength=`printf "$message" | wc -c`
@@ -47,7 +55,9 @@ function StopVirtmic () {
   exit
 }
 
-payload=`$projectRoot/out/message-parser`
+payloadLength=`binToInt`
+payload=`head -c "$payloadLength"`
+
 cmd=`echo "$payload" | jq -r .cmd`
 args=`echo "$payload" | jq .args`
 
