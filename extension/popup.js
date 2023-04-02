@@ -18,10 +18,15 @@ function onResponse (response) {
   document.getElementById('share-btn').addEventListener('click', () => {
     browser.runtime.sendNativeMessage('screenAudioMicConnector', { cmd: 'StartVirtmic', args: [{ node: dropdown.value }] })
   })
+
+  document.getElementById('heading').innerText = 'Select audio node to share';
 }
 
 function onError (error) {
   console.error(error)
+  document.getElementById('heading').innerText = 'The native connector is missing!';
+  document.getElementById('share-btn').hidden = true;
+  document.getElementById('dropdown').hidden = true;
 }
 
 // let sending = browser.runtime.sendNativeMessage("screenAudioMicConnector", { cmd: "StartVirtmic", args: [{ node: '' }] });
