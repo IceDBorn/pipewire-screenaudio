@@ -1,7 +1,7 @@
 {
   "name": "screenAudioMicConnector",
   "description": "Connector to communicate with the browser",
-  "path": "/home/icedborn/dev/screenaudio-mic/native/screenAudioMicConnector",
+  "path": "/usr/lib/screenaudio-mic/screenAudioMicConnector",
   "type": "stdio",
   "allowed_extensions": [
     "screenaudio-mic@icedborn"
