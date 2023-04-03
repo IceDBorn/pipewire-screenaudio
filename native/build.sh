@@ -6,4 +6,4 @@ cmake -B build -S .
 cmake --build build
 
 mkdir -p out
-cp build/screenaudio-mic/screenaudio-mic out/
+cp build/pipewire-screenaudio/pipewire-screenaudio out/

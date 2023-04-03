@@ -1,4 +1,4 @@
-const MESSAGE_NAME = 'com.icedborn.screenaudiomicconnector'
+const MESSAGE_NAME = 'com.icedborn.pipewirescreenaudioconnector'
 
 let selectedNode = null
 
@@ -8,7 +8,7 @@ async function isRunning () {
     return false
   }
 
-  const { isRunning } = await chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: 'IsVirtmicRunning', args: [{ micPid }] })
+  const { isRunning } = await chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: 'IsPipewireScreenAudioRunning', args: [{ micPid }] })
 
   if (!isRunning) {
     window.localStorage.setItem('micPid', null)
@@ -28,7 +28,7 @@ function createShareBtn (root) {
   const shareBtnEl = document.getElementById('share-btn')
   shareBtnEl.addEventListener('click', () => {
     window.localStorage.setItem('selectedNode', selectedNode)
-    chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: 'StartVirtmic', args: [{ node: selectedNode }] })
+    chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: 'StartPipewireScreenAudio', args: [{ node: selectedNode }] })
       .then(({ micPid }) => {
         root.removeChild(shareBtnEl)
         window.localStorage.setItem('micPid', micPid)
@@ -49,7 +49,7 @@ function createStopBtn (root) {
   stopBtnEl.addEventListener('click', async () => {
     if (await isRunning()) {
       const micPid = window.localStorage.getItem('micPid')
-      chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: 'StopVirtmic', args: [{ micPid }] })
+      chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: 'StopPipewireScreenAudio', args: [{ micPid }] })
         .then(() => {
           root.removeChild(stopBtnEl)
           window.localStorage.setItem('micPid', null)
@@ -61,10 +61,10 @@ function createStopBtn (root) {
 
 async function updateGui (root) {
   if (await isRunning()) {
-    document.getElementById('is-running').innerText = `screenaudio-mic is running with PID: ${window.localStorage.getItem('micPid')}`
+    document.getElementById('is-running').innerText = `pipewire-screenaudio is running with PID: ${window.localStorage.getItem('micPid')}`
     createStopBtn(root)
   } else {
-    document.getElementById('is-running').innerText = 'screenaudio-mic is not running'
+    document.getElementById('is-running').innerText = 'pipewire-screenaudio is not running'
     createShareBtn(root)
   }
 }
@@ -107,7 +107,5 @@ function onError (error) {
   document.getElementById('dropdown').hidden = true
 }
 
-// let sending = chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: "StartVirtmic", args: [{ node: '' }] });
-// let sending = chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: "StopVirtmic", args: [{ micPid: 0 }] });
 const sending = chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: 'GetNodes', args: [] })
 sending.then(onResponse, onError)

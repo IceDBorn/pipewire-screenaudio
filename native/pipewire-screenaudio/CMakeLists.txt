@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.2.2)
-project(screenaudio-mic LANGUAGES CXX VERSION 1.0)
+project(pipewire-screenaudio LANGUAGES CXX VERSION 1.0)
 
 # --------------------------------------------------------------------------------------------------------
 # Create library
