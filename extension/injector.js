@@ -17,4 +17,4 @@ function injectCode (src) {
   nullthrows(document.head || document.documentElement).appendChild(script)
 }
 
-injectCode(browser.runtime.getURL('/index.js'))
+injectCode(chrome.runtime.getURL('/index.js'))

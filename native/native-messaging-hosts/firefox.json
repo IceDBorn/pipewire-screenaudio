@@ -1,5 +1,5 @@
 {
-  "name": "screenAudioMicConnector",
+  "name": "com.icedborn.screenaudiomicconnector",
   "description": "Connector to communicate with the browser",
   "path": "/usr/lib/screenaudio-mic/screenAudioMicConnector",
   "type": "stdio",

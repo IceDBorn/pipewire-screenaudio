@@ -1,3 +1,5 @@
+const MESSAGE_NAME = 'com.icedborn.screenaudiomicconnector'
+
 function onResponse (response) {
   const ALL_DESKTOP_AUDIO_TEXT = 'All Desktop Audio'
 
@@ -16,7 +18,7 @@ function onResponse (response) {
   }
 
   document.getElementById('share-btn').addEventListener('click', () => {
-    browser.runtime.sendNativeMessage('screenAudioMicConnector', { cmd: 'StartVirtmic', args: [{ node: dropdown.value }] })
+    chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: 'StartVirtmic', args: [{ node: dropdown.value }] })
   })
 
   document.getElementById('heading').innerText = 'Select audio node to share';
@@ -29,7 +31,7 @@ function onError (error) {
   document.getElementById('dropdown').hidden = true;
 }
 
-// let sending = browser.runtime.sendNativeMessage("screenAudioMicConnector", { cmd: "StartVirtmic", args: [{ node: '' }] });
-// let sending = browser.runtime.sendNativeMessage("screenAudioMicConnector", { cmd: "StopVirtmic", args: [{ micPid: 0 }] });
-const sending = browser.runtime.sendNativeMessage('screenAudioMicConnector', { cmd: 'GetNodes', args: [] })
+// let sending = chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: "StartVirtmic", args: [{ node: '' }] });
+// let sending = chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: "StopVirtmic", args: [{ micPid: 0 }] });
+const sending = chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: 'GetNodes', args: [] })
 sending.then(onResponse, onError)
