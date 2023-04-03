@@ -21,14 +21,14 @@ function onResponse (response) {
     chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: 'StartVirtmic', args: [{ node: dropdown.value }] })
   })
 
-  document.getElementById('heading').innerText = 'Select audio node to share';
+  document.getElementById('heading').innerText = 'Select audio node to share'
 }
 
 function onError (error) {
   console.error(error)
-  document.getElementById('heading').innerText = 'The native connector is missing!';
-  document.getElementById('share-btn').hidden = true;
-  document.getElementById('dropdown').hidden = true;
+  document.getElementById('heading').innerText = 'The native connector is missing!'
+  document.getElementById('share-btn').hidden = true
+  document.getElementById('dropdown').hidden = true
 }
 
 // let sending = chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: "StartVirtmic", args: [{ node: '' }] });
