@@ -82,11 +82,21 @@ function StartVirtmic () {
 
 function StopVirtmic () {
   local args="$1"
-  local micPid=`echo $args | jq '.[].micPid' | head -n 1`
+  local micPid=`echo $args | jq '.[].micPid' | xargs | head -n 1`
 
   kill "$micPid" && toMessage '{"success":true}' && exit
 
   toMessage '{"success":false}'
+  exit
+}
+
+function IsVirtmicRunning () {
+  local args="$1"
+  local micPid=`echo $args | jq '.[].micPid' | xargs | head -n 1`
+
+  (ps -p "$micPid" > /dev/null) && toMessage '{"isRunning":true}' && exit
+
+  toMessage '{"isRunning":false}'
   exit
 }
 
@@ -102,6 +112,9 @@ case $cmd in
     ;;
   'StartVirtmic')
     StartVirtmic "$args"
+    ;;
+  'IsVirtmicRunning')
+    IsVirtmicRunning "$args"
     ;;
   'StopVirtmic')
     StopVirtmic "$args"
