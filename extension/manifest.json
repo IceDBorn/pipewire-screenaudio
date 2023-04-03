@@ -17,7 +17,10 @@
   },
 
   "icons": {
-    "48": "icons/icon.png"
+    "16": "icons/icon.svg",
+    "32": "icons/icon.svg",
+    "48": "icons/icon.svg",
+    "64": "icons/icon.svg"
   },
 
   "content_scripts": [
