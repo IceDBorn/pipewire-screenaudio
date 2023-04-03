@@ -55,6 +55,4 @@ function overrideGdm () {
   navigator.mediaDevices.getDisplayMedia = getDisplayMedia
 }
 
-const newScript = document.createElement('script')
-newScript.innerHTML = `${overrideGdm.toString()}; overrideGdm();`.replaceAll('overrideGdm', '__overrideGdm')
-document.body.appendChild(newScript)
+overrideGdm()
