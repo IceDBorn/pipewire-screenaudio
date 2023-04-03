@@ -72,7 +72,6 @@ function StartPipewireScreenAudio () {
       done
     }
 
-    notify-send \"micPid=$micPid micId=$micId mainPid=\$mainPid\"
     countVirtmicLinks | mainLoop
   " > /dev/null &
 
