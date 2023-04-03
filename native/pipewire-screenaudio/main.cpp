@@ -69,7 +69,7 @@ int main()
 
     auto virtual_mic = core.create("adapter",
                                    {
-                                       {"node.name", "screenaudio-mic"},            //
+                                       {"node.name", "pipewire-screenaudio"},            //
                                        {"media.class", "Audio/Source/Virtual"},     //
                                        {"factory.name", "support.null-audio-sink"}, //
                                        {"audio.channels", "2"},                     //

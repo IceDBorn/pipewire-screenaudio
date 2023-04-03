@@ -1,33 +1,33 @@
 {
 
   "manifest_version": 3,
-  "name": "screenaudio-mic",
+  "name": "Pipewire Screenaudio",
   "version": "0.0.1",
 
   "description": "Passthrough pipewire audio to WebRTC screenshare",
 
   "browser_specific_settings": {
     "gecko": {
-      "id": "screenaudio-mic@icedborn"
+      "id": "pipewire-screenaudio@icedborn"
     }
   },
 
   "action": {
-    "default_popup": "popup.html"
+    "default_popup": "assets/popup.html"
   },
 
   "icons": {
-    "16": "icons/icon.svg",
-    "32": "icons/icon.svg",
-    "48": "icons/icon.svg",
-    "64": "icons/icon.svg"
+    "16": "assets/icons/icon.svg",
+    "32": "assets/icons/icon.svg",
+    "48": "assets/icons/icon.svg",
+    "64": "assets/icons/icon.svg"
   },
 
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
       "run_at": "document_start",
-      "js": ["injector.js"]
+      "js": ["scripts/injector.js"]
     }
   ],
 
@@ -38,7 +38,7 @@
   "web_accessible_resources": [
     {
       "matches": ["<all_urls>"],
-      "resources": [ "index.js" ]
+      "resources": [ "scripts/index.js" ]
     }
   ]
 

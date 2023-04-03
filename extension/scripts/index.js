@@ -18,7 +18,7 @@ function overrideGdm () {
   const getDisplayMedia = async () => {
     let id
     try {
-      const myDiscordAudioSink = await getAudioDevice('screenaudio-mic')
+      const myDiscordAudioSink = await getAudioDevice('pipewire-screenaudio')
       id = myDiscordAudioSink.deviceId
     } catch (error) {
       id = 'default'

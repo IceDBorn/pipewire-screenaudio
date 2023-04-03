@@ -1,5 +1,6 @@
 {
-  "name": "screenaudio-mic",
+  "name": "pipewire-screenaudio",
+  "version": "0.0.1",
   "devDependencies": {
     "standard": "^16.0.0"
   },

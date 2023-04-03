@@ -7,11 +7,11 @@ function injectCode (src) {
   const script = document.createElement('script')
   script.src = src
   script.onload = function () {
-    console.log('screenaudio-mic script injected')
+    console.log('pipewire-screenaudio script injected')
     this.remove()
   }
 
   nullthrows(document.head || document.documentElement).appendChild(script)
 }
 
-injectCode(chrome.runtime.getURL('/index.js'))
+injectCode(chrome.runtime.getURL('/scripts/index.js'))

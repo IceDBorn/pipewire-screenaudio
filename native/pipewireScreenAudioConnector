@@ -33,15 +33,15 @@ function GetNodes () {
   exit
 }
 
-function StartVirtmic () {
+function StartPipewireScreenAudio () {
   local args="$1"
 
   local node=`echo $args | jq -r '.[].node' | head -n 1`
-  echo $node | nohup $projectRoot/out/screenaudio-mic > /dev/null &
+  echo $node | nohup $projectRoot/out/pipewire-screenaudio > /dev/null &
   local micPid=$!
 
   sleep 1
-  local micId=`pw-cli ls Node | grep -B 3 'screenaudio-mic' | grep 'object.serial' | awk '{print $3}' | jq -r`
+  local micId=`pw-cli ls Node | grep -B 3 'pipewire-screenaudio' | grep 'object.serial' | awk '{print $3}' | jq -r`
 
   nohup bash -c "
     mainPid=\$\$
@@ -55,7 +55,7 @@ function StartVirtmic () {
             pstree -A -p \$mainPid | grep -Eow '[0-9]+' | xargs kill
           )) > /dev/null
 
-          pw-link -l | grep screenaudio-mic | wc -l
+          pw-link -l | grep pipewire-screenaudio | wc -l
         done
       )
     }
@@ -72,7 +72,6 @@ function StartVirtmic () {
       done
     }
 
-    notify-send \"micPid=$micPid micId=$micId mainPid=\$mainPid\"
     countVirtmicLinks | mainLoop
   " > /dev/null &
 
@@ -80,7 +79,7 @@ function StartVirtmic () {
   exit
 }
 
-function StopVirtmic () {
+function StopPipewireScreenAudio () {
   local args="$1"
   local micPid=`echo $args | jq '.[].micPid' | xargs | head -n 1`
 
@@ -90,7 +89,7 @@ function StopVirtmic () {
   exit
 }
 
-function IsVirtmicRunning () {
+function IsPipewireScreenAudioRunning () {
   local args="$1"
   local micPid=`echo $args | jq '.[].micPid' | xargs | head -n 1`
 
@@ -110,13 +109,13 @@ case $cmd in
   'GetNodes')
     GetNodes "$args"
     ;;
-  'StartVirtmic')
-    StartVirtmic "$args"
+  'StartPipewireScreenAudio')
+    StartPipewireScreenAudio "$args"
     ;;
-  'IsVirtmicRunning')
-    IsVirtmicRunning "$args"
+  'IsPipewireScreenAudioRunning')
+    IsPipewireScreenAudioRunning "$args"
     ;;
-  'StopVirtmic')
-    StopVirtmic "$args"
+  'StopPipewireScreenAudio')
+    StopPipewireScreenAudio "$args"
     ;;
 esac
