@@ -4,6 +4,6 @@
     "standard": "^16.0.0"
   },
   "standard": {
-    "globals": ["browser"]
+    "globals": ["browser", "chrome"]
   }
 }
