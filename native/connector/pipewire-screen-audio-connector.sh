@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 export LC_ALL=C
-projectRoot="$( cd -- "$(dirname "$0")" > /dev/null 2>&1 ; pwd -P )"
+projectRoot="$( cd -- "$(dirname "$0")" > /dev/null 2>&1 ; cd .. ; pwd -P )"
 
 function intToBin () {
   printf '%08x' $1 |                # Convert integer to 8 digit hex
@@ -43,37 +43,7 @@ function StartPipewireScreenAudio () {
   sleep 1
   local micId=`pw-cli ls Node | grep -B 3 'pipewire-screenaudio' | grep 'object.serial' | awk '{print $3}' | jq -r`
 
-  nohup bash -c "
-    mainPid=\$\$
-
-    isCapturing=0
-
-    function countVirtmicLinks () {
-      pactl subscribe | grep --line-buffered '$micId' | (
-        while read -r line; do
-          ((echo \"\$line\" | grep 'remove') && (
-            pstree -A -p \$mainPid | grep -Eow '[0-9]+' | xargs kill
-          )) > /dev/null
-
-          pw-link -l | grep pipewire-screenaudio | wc -l
-        done
-      )
-    }
-
-    function mainLoop () {
-      while read -r line; do
-        if [ \$line -eq 8 ] && [ \$isCapturing -eq 0 ]; then
-          isCapturing=1
-        fi
-
-        if [ \$line -eq 4 ] && [ \$isCapturing -eq 1 ]; then
-          kill $micPid
-        fi
-      done
-    }
-
-    countVirtmicLinks | mainLoop
-  " > /dev/null &
+  nohup "$projectRoot/connector/watcher.sh" > /dev/null &
 
   toMessage '{"micPid":'$micPid',"micId":'$micId'}'
   exit

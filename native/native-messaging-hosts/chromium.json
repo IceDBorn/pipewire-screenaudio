@@ -1,7 +1,7 @@
 {
   "name": "com.icedborn.pipewirescreenaudioconnector",
   "description": "Connector to communicate with the browser",
-  "path": "/usr/lib/pipewire-screenaudio/pipewireScreenAudioConnector",
+  "path": "/usr/lib/pipewire-screenaudio/connector/pipewire-screen-audio-connector.sh",
   "type": "stdio",
   "allowed_origins": [
     "chrome-extension://dfoogepphhgaoofihnedpnmjgjoglglm/"
