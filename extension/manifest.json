@@ -13,7 +13,7 @@
   },
 
   "action": {
-    "default_popup": "assets/popup.html"
+    "default_popup": "assets/web/html/popup.html"
   },
 
   "icons": {

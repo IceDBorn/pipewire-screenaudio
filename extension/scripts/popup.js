@@ -1,4 +1,5 @@
 const MESSAGE_NAME = 'com.icedborn.pipewirescreenaudioconnector'
+const ALL_DESKTOP_AUDIO_TEXT = 'All Desktop Audio'
 
 const dropdown = document.getElementById('dropdown')
 const heading = document.getElementById('heading')
@@ -22,9 +23,8 @@ async function isRunning () {
 
 function createShareBtn (root) {
   const shareBtn = document.createElement('button')
-  shareBtn.style.background = '#202324'
-  shareBtn.style.color = '#e8e6e3'
   shareBtn.id = 'share-btn'
+  shareBtn.className = 'button'
   shareBtn.innerText = 'Share'
   root.appendChild(shareBtn)
 
@@ -42,9 +42,8 @@ function createShareBtn (root) {
 
 function createStopBtn (root) {
   const stopBtn = document.createElement('button')
-  stopBtn.style.background = '#202324'
-  stopBtn.style.color = '#e8e6e3'
   stopBtn.id = 'stop-btn'
+  stopBtn.className = 'button'
   stopBtn.innerText = 'Stop'
   root.appendChild(stopBtn)
 
@@ -67,7 +66,6 @@ async function updateGui (root) {
     heading.innerText = `Pipewire Screenaudio is running with PID: ${window.localStorage.getItem('micPid')}`
     dropdown.hidden = true
     createStopBtn(root)
-    document.getElementById('stop-btn').style.marginLeft = '47%'
   } else {
     heading.innerText = `Select audio node to share`
     dropdown.hidden = false
@@ -76,7 +74,6 @@ async function updateGui (root) {
 }
 
 function onResponse (response) {
-  const ALL_DESKTOP_AUDIO_TEXT = 'All Desktop Audio'
   const allDesktopAudioOption = document.createElement('option')
 
   allDesktopAudioOption.innerText = ALL_DESKTOP_AUDIO_TEXT
