@@ -13,18 +13,3 @@ body {
 #heading {
   text-align: center;
 }
-
-#dropdown {
-  background: #202324;
-  color: #e8e6e3;
-  margin: 0 auto;
-  margin-bottom: 1rem;
-  max-width: 40%;
-  text-overflow: ellipsis;
-}
-
-.button {
-  background: #202324;
-  color: #e8e6e3;
-  margin: 0 auto;
-}

@@ -24,7 +24,7 @@ async function isRunning () {
 function createShareBtn (root) {
   const shareBtn = document.createElement('button')
   shareBtn.id = 'share-btn'
-  shareBtn.className = 'button'
+  shareBtn.className = 'pure-material-button-contained'
   shareBtn.innerText = 'Share'
   root.appendChild(shareBtn)
 
@@ -43,7 +43,7 @@ function createShareBtn (root) {
 function createStopBtn (root) {
   const stopBtn = document.createElement('button')
   stopBtn.id = 'stop-btn'
-  stopBtn.className = 'button'
+  stopBtn.className = 'pure-material-button-contained'
   stopBtn.innerText = 'Stop'
   root.appendChild(stopBtn)
 
