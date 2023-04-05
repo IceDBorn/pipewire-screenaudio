@@ -32,7 +32,7 @@ void link(const std::string &target, pipewire::core &core)
 
         auto &parent = nodes.at(parent_id);
 
-        if (parent.info().props["node.name"].find(target) != std::string::npos)
+        if (parent.info().props["object.serial"].find(target) != std::string::npos)
         {
             std::cout << "Link   : " << target << ":" << port_id << " -> ";
 
