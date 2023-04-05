@@ -43,7 +43,7 @@ function StartPipewireScreenAudio () {
   sleep 1
   local micId=`pw-cli ls Node | grep -B 3 'pipewire-screenaudio' | grep 'object.serial' | awk '{print $3}' | jq -r`
 
-  nohup "$projectRoot/connector/watcher.sh" > /dev/null &
+  nohup $projectRoot/connector/watcher.sh $micPid $micId > /dev/null &
 
   toMessage '{"micPid":'$micPid',"micId":'$micId'}'
   exit

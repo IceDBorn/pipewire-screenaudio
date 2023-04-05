@@ -7,7 +7,7 @@ mainPid=$$
 isCapturing=0
 
 function countVirtmicLinks () {
-  pactl subscribe | grep --line-buffered '$micId' | (
+  pactl subscribe | grep --line-buffered $micId | (
     while read -r line; do
       ((echo "$line" | grep 'remove') && (
         pstree -A -p $mainPid | grep -Eow '[0-9]+' | xargs kill
