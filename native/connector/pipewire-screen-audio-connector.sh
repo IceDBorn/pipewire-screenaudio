@@ -21,14 +21,14 @@ function binToInt () {
 
 function toMessage () {
   local message="$1"
-  local messageLength=`printf "$message" | wc -c`
+  local messageLength=`echo -n "$message" | wc -c`
 
   intToBin $messageLength
-  printf "$message"
+  echo -n "$message"
 }
 
 function GetNodes () {
-  local nodes=`pw-cli ls Node | grep node.name | awk '{print $3}' | sort | uniq | sed 's|\"||g' | jq -R . | jq -s . | jq -c`
+  local nodes=`pactl -f json list | jq '.sink_inputs' | jq -c '[ .[] | select(.properties["media.class"] == "Stream/Output/Audio") ]'`
   toMessage "$nodes"
   exit
 }

@@ -82,7 +82,7 @@ function onResponse (response) {
 
   for (const element of response) {
     const option = document.createElement('option')
-    option.innerText = element
+    option.innerText = `${element.properties['media.name']} (${element.properties['application.name']})`
     option.value = element
     dropdown.appendChild(option)
   }
