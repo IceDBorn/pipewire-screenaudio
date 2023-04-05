@@ -67,7 +67,7 @@ async function updateGui (root) {
     dropdown.hidden = true
     createStopBtn(root)
   } else {
-    heading.innerText = `Select audio node to share`
+    heading.innerText = 'Select audio node to share'
     dropdown.hidden = false
     createShareBtn(root)
   }
