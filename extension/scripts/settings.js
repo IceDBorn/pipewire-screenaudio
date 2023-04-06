@@ -61,5 +61,9 @@ remove.addEventListener('click', () => {
 populateBlacklistedList()
 
 clear.addEventListener('click', () => {
-  window.localStorage.setItem('blacklistedNodes', new Array())
+  if (confirm('Remove all blacklisted nodes?')) {
+    window.localStorage.setItem('blacklistedNodes', new Array())
+    table.innerHTML = null
+    populateBlacklistedList()
+}
 })
