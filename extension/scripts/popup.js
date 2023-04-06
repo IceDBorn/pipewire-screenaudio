@@ -84,12 +84,12 @@ async function updateGui (root) {
 async function populateNodesList(response) {
   if (JSON.stringify(response) !== window.localStorage.getItem('nodesList')) {
     window.localStorage.setItem('nodesList', JSON.stringify(response))
-    const allDesktopAudioOption = document.createElement('option')
     dropdown.innerHTML = null
 
-    allDesktopAudioOption.innerText = ALL_DESKTOP_AUDIO_TEXT
-    allDesktopAudioOption.value = ALL_DESKTOP_AUDIO_TEXT
-    dropdown.appendChild(allDesktopAudioOption)
+    // const allDesktopAudioOption = document.createElement('option')
+    // allDesktopAudioOption.innerText = ALL_DESKTOP_AUDIO_TEXT
+    // allDesktopAudioOption.value = ALL_DESKTOP_AUDIO_TEXT
+    // dropdown.appendChild(allDesktopAudioOption)
 
     for (const element of response) {
       const option = document.createElement('option')
