@@ -1,5 +1,5 @@
 const MESSAGE_NAME = 'com.icedborn.pipewirescreenaudioconnector'
-const ALL_DESKTOP_AUDIO_TEXT = 'All Desktop Audio'
+// const ALL_DESKTOP_AUDIO_TEXT = 'All Desktop Audio'
 
 const dropdown = document.getElementById('dropdown')
 const message = document.getElementById('message')
@@ -82,13 +82,13 @@ function createBlacklistBtn (root) {
     let nodeToBlacklist = { name: dropdown.options[dropdown.selectedIndex].text }
     nodeToBlacklist = JSON.stringify(nodeToBlacklist)
     let blacklistedNodes = []
-    items = window.localStorage.getItem('blacklistedNodes')
+    const items = window.localStorage.getItem('blacklistedNodes')
 
     if (items) {
       blacklistedNodes = JSON.parse(items)
       blacklistedNodes.push(nodeToBlacklist)
     } else {
-      blacklistedNodes = [ nodeToBlacklist ]
+      blacklistedNodes = [nodeToBlacklist]
     }
     window.localStorage.setItem('blacklistedNodes', JSON.stringify(blacklistedNodes))
   })
@@ -110,13 +110,13 @@ async function updateGui (root) {
   }
 }
 
-async function populateNodesList(response) {
+async function populateNodesList (response) {
   if (JSON.stringify(response) !== window.localStorage.getItem('nodesList')) {
     let whitelistedNodes = response
     window.localStorage.setItem('nodesList', JSON.stringify(response))
     dropdown.innerHTML = null
 
-    let blacklistedNodes = window.localStorage.getItem('blacklistedNodes')
+    const blacklistedNodes = window.localStorage.getItem('blacklistedNodes')
 
     if (blacklistedNodes > 1) {
       const bnSerials = blacklistedNodes.map(bn => bn.name)
@@ -147,7 +147,7 @@ async function populateNodesList(response) {
   }
 }
 
-function onReload(response) {
+function onReload (response) {
   populateNodesList(response)
 }
 
@@ -157,7 +157,7 @@ function onResponse (response) {
   settings.addEventListener('click', async () => {
     window.open('settings.html')
   })
-  setInterval(() => {chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: 'GetNodes', args: [] }).then(onReload, onError)}, 1000)
+  setInterval(() => { chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: 'GetNodes', args: [] }).then(onReload, onError) }, 1000)
   window.localStorage.setItem('nodesList', null)
   window.localStorage.setItem('selectedNode', null)
   populateNodesList(response)
