@@ -57,5 +57,4 @@ remove.addEventListener('click', () => {
   }
 })
 
-addItem('Item 1')
-addItem('Item 2')
+populateBlacklistedList()
