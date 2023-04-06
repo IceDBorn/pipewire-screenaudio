@@ -1,19 +1,40 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
-  <title>Screenaudio Mic</title>
-  <link rel="stylesheet" href="../css/global.css">
-  <link rel="stylesheet" href="../css/select.css">
-  <link rel="stylesheet" href="../css/button.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pipewire Screenaudio</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-KK94CHFLLe+nY2dmCWGMq91rCGa5gtU4mk92HdvYe+M/SXH301p5ILy+dN9+nJOZ" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.4/font/bootstrap-icons.css">
+
 </head>
 
-<body>
-  <div id="root">
-    <h3 id="heading"></h3>
-    <select id="dropdown" class="select-text"></select>
+<body data-bs-theme="dark" style="max-width: 19rem; width: 19rem; max-height: 11rem; height: 11rem;">
+  <!-- Navbar -->
+  <nav class="navbar bg-body-tertiary">
+    <div class="container-fluid">
+      <span class="navbar-brand mb-0 h1">Pipewire Screenaudio</span>
+      <button class="btn btn-outline-secondary btn-sm" type="button">
+        <span class="bi bi-gear-fill"></span>
+      </button>
+    </div>
+  </nav>
+  <!-- Content -->
+  <div id="root" class="container-fluid text-center px-4 mt-4">
+    <span id="message" class="mt-5"></span>
+    <div class="row justify-content-center g-1 mb-3">
+      <div class="col-9">
+        <select id="dropdown" class="form-select text-truncate"></select>
+      </div>
+      <div class="col-2 col align-self-center">
+        <button id="reload-btn" class="btn btn-outline-secondary">
+          <span class="bi bi-arrow-repeat"></span>
+        </button>
+      </div>
+    </div>
   </div>
 </body>
 <script src="../../../scripts/popup.js"></script>
-
 </html>
