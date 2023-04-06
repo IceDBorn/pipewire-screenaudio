@@ -79,9 +79,9 @@ function createBlacklistBtn (root) {
 
   blacklistBtnEl = document.getElementById('blacklist-btn')
   blacklistBtn.addEventListener('click', async () => {
-    let nodeToBlacklist = { name: dropdown.options[dropdown.selectedIndex].text, id: dropdown.value }
+    let nodeToBlacklist = { name: dropdown.options[dropdown.selectedIndex].text }
     nodeToBlacklist = JSON.stringify(nodeToBlacklist)
-    let blacklistedNodes = [ {} ]
+    let blacklistedNodes = []
     items = window.localStorage.getItem('blacklistedNodes')
 
     if (items) {
@@ -112,15 +112,23 @@ async function updateGui (root) {
 
 async function populateNodesList(response) {
   if (JSON.stringify(response) !== window.localStorage.getItem('nodesList')) {
+    let whitelistedNodes = response
     window.localStorage.setItem('nodesList', JSON.stringify(response))
     dropdown.innerHTML = null
+
+    let blacklistedNodes = window.localStorage.getItem('blacklistedNodes')
+
+    if (blacklistedNodes > 1) {
+      const bnSerials = blacklistedNodes.map(bn => bn.name)
+      whitelistedNodes = response.filter(node => !bnSerials.includes(node.properties['application.name']))
+    }
 
     // const allDesktopAudioOption = document.createElement('option')
     // allDesktopAudioOption.innerText = ALL_DESKTOP_AUDIO_TEXT
     // allDesktopAudioOption.value = ALL_DESKTOP_AUDIO_TEXT
     // dropdown.appendChild(allDesktopAudioOption)
 
-    for (const element of response) {
+    for (const element of whitelistedNodes) {
       const option = document.createElement('option')
       option.innerText = `${element.properties['media.name']} (${element.properties['application.name']})`
       option.value = element.properties['object.serial']

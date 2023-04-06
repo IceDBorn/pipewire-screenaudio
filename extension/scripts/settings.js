@@ -34,7 +34,7 @@ function addItem(item) {
 function populateBlacklistedList() {
   for (const item of JSON.parse(window.localStorage.getItem('blacklistedNodes'))) {
     const parsedItem = JSON.parse(item)
-    addItem(`${parsedItem.name} (${parsedItem.id})`)
+    addItem(parsedItem.name)
   }
 }
 
