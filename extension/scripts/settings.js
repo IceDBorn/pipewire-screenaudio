@@ -30,22 +30,25 @@ function addItem(item) {
   placeholder.hidden = true
 }
 
-// for (const item of blacklistedNodes) {
-//   addItem(item)
-// }
+function populateBlacklistedList() {
+  for (const item of JSON.parse(window.localStorage.getItem('blacklistedNodes'))) {
+    const parsedItem = JSON.parse(item)
+    addItem(`${parsedItem.name} (${parsedItem.id})`)
+  }
+}
 
 remove.addEventListener('click', () => {
   let items = Array.from(table.children)
 
   for (const item of items) {
-    let checked = false
     const children = item.firstElementChild.firstElementChild
     if (children) {
-      checked = children.firstElementChild.checked
-
-      if (checked) {
+      if (children.firstElementChild.checked) {
+        let blacklistedNodes = JSON.parse(window.localStorage.getItem('blacklistedNodes'))
+        blacklistedNodes = blacklistedNodes.filter(node => node === JSON.stringify(children.lastElementChild.innerText))
         table.removeChild(item)
         items = Array.from(table.children)
+        window.localStorage.setItem('blacklistedNodes', JSON.stringify(blacklistedNodes))
       }
       if (items.length <= 1) {
         placeholder.hidden = false
