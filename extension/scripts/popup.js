@@ -3,7 +3,6 @@ const ALL_DESKTOP_AUDIO_TEXT = 'All Desktop Audio'
 
 const dropdown = document.getElementById('dropdown')
 const message = document.getElementById('message')
-const reload = document.getElementById('reload-btn')
 
 let selectedNode = null
 
@@ -39,7 +38,6 @@ function createShareBtn (root) {
     shareBtnEl.appendChild(spinner)
     shareBtnEl.appendChild(text)
 
-    window.localStorage.setItem('selectedNode', selectedNode)
     chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: 'StartPipewireScreenAudio', args: [{ node: selectedNode }] })
       .then(({ micPid }) => {
         root.removeChild(shareBtnEl)
@@ -75,39 +73,53 @@ async function updateGui (root) {
     message.innerText = `Running with PID: ${window.localStorage.getItem('micPid')}`
     message.hidden = false
     dropdown.hidden = true
-    reload.hidden = true
     createStopBtn(root)
   } else {
     message.hidden = true
     dropdown.hidden = false
-    reload.hidden = false
     createShareBtn(root)
   }
 }
 
+async function populateNodesList(response) {
+  if (JSON.stringify(response) !== window.localStorage.getItem('nodesList')) {
+    window.localStorage.setItem('nodesList', JSON.stringify(response))
+    const allDesktopAudioOption = document.createElement('option')
+    dropdown.innerHTML = null
+
+    allDesktopAudioOption.innerText = ALL_DESKTOP_AUDIO_TEXT
+    allDesktopAudioOption.value = ALL_DESKTOP_AUDIO_TEXT
+    dropdown.appendChild(allDesktopAudioOption)
+
+    for (const element of response) {
+      const option = document.createElement('option')
+      option.innerText = `${element.properties['media.name']} (${element.properties['application.name']})`
+      option.value = element.properties['object.serial']
+      dropdown.appendChild(option)
+    }
+
+    const lastSelection = window.localStorage.getItem('selectedNode')
+    if (lastSelection) {
+      dropdown.value = lastSelection
+    }
+
+    selectedNode = dropdown.value
+    dropdown.addEventListener('change', () => {
+      selectedNode = dropdown.value
+      window.localStorage.setItem('selectedNode', selectedNode)
+    })
+  }
+}
+
+function onReload(response) {
+  populateNodesList(response)
+}
+
 function onResponse (response) {
-  const allDesktopAudioOption = document.createElement('option')
-
-  allDesktopAudioOption.innerText = ALL_DESKTOP_AUDIO_TEXT
-  allDesktopAudioOption.value = ALL_DESKTOP_AUDIO_TEXT
-  dropdown.appendChild(allDesktopAudioOption)
-
-  for (const element of response) {
-    const option = document.createElement('option')
-    option.innerText = `${element.properties['media.name']} (${element.properties['application.name']})`
-    option.value = element.properties['object.serial']
-    dropdown.appendChild(option)
-  }
-
-  const lastSelection = window.localStorage.getItem('selectedNode')
-  if (lastSelection) {
-    dropdown.value = lastSelection
-  }
-
-  selectedNode = dropdown.value
-  dropdown.addEventListener('change', () => { selectedNode = dropdown.value })
-
   const root = document.getElementById('root')
+  setInterval(() => {chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: 'GetNodes', args: [] }).then(onReload, onError)}, 1000)
+  window.localStorage.setItem('nodesList', null)
+  populateNodesList(response)
   updateGui(root)
 }
 
@@ -115,7 +127,6 @@ function onError (error) {
   console.error(error)
   message.innerText = 'The native connector is misconfigured or missing!'
   dropdown.hidden = true
-  reload.hidden = true;
 }
 
 chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: 'GetNodes', args: [] }).then(onResponse, onError)
