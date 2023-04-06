@@ -98,9 +98,8 @@ async function populateNodesList(response) {
       dropdown.appendChild(option)
     }
 
-    const lastSelection = window.localStorage.getItem('selectedNode')
-    if (lastSelection) {
-      dropdown.value = lastSelection
+    if (dropdown.innerHTML.indexOf('value="' + window.localStorage.getItem('selectedNode') + '"') > -1) {
+      dropdown.value = window.localStorage.getItem('selectedNode')
     }
 
     selectedNode = dropdown.value
@@ -119,6 +118,7 @@ function onResponse (response) {
   const root = document.getElementById('root')
   setInterval(() => {chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: 'GetNodes', args: [] }).then(onReload, onError)}, 1000)
   window.localStorage.setItem('nodesList', null)
+  window.localStorage.setItem('selectedNode', null)
   populateNodesList(response)
   updateGui(root)
 }
