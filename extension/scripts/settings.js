@@ -1,5 +1,6 @@
 const table = document.getElementById('blacklisted')
 const remove = document.getElementById('remove-btn')
+const clear = document.getElementById('clear-btn')
 const placeholder = document.getElementById('placeholder')
 
 function addItem(item) {
@@ -58,3 +59,7 @@ remove.addEventListener('click', () => {
 })
 
 populateBlacklistedList()
+
+clear.addEventListener('click', () => {
+  window.localStorage.setItem('blacklistedNodes', new Array())
+})
