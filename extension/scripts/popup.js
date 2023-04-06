@@ -73,8 +73,8 @@ function createStopBtn (root) {
 function createBlacklistBtn (root) {
   const blacklistBtn = document.createElement('button')
   blacklistBtn.id = 'blacklist-btn'
-  blacklistBtn.className = 'btn btn-warning'
-  blacklistBtn.innerText = 'Blacklist'
+  blacklistBtn.className = 'btn btn-danger px-3'
+  blacklistBtn.innerText = 'Hide'
   root.appendChild(blacklistBtn)
 
   blacklistBtnEl = document.getElementById('blacklist-btn')
