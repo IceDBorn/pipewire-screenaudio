@@ -31,6 +31,14 @@ function createShareBtn (root) {
 
   const shareBtnEl = document.getElementById('share-btn')
   shareBtnEl.addEventListener('click', () => {
+    const spinner = document.createElement('span')
+    const text = document.createElement('span')
+    shareBtnEl.innerText = ''
+    spinner.className = 'spinner-border spinner-border-sm me-1'
+    text.innerText = 'Sharing...'
+    shareBtnEl.appendChild(spinner)
+    shareBtnEl.appendChild(text)
+
     window.localStorage.setItem('selectedNode', selectedNode)
     chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: 'StartPipewireScreenAudio', args: [{ node: selectedNode }] })
       .then(({ micPid }) => {
