@@ -116,6 +116,10 @@ function onReload(response) {
 
 function onResponse (response) {
   const root = document.getElementById('root')
+  const settings = document.getElementById('settings')
+  settings.addEventListener('click', async () => {
+    window.open('settings.html')
+  })
   setInterval(() => {chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: 'GetNodes', args: [] }).then(onReload, onError)}, 1000)
   window.localStorage.setItem('nodesList', null)
   window.localStorage.setItem('selectedNode', null)
