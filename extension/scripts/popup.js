@@ -38,11 +38,11 @@ function createShareBtn (root) {
     text.innerText = 'Sharing...'
     shareBtnEl.appendChild(spinner)
     shareBtnEl.appendChild(text)
+    root.removeChild(blacklistBtnEl)
 
     chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: 'StartPipewireScreenAudio', args: [{ node: selectedNode }] })
       .then(({ micPid }) => {
         root.removeChild(shareBtnEl)
-        root.removeChild(blacklistBtnEl)
         window.localStorage.setItem('micPid', micPid)
         updateGui(root)
       })
