@@ -5,6 +5,7 @@ const dropdown = document.getElementById('dropdown')
 const message = document.getElementById('message')
 
 let selectedNode = null
+let blacklistBtnEl = null
 
 async function isRunning () {
   const micPid = window.localStorage.getItem('micPid')
@@ -24,7 +25,7 @@ async function isRunning () {
 function createShareBtn (root) {
   const shareBtn = document.createElement('button')
   shareBtn.id = 'share-btn'
-  shareBtn.className = 'btn btn-success'
+  shareBtn.className = 'btn btn-success me-2'
   shareBtn.innerText = 'Share'
   root.appendChild(shareBtn)
 
@@ -41,6 +42,7 @@ function createShareBtn (root) {
     chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: 'StartPipewireScreenAudio', args: [{ node: selectedNode }] })
       .then(({ micPid }) => {
         root.removeChild(shareBtnEl)
+        root.removeChild(blacklistBtnEl)
         window.localStorage.setItem('micPid', micPid)
         updateGui(root)
       })
@@ -68,16 +70,43 @@ function createStopBtn (root) {
   })
 }
 
+function createBlacklistBtn (root) {
+  const blacklistBtn = document.createElement('button')
+  blacklistBtn.id = 'blacklist-btn'
+  blacklistBtn.className = 'btn btn-warning'
+  blacklistBtn.innerText = 'Blacklist'
+  root.appendChild(blacklistBtn)
+
+  blacklistBtnEl = document.getElementById('blacklist-btn')
+  blacklistBtn.addEventListener('click', async () => {
+    let nodeToBlacklist = { name: dropdown.options[dropdown.selectedIndex].text, id: dropdown.value }
+    nodeToBlacklist = JSON.stringify(nodeToBlacklist)
+    let blacklistedNodes = [ {} ]
+    items = window.localStorage.getItem('blacklistedNodes')
+
+    if (items) {
+      blacklistedNodes = JSON.parse(items)
+      blacklistedNodes.push(nodeToBlacklist)
+    } else {
+      blacklistedNodes = [ nodeToBlacklist ]
+    }
+    window.localStorage.setItem('blacklistedNodes', JSON.stringify(blacklistedNodes))
+  })
+}
+
 async function updateGui (root) {
+  const buttonGroup = document.getElementById('btn-group')
+
   if (await isRunning()) {
     message.innerText = `Running with PID: ${window.localStorage.getItem('micPid')}`
     message.hidden = false
     dropdown.hidden = true
-    createStopBtn(root)
+    createStopBtn(buttonGroup)
   } else {
     message.hidden = true
     dropdown.hidden = false
-    createShareBtn(root)
+    createShareBtn(buttonGroup)
+    createBlacklistBtn(buttonGroup)
   }
 }
 
