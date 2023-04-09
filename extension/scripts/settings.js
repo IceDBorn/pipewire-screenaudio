@@ -58,12 +58,21 @@ remove.addEventListener('click', () => {
   }
 })
 
-populateBlacklistedList()
-
 clear.addEventListener('click', () => {
   if (window.confirm('Remove all blacklisted nodes?')) {
     window.localStorage.setItem('blacklistedNodes', [])
     table.innerHTML = tableInitialHTML
-    populateBlacklistedList()
   }
 })
+
+// Repopulate table upon hiding a node
+function handleMessage(message) {
+  if (message === 'node-hidden') {
+    table.innerHTML = null
+    populateBlacklistedList()
+  }
+}
+
+chrome.runtime.onMessage.addListener(handleMessage);
+
+populateBlacklistedList()

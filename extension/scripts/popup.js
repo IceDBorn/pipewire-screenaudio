@@ -91,6 +91,7 @@ function createBlacklistBtn (root) {
     blacklistedNodes.push(nodeToBlacklist)
     window.localStorage.setItem('blacklistedNodes', JSON.stringify(blacklistedNodes))
     window.localStorage.setItem('nodesList', null)
+    chrome.runtime.sendMessage('node-hidden')
   })
 }
 
