@@ -44,7 +44,7 @@ function createShareBtn (root) {
       .then(({ micPid }) => {
         root.removeChild(shareBtnEl)
         window.localStorage.setItem('micPid', micPid)
-        updateGui(root)
+        updateGui()
       })
   })
 }
@@ -64,7 +64,7 @@ function createStopBtn (root) {
         .then(() => {
           root.removeChild(stopBtnEl)
           window.localStorage.setItem('micPid', null)
-          updateGui(root)
+          updateGui()
         })
     }
   })
@@ -94,7 +94,7 @@ function createBlacklistBtn (root) {
   })
 }
 
-async function updateGui (root) {
+async function updateGui () {
   const buttonGroup = document.getElementById('btn-group')
 
   if (await isRunning()) {
@@ -141,6 +141,15 @@ async function populateNodesList (response) {
       dropdown.appendChild(option)
     }
 
+    if (!dropdown.children.length) {
+      message.innerText = "No nodes available to share..."
+      message.className = "mt-5"
+      message.hidden = false
+      dropdown.hidden = true
+      document.getElementById('share-btn').hidden = true
+      document.getElementById('blacklist-btn').hidden = true
+    }
+
     if (dropdown.innerHTML.indexOf('value="' + window.localStorage.getItem('selectedNode') + '"') > -1) {
       dropdown.value = window.localStorage.getItem('selectedNode')
     }
@@ -167,7 +176,7 @@ function onResponse (response) {
   window.localStorage.setItem('nodesList', null)
   window.localStorage.setItem('selectedNode', null)
   populateNodesList(response)
-  updateGui(root)
+  updateGui()
 }
 
 function onError (error) {
