@@ -2,6 +2,7 @@ const table = document.getElementById('blacklisted')
 const remove = document.getElementById('remove-btn')
 const clear = document.getElementById('clear-btn')
 const placeholder = document.getElementById('placeholder')
+const tableInitialHTML = table.innerHTML
 
 function addItem (item) {
   const tr = document.createElement('tr')
@@ -62,7 +63,7 @@ populateBlacklistedList()
 clear.addEventListener('click', () => {
   if (window.confirm('Remove all blacklisted nodes?')) {
     window.localStorage.setItem('blacklistedNodes', [])
-    table.innerHTML = null
+    table.innerHTML = tableInitialHTML
     populateBlacklistedList()
   }
 })
