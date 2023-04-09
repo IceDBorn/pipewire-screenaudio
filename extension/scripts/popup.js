@@ -102,11 +102,16 @@ async function updateGui (root) {
     message.hidden = false
     dropdown.hidden = true
     createStopBtn(buttonGroup)
-  } else {
+  } else if (dropdown.children.length) {
     message.hidden = true
     dropdown.hidden = false
     createShareBtn(buttonGroup)
     createBlacklistBtn(buttonGroup)
+  } else {
+    message.innerText = "No nodes available to share..."
+    message.className = "mt-5"
+    message.hidden = false
+    dropdown.hidden = true
   }
 }
 
