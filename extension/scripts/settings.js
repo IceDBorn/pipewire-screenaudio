@@ -3,7 +3,7 @@ const remove = document.getElementById('remove-btn')
 const clear = document.getElementById('clear-btn')
 const placeholder = document.getElementById('placeholder')
 
-function addItem(item) {
+function addItem (item) {
   const tr = document.createElement('tr')
   const th = document.createElement('th')
   const div = document.createElement('div')
@@ -31,10 +31,9 @@ function addItem(item) {
   placeholder.hidden = true
 }
 
-function populateBlacklistedList() {
-  for (const item of JSON.parse(window.localStorage.getItem('blacklistedNodes'))) {
-    const parsedItem = JSON.parse(item)
-    addItem(parsedItem.name)
+function populateBlacklistedList () {
+  for (const item of JSON.parse(window.localStorage.getItem('blacklistedNodes') || '[]')) {
+    addItem(item.name)
   }
 }
 
@@ -61,9 +60,9 @@ remove.addEventListener('click', () => {
 populateBlacklistedList()
 
 clear.addEventListener('click', () => {
-  if (confirm('Remove all blacklisted nodes?')) {
-    window.localStorage.setItem('blacklistedNodes', new Array())
+  if (window.confirm('Remove all blacklisted nodes?')) {
+    window.localStorage.setItem('blacklistedNodes', [])
     table.innerHTML = null
     populateBlacklistedList()
-}
+  }
 })

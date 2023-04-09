@@ -79,17 +79,16 @@ function createBlacklistBtn (root) {
 
   blacklistBtnEl = document.getElementById('blacklist-btn')
   blacklistBtn.addEventListener('click', async () => {
-    let nodeToBlacklist = { name: dropdown.options[dropdown.selectedIndex].text }
-    nodeToBlacklist = JSON.stringify(nodeToBlacklist)
-    let blacklistedNodes = []
-    const items = window.localStorage.getItem('blacklistedNodes')
+    const nodesList = JSON.parse(window.localStorage.getItem('nodesList'))
+    const nodeToBlacklist = { name: nodesList.find(n => n.properties['object.serial'] === dropdown.value).properties['application.name'] }
+    const blacklistedNodes = []
 
+    const items = window.localStorage.getItem('blacklistedNodes')
     if (items) {
-      blacklistedNodes = JSON.parse(items)
-      blacklistedNodes.push(nodeToBlacklist)
-    } else {
-      blacklistedNodes = [nodeToBlacklist]
+      blacklistedNodes.push(...JSON.parse(items))
     }
+
+    blacklistedNodes.push(nodeToBlacklist)
     window.localStorage.setItem('blacklistedNodes', JSON.stringify(blacklistedNodes))
   })
 }
@@ -112,15 +111,16 @@ async function updateGui (root) {
 
 async function populateNodesList (response) {
   if (JSON.stringify(response) !== window.localStorage.getItem('nodesList')) {
-    let whitelistedNodes = response
+    let whitelistedNodes = [...response]
     window.localStorage.setItem('nodesList', JSON.stringify(response))
     dropdown.innerHTML = null
 
     const blacklistedNodes = window.localStorage.getItem('blacklistedNodes')
 
-    if (blacklistedNodes > 1) {
-      const bnSerials = blacklistedNodes.map(bn => bn.name)
-      whitelistedNodes = response.filter(node => !bnSerials.includes(node.properties['application.name']))
+    if (blacklistedNodes?.length) {
+      const bnNames = JSON.parse(blacklistedNodes).map(bn => bn.name)
+      document.body.innerHTML += JSON.stringify(bnNames)
+      whitelistedNodes = response.filter(node => !bnNames.includes(node.properties['application.name']))
     }
 
     // const allDesktopAudioOption = document.createElement('option')
@@ -132,6 +132,9 @@ async function populateNodesList (response) {
       const option = document.createElement('option')
       option.innerText = `${element.properties['media.name']} (${element.properties['application.name']})`
       option.value = element.properties['object.serial']
+
+      document.body.innerHTML += '<div>' + option.innerText + '</div><div>' + option.value + '</div>'
+
       dropdown.appendChild(option)
     }
 
