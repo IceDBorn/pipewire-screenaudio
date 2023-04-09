@@ -45,7 +45,7 @@ remove.addEventListener('click', () => {
     if (children) {
       if (children.firstElementChild.checked) {
         let blacklistedNodes = JSON.parse(window.localStorage.getItem('blacklistedNodes'))
-        blacklistedNodes = blacklistedNodes.filter(node => node === JSON.stringify(children.lastElementChild.innerText))
+        blacklistedNodes = blacklistedNodes.filter(node => node.name !== children.lastElementChild.innerText)
         table.removeChild(item)
         items = Array.from(table.children)
         window.localStorage.setItem('blacklistedNodes', JSON.stringify(blacklistedNodes))
