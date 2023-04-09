@@ -90,6 +90,7 @@ function createBlacklistBtn (root) {
 
     blacklistedNodes.push(nodeToBlacklist)
     window.localStorage.setItem('blacklistedNodes', JSON.stringify(blacklistedNodes))
+    window.localStorage.setItem('nodesList', null)
   })
 }
 
@@ -119,7 +120,6 @@ async function populateNodesList (response) {
 
     if (blacklistedNodes?.length) {
       const bnNames = JSON.parse(blacklistedNodes).map(bn => bn.name)
-      document.body.innerHTML += JSON.stringify(bnNames)
       whitelistedNodes = response.filter(node => !bnNames.includes(node.properties['application.name']))
     }
 
@@ -132,8 +132,6 @@ async function populateNodesList (response) {
       const option = document.createElement('option')
       option.innerText = `${element.properties['media.name']} (${element.properties['application.name']})`
       option.value = element.properties['object.serial']
-
-      document.body.innerHTML += '<div>' + option.innerText + '</div><div>' + option.value + '</div>'
 
       dropdown.appendChild(option)
     }
