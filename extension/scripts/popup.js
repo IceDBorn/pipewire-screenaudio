@@ -41,7 +41,7 @@ function createShareBtn (root) {
     shareBtnEl.appendChild(text)
     root.removeChild(blacklistBtnEl)
 
-    chrome.runtime.sendMessage({messageName: MESSAGE_NAME, message: 'node-shared', cmd: 'StartPipewireScreenAudio', args: [{ node: selectedNode }]})
+    chrome.runtime.sendMessage({ messageName: MESSAGE_NAME, message: 'node-shared', cmd: 'StartPipewireScreenAudio', args: [{ node: selectedNode }] })
   })
 }
 
@@ -56,12 +56,7 @@ function createStopBtn (root) {
   stopBtnEl.addEventListener('click', async () => {
     if (await isRunning()) {
       const micPid = window.localStorage.getItem('micPid')
-      chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: 'StopPipewireScreenAudio', args: [{ micPid }] })
-        .then(() => {
-          root.removeChild(stopBtnEl)
-          window.localStorage.setItem('micPid', null)
-          updateGui()
-        })
+      chrome.runtime.sendMessage({ messageName: MESSAGE_NAME, message: 'node-stopped', cmd: 'StopPipewireScreenAudio', args: [{ micPid }] })
     }
   })
 }
@@ -103,8 +98,8 @@ async function updateGui () {
     createShareBtn(buttonGroup)
     createBlacklistBtn(buttonGroup)
   } else {
-    message.innerText = "No nodes available to share..."
-    message.className = "mt-5"
+    message.innerText = 'No nodes available to share...'
+    message.className = 'mt-5'
     message.hidden = false
     dropdown.hidden = true
   }
@@ -137,8 +132,8 @@ async function populateNodesList (response) {
     }
 
     if (!dropdown.children.length) {
-      message.innerText = "No nodes available to share..."
-      message.className = "mt-5"
+      message.innerText = 'No nodes available to share...'
+      message.className = 'mt-5'
       message.hidden = false
       dropdown.hidden = true
       document.getElementById('share-btn').hidden = true
@@ -179,10 +174,16 @@ function onError (error) {
   dropdown.hidden = true
 }
 
-function handleMessage(message) {
+function handleMessage (message) {
   if (message === 'pid-updated') {
     const shareBtnEl = document.getElementById('share-btn')
     buttonGroup.removeChild(shareBtnEl)
+    updateGui()
+  }
+
+  if (message === 'pid-removed') {
+    const stopBtnEl = document.getElementById('stop-btn')
+    buttonGroup.removeChild(stopBtnEl)
     updateGui()
   }
 }
