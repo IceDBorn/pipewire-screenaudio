@@ -3,6 +3,7 @@ const MESSAGE_NAME = 'com.icedborn.pipewirescreenaudioconnector'
 
 const dropdown = document.getElementById('dropdown')
 const message = document.getElementById('message')
+const buttonGroup = document.getElementById('btn-group')
 
 let selectedNode = null
 let blacklistBtnEl = null
@@ -40,12 +41,7 @@ function createShareBtn (root) {
     shareBtnEl.appendChild(text)
     root.removeChild(blacklistBtnEl)
 
-    chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: 'StartPipewireScreenAudio', args: [{ node: selectedNode }] })
-      .then(({ micPid }) => {
-        root.removeChild(shareBtnEl)
-        window.localStorage.setItem('micPid', micPid)
-        updateGui()
-      })
+    chrome.runtime.sendMessage({messageName: MESSAGE_NAME, message: 'node-shared', cmd: 'StartPipewireScreenAudio', args: [{ node: selectedNode }]})
   })
 }
 
@@ -96,8 +92,6 @@ function createBlacklistBtn (root) {
 }
 
 async function updateGui () {
-  const buttonGroup = document.getElementById('btn-group')
-
   if (await isRunning()) {
     message.innerText = `Running with PID: ${window.localStorage.getItem('micPid')}`
     message.hidden = false
@@ -168,7 +162,6 @@ function onReload (response) {
 }
 
 function onResponse (response) {
-  const root = document.getElementById('root')
   const settings = document.getElementById('settings')
   settings.addEventListener('click', async () => {
     window.open('settings.html')
@@ -185,5 +178,15 @@ function onError (error) {
   message.innerText = 'The native connector is misconfigured or missing!'
   dropdown.hidden = true
 }
+
+function handleMessage(message) {
+  if (message === 'pid-updated') {
+    const shareBtnEl = document.getElementById('share-btn')
+    buttonGroup.removeChild(shareBtnEl)
+    updateGui()
+  }
+}
+
+chrome.runtime.onMessage.addListener(handleMessage)
 
 chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: 'GetNodes', args: [] }).then(onResponse, onError)

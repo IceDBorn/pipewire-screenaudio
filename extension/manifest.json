@@ -31,6 +31,10 @@
     }
   ],
 
+  "background": {
+    "scripts": ["scripts/background.js"]
+  },
+
   "permissions": [
     "nativeMessaging"
   ],
