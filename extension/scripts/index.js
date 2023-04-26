@@ -21,7 +21,10 @@ function overrideGdm () {
       const myDiscordAudioSink = await getAudioDevice('pipewire-screenaudio')
       id = myDiscordAudioSink.deviceId
     } catch (error) {
-      id = 'default'
+      return await navigator.mediaDevices.chromiumGetDisplayMedia({
+        video: true,
+        audio: false
+      })
     }
     const captureSystemAudioStream = await navigator.mediaDevices.getUserMedia({
       audio: {
