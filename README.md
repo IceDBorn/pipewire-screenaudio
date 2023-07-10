@@ -26,3 +26,9 @@ bash build.sh
 - Edit `pipewire-screenaudio/native/native-messaging-hosts/firefox.json`, replace "path" with the full location of `pipewire-screenaudio/native/connector/pipewire-screen-audio-connector.sh`
 - Rename `firefox.json` to `com.icedborn.pipewirescreenaudioconnector.json` and move it to `~/.mozilla/native-messaging-hosts`
 - Install the extension for Firefox
+
+## Usage
+- Optional: Grant extension with access permissions to all sites
+- Join a WebRTC call, click the extension icon, select an audio node and share
+- Stream, your transmission should contain both audio and video
+ 
