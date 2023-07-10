@@ -17,7 +17,7 @@ Based on [link-app-to-mic](https://github.com/Soundux/rohrkabel/tree/master/exam
 ### Building
 
 ```bash
-git clone https://github.com/IceDBorn/pipewire-screenaudio.git
+git clone --recursive https://github.com/IceDBorn/pipewire-screenaudio.git
 cd pipewire-screenaudio/native
 bash build.sh
 ```
