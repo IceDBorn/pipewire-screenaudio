@@ -34,10 +34,9 @@ bash build.sh
  
 ## Known Problems
 - There is no way to change the audio node you're sharing while streaming
-- Does not work with Chromium
-- Missing customization options
-- Missing all desktop audio support
 
 ## Planned Features
 - All Desktop Audio support
 - Change audio node while streaming
+- More customization options (node matching, watcher behavior etc.)
+- Chromium support
