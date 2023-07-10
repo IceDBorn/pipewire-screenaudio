@@ -25,7 +25,7 @@ bash build.sh
 ### Installing
 - Edit `pipewire-screenaudio/native/native-messaging-hosts/firefox.json`, replace "path" with the full location of `pipewire-screenaudio/native/connector/pipewire-screen-audio-connector.sh`
 - Rename `firefox.json` to `com.icedborn.pipewirescreenaudioconnector.json` and move it to `~/.mozilla/native-messaging-hosts`
-- Install the extension for Firefox
+- Install the [extension](https://addons.mozilla.org/en-US/firefox/addon/pipewire-screenaudio/) for Firefox
 
 ## Usage
 - Optional: Grant extension with access permissions to all sites
