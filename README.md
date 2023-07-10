@@ -32,3 +32,8 @@ bash build.sh
 - Join a WebRTC call, click the extension icon, select an audio node and share
 - Stream, your transmission should contain both audio and video
  
+## Known Problems
+- There is no way to change the audio node you're sharing while streaming
+- Does not work with Chromium
+- Missing customization options
+- Missing all desktop audio support
