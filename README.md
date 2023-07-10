@@ -37,3 +37,7 @@ bash build.sh
 - Does not work with Chromium
 - Missing customization options
 - Missing all desktop audio support
+
+## Planned Features
+- All Desktop Audio support
+- Change audio node while streaming
