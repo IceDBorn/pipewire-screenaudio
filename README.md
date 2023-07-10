@@ -7,11 +7,12 @@ Based on [link-app-to-mic](https://github.com/Soundux/rohrkabel/tree/master/exam
 ### Building from Source
 #### Requirements
 - cmake
-- pipewire
-- tl-expected
-- jq
-- hexdump
 - gawk
+- hexdump
+- jq
+- pipewire
+- pipewire-pulse
+- tl-expected 
 
 ### Building
 
@@ -24,3 +25,4 @@ bash build.sh
 ### Installing
 - Edit `pipewire-screenaudio/native/native-messaging-hosts/firefox.json`, replace "path" with the full location of `pipewire-screen-audio-connector.sh`
 - Rename `firefox.json` to `com.icedborn.pipewirescreenaudioconnector.json` and move it to `~/.mozilla/native-messaging-hosts`
+- Install the extension for Firefox
