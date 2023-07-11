@@ -37,6 +37,7 @@ bash build.sh
 
 ## Planned Features
 - All Desktop Audio support
+- Multiple nodes selection
 - Change audio node while streaming
 - More customization options (node matching, watcher behavior etc.)
 - Chromium support
