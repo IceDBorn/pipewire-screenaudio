@@ -4,6 +4,11 @@ Extension to passthrough Pipewire audio to WebRTC Screenshare
 Based on [link-app-to-mic](https://github.com/Soundux/rohrkabel/tree/master/examples/link-app-to-mic) and [Screenshare-with-audio-on-Discord-with-Linux](https://github.com/edisionnano/Screenshare-with-audio-on-Discord-with-Linux)
 
 ## Installation
+### Packages
+| Distro     | URL                                     |
+|------------|-----------------------------------------|
+| Arch Linux | [![AUR](https://img.shields.io/aur/version/pipewire-screenaudio?style=for-the-badge)](https://aur.archlinux.org/packages/pipewire-screenaudio)
+
 ### Building from Source
 #### Requirements
 - cmake
@@ -15,7 +20,6 @@ Based on [link-app-to-mic](https://github.com/Soundux/rohrkabel/tree/master/exam
 - tl-expected 
 
 ### Building
-
 ```bash
 git clone --recursive https://github.com/IceDBorn/pipewire-screenaudio.git
 cd pipewire-screenaudio/native
