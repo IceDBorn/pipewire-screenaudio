@@ -124,8 +124,13 @@ async function populateNodesList (response) {
     // dropdown.appendChild(allDesktopAudioOption)
 
     for (const element of whitelistedNodes) {
+      let text = element.properties['media.name']
+      if (element.properties['application.name']) {
+        text += ` (${element.properties['application.name']})`
+      }
+
       const option = document.createElement('option')
-      option.innerText = `${element.properties['media.name']} (${element.properties['application.name']})`
+      option.innerText = text
       option.value = element.properties['object.serial']
 
       dropdown.appendChild(option)
