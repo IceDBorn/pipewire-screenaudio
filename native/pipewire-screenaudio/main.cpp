@@ -9,7 +9,7 @@ std::optional<pipewire::port> virt_fl, virt_fr;
 std::map<std::uint32_t, pipewire::node> nodes;
 std::map<std::uint32_t, pipewire::link> links;
 
-std::vector<std::string> EXCLUDE_TARGETS{"Firefox"};
+std::vector<std::string> EXCLUDE_TARGETS{"AudioCallbackDriver"};
 
 bool isExcluded(const std::string &target) {
   auto it = std::find(EXCLUDE_TARGETS.begin(), EXCLUDE_TARGETS.end(), target);
@@ -46,9 +46,9 @@ void link(const std::string &target, pipewire::core &core)
         }
 
         auto code = parent.info().props["object.serial"];
-        auto name = parent.info().props["node.name"];
+        auto media_name = parent.info().props["media.name"];
         if (code == target ||
-            (target == "-1" && !isExcluded(name)))
+            (target == "-1" && !isExcluded(media_name)))
             {
                 std::cout << "Link   : " << target << ":" << port_id << " -> ";
 
