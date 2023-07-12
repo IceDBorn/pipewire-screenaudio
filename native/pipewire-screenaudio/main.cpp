@@ -9,6 +9,13 @@ std::optional<pipewire::port> virt_fl, virt_fr;
 std::map<std::uint32_t, pipewire::node> nodes;
 std::map<std::uint32_t, pipewire::link> links;
 
+std::vector<std::string> EXCLUDE_TARGETS{"AudioCallbackDriver"};
+
+bool isExcluded(const std::string &target) {
+  auto it = std::find(EXCLUDE_TARGETS.begin(), EXCLUDE_TARGETS.end(), target);
+  return it != EXCLUDE_TARGETS.end();
+}
+
 void link(const std::string &target, pipewire::core &core)
 {
     for (const auto &[port_id, port] : ports)
@@ -32,9 +39,18 @@ void link(const std::string &target, pipewire::core &core)
 
         auto &parent = nodes.at(parent_id);
 
-        if (parent.info().props["object.serial"].find(target) != std::string::npos)
-        {
-            std::cout << "Link   : " << target << ":" << port_id << " -> ";
+        if (!parent.info().props.count("media.class") ||
+            parent.info().props["media.class"] != "Stream/Output/Audio")
+            {
+          continue;
+        }
+
+        auto code = parent.info().props["object.serial"];
+        auto media_name = parent.info().props["media.name"];
+        if (code == target ||
+            (target == "-1" && !isExcluded(media_name)))
+            {
+                std::cout << "Link   : " << target << ":" << port_id << " -> ";
 
             if (port.info().props["audio.channel"] == "FL")
             {
