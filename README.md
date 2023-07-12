@@ -34,9 +34,9 @@ bash build.sh
  
 ## Known Problems
 - There is no way to change the audio node you're sharing while streaming
+- You can't stream firefox WebRTC calls at all, they are excluded by default
 
 ## Planned Features
-- All Desktop Audio support
 - Multiple nodes selection
 - Change audio node while streaming
 - More customization options (node matching, watcher behavior etc.)
