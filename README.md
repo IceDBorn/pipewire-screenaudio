@@ -5,9 +5,8 @@ Based on [link-app-to-mic](https://github.com/Soundux/rohrkabel/tree/master/exam
 
 ## Installation
 ### Packages
-| Distro     | URL                                     |
-|------------|-----------------------------------------|
-| Arch Linux | [![AUR](https://img.shields.io/aur/version/pipewire-screenaudio?style=for-the-badge)](https://aur.archlinux.org/packages/pipewire-screenaudio)
+[![AUR](https://img.shields.io/aur/version/pipewire-screenaudio?style=for-the-badge)](https://aur.archlinux.org/packages/pipewire-screenaudio)
+[![AUR](https://img.shields.io/aur/version/pipewire-screenaudio-git?style=for-the-badge)](https://aur.archlinux.org/packages/pipewire-screenaudio-git)
 
 ### Building from Source
 #### Requirements
