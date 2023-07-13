@@ -49,13 +49,12 @@ function StartPipewireScreenAudio () {
   local args="$1"
 
   local node=`echo $args | jq -r '.[].node' | head -n 1`
-  echo $node | nohup $projectRoot/out/pipewire-screenaudio > /dev/null &
-  local micPid=$!
 
-  sleep 1
-  local micId=`pw-cli ls Node | grep -B 3 'pipewire-screenaudio' | grep 'object.serial' | awk '{print $3}' | jq -r`
-
-  nohup $projectRoot/connector/watcher.sh $micPid $micId > /dev/null &
+  if [[ "$node" -eq "-1" ]]; then
+    echo $node | nohup $projectRoot/out/pipewire-screenaudio > /dev/null &
+  else
+    $projectRoot/connector/virtmic.sh $node
+  fi
 
   toMessage '{"micPid":'$micPid',"micId":'$micId'}'
   exit
