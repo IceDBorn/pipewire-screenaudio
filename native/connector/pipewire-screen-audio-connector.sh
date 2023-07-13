@@ -28,7 +28,19 @@ function toMessage () {
 }
 
 function GetNodes () {
-  local nodes=`pactl -f json list | jq '.sink_inputs' | jq -c '[{"properties": {"media.name": "[All Desktop Audio]", "application.name": "", "object.serial": -1}}] + [ .[] | select(.properties["media.class"] == "Stream/Output/Audio") ]'`
+  local nodes=`pw-dump | jq -c '
+    [{
+      "properties": {
+        "media.name": "[All Desktop Audio]",
+        "application.name": "",
+        "object.serial": -1
+      }
+    }] + [ .[] |
+      select(.info.props["media.class"] == "Stream/Output/Audio") |
+      .["properties"] = .info.props |
+      del(.info) 
+    ]
+  '`
   toMessage "$nodes"
   exit
 }
