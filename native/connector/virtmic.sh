@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-targetNodeSerial=$1
+targetNodeSerial="$1"
 virtmicNode='pipewire-screenaudio'
 
 EXCLUDED_TARGETS='"AudioCallbackDriver"'
@@ -37,7 +37,7 @@ cat "$fullDumpFile" | jq -c "[ .[] | select(.type == \"PipeWire:Interface:Port\"
 
 # === Connect the target node(s) to $virtmicNode === #
 
-if [[ ! "$targetNode" -eq "-1" ]]; then
+if [[ ! "$targetNodeSerial" -eq "-1" ]]; then
     # Get target node id from $streamsFile
     targetNodeId=`cat "$streamsFile" | jq -c "[ .[] | select(.info.props[\"object.serial\"] == $targetNodeSerial) ][0].id"`
 
@@ -52,8 +52,8 @@ if [[ ! "$targetNode" -eq "-1" ]]; then
     pw-link $targetPortFlId $virtmicPortFlId
     pw-link $targetPortFrId $virtmicPortFrId
 else
-    # Get target nodes ids to connect from $fullDumpFile
-    targetNodesIds=`cat $fullDumpFile | jq -c "[ .[] | select(.info.props[\"media.name\"] | contains($EXCLUDED_TARGETS) | not) ][].id" | paste -sd ','`
+    # Get target nodes ids to connect from $streamsFile
+    targetNodesIds=`cat $streamsFile | jq -c "[ .[] | select(.info.props[\"media.name\"] | contains($EXCLUDED_TARGETS) | not) ][].id" | paste -sd ','`
 
     # Get target nodes ports ids from $portsFile
     targetPortsFile=`mktemp`
@@ -63,8 +63,8 @@ else
     rm $targetPortsFile
 
     # Connect targets to virtmic
-    echo $targetPortsFlIds | while read -r id; do pw-link $id $virtmicPortFlId; done
-    echo $targetPortsFrIds | while read -r id; do pw-link $id $virtmicPortFrId; done
+    echo "$targetPortsFlIds" | while read -r id; do pw-link $id $virtmicPortFlId; done
+    echo "$targetPortsFrIds" | while read -r id; do pw-link $id $virtmicPortFrId; done
 fi
 
 # Cleanup
