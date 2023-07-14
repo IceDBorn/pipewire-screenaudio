@@ -65,6 +65,34 @@ else
     # Connect targets to virtmic
     echo "$targetPortsFlIds" | while read -r id; do pw-link $id $virtmicPortFlId; done
     echo "$targetPortsFrIds" | while read -r id; do pw-link $id $virtmicPortFrId; done
+
+    # Watch for new nodes to connect
+    tail -f /dev/null | pw-cli -m |
+    stdbuf -o0 awk '/remote 0 added global/ && /Node/' |
+    grep --line-buffered -oP 'id \K\d+' |
+    while read -r id; do
+        # 1. Find the ports with node.id == $id
+        # 2. Get only the FR and FL ports
+        # 3. Sort by audio.channel (FR > FL)
+        # 4. Return only the ids
+        ids=`pw-dump | jq -c "
+            [
+                .[] |
+                select(.info.props[\"node.id\"] == $id) |
+                select(.info.props[\"audio.channel\"] | contains(\"FR\", \"FL\"))
+            ] |
+            sort_by(.info.props[\"audio.channel\"]) |
+            .[].id
+        " | xargs` # Merge to one line
+
+        # As channels were sorted, $1 is FR and $2 is FL
+        flId=`echo "$ids" | awk '{print $1}'`
+        frId=`echo "$ids" | awk '{print $2}'`
+
+        # Connect new node to virtmic
+        pw-link $flId $virtmicPortFlId
+        pw-link $frId $virtmicPortFrId
+    done
 fi
 
 # Cleanup

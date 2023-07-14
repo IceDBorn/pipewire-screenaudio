@@ -50,13 +50,14 @@ function StartPipewireScreenAudio () {
 
   local node=`echo $args | jq -r '.[].node' | head -n 1`
 
-  $projectRoot/connector/virtmic.sh $node >/dev/null
+  nohup $projectRoot/connector/virtmic.sh $node 2>&1 >/tmp/virtmic.log &
 
   sleep 1
   local micId=`
     pw-dump |
       jq -c '[ .[] | select(.info.props["node.name"] == "pipewire-screenaudio") ][0].id'
   `
+  notify-send "micId: $micId"
 
   toMessage '{"micId":'$micId'}'
   exit
