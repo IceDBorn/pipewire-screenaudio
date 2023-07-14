@@ -37,7 +37,6 @@ cat "$fullDumpFile" | jq -c "[ .[] | select(.type == \"PipeWire:Interface:Port\"
 
 # Get target node id from $streamsFile
 targetNodeId=`cat "$streamsFile" | jq -c "[ .[] | select(.info.props[\"object.serial\"] == $targetNodeSerial) ][0].id"`
-code $streamsFile
 
 # Get target node ports ids from $portsFile
 targetPortsFile=`mktemp`
