@@ -58,7 +58,6 @@ function StartPipewireScreenAudio () {
       jq -c '[ .[] | select(.info.props["node.name"] == "pipewire-screenaudio") ][0].id'
   `
 
-  notify-send "id: $micId"
   toMessage '{"micId":'$micId'}'
   exit
 }
