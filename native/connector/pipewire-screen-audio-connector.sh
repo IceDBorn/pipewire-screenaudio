@@ -50,12 +50,7 @@ function StartPipewireScreenAudio () {
 
   local node=`echo $args | jq -r '.[].node' | head -n 1`
 
-  if [[ "$node" -eq "-1" ]]; then
-    echo $node | nohup $projectRoot/out/pipewire-screenaudio > /dev/null &
-  else
-    nohup $projectRoot/connector/virtmic.sh $node > /dev/null &
-  fi
-  local micPid=$!
+  $projectRoot/connector/virtmic.sh $node >/dev/null
 
   sleep 1
   local micId=`
@@ -63,8 +58,8 @@ function StartPipewireScreenAudio () {
       jq -c '[ .[] | select(.info.props["node.name"] == "pipewire-screenaudio") ][0].id'
   `
 
-  notify-send "pid: $micPid id: $micId"
-  toMessage '{"micPid":'$micPid',"micId":'$micId'}'
+  notify-send "id: $micId"
+  toMessage '{"micId":'$micId'}'
   exit
 }
 
