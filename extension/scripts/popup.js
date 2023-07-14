@@ -9,15 +9,15 @@ let selectedNode = null
 let blacklistBtnEl = null
 
 async function isRunning () {
-  const micPid = window.localStorage.getItem('micPid')
-  if (!micPid) {
+  const micId = window.localStorage.getItem('micId')
+  if (!micId) {
     return false
   }
 
-  const { isRunning } = await chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: 'IsPipewireScreenAudioRunning', args: [{ micPid }] })
+  const { isRunning } = await chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: 'IsPipewireScreenAudioRunning', args: [{ micId }] })
 
   if (!isRunning) {
-    window.localStorage.setItem('micPid', null)
+    window.localStorage.setItem('micId', null)
   }
 
   return isRunning
@@ -55,8 +55,8 @@ function createStopBtn (root) {
   const stopBtnEl = document.getElementById('stop-btn')
   stopBtnEl.addEventListener('click', async () => {
     if (await isRunning()) {
-      const micPid = window.localStorage.getItem('micPid')
-      chrome.runtime.sendMessage({ messageName: MESSAGE_NAME, message: 'node-stopped', cmd: 'StopPipewireScreenAudio', args: [{ micPid }] })
+      const micId = window.localStorage.getItem('micId')
+      chrome.runtime.sendMessage({ messageName: MESSAGE_NAME, message: 'node-stopped', cmd: 'StopPipewireScreenAudio', args: [{ micId }] })
     }
   })
 }
@@ -88,7 +88,7 @@ function createBlacklistBtn (root) {
 
 async function updateGui () {
   if (await isRunning()) {
-    message.innerText = `Running with PID: ${window.localStorage.getItem('micPid')}`
+    message.innerText = `Running virtmic Id: ${window.localStorage.getItem('micId')}`
     message.hidden = false
     dropdown.hidden = true
     createStopBtn(buttonGroup)
@@ -180,13 +180,13 @@ function onError (error) {
 }
 
 function handleMessage (message) {
-  if (message === 'pid-updated') {
+  if (message === 'mic-id-updated') {
     const shareBtnEl = document.getElementById('share-btn')
     buttonGroup.removeChild(shareBtnEl)
     updateGui()
   }
 
-  if (message === 'pid-removed') {
+  if (message === 'mic-id-removed') {
     const stopBtnEl = document.getElementById('stop-btn')
     buttonGroup.removeChild(stopBtnEl)
     updateGui()
