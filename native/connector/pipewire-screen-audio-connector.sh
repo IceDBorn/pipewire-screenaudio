@@ -58,7 +58,10 @@ function StartPipewireScreenAudio () {
   local micPid=$!
 
   sleep 1
-  local micId=`pw-cli ls Node | grep -B 3 'pipewire-screenaudio' | head -n 1 | awk '{ print $2 }' | tr -d ','`
+  local micId=`
+    pw-dump |
+      jq -c '[ .[] | select(.info.props["node.name"] == "pipewire-screenaudio") ][0].id'
+  `
 
   notify-send "pid: $micPid id: $micId"
   toMessage '{"micPid":'$micPid',"micId":'$micId'}'
