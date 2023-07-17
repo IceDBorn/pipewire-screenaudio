@@ -1,3 +1,0 @@
-[submodule "native/pipewire-screenaudio/rohrkabel"]
-	path = native/pipewire-screenaudio/rohrkabel
-	url = https://github.com/Soundux/rohrkabel
