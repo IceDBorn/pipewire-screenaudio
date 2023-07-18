@@ -57,16 +57,18 @@ else
     # Get target nodes ids to connect from $streamsFile
     targetNodesIds=`cat $streamsFile | jq -c "[ .[] | select(.info.props[\"media.name\"] | contains($EXCLUDED_TARGETS) | not) ][].id" | paste -sd ','`
 
-    # Get target nodes ports ids from $portsFile
-    targetPortsFile=`mktemp`
-    cat "$portsFile" | jq -c "[ .[] | select(.info.props[\"node.id\"] | contains($targetNodesIds)) ]" > $targetPortsFile
-    targetPortsFlIds=`cat "$targetPortsFile" | jq -c "[ .[] | select(.info.props[\"audio.channel\"] == \"FL\") ][].id"`
-    targetPortsFrIds=`cat "$targetPortsFile" | jq -c "[ .[] | select(.info.props[\"audio.channel\"] == \"FR\") ][].id"`
-    rm $targetPortsFile
+    if [[ ! "$targetNodesIds" -eq "" ]]; then
+        # Get target nodes ports ids from $portsFile
+        targetPortsFile=`mktemp`
+        cat "$portsFile" | jq -c "[ .[] | select(.info.props[\"node.id\"] | contains($targetNodesIds)) ]" > $targetPortsFile
+        targetPortsFlIds=`cat "$targetPortsFile" | jq -c "[ .[] | select(.info.props[\"audio.channel\"] == \"FL\") ][].id"`
+        targetPortsFrIds=`cat "$targetPortsFile" | jq -c "[ .[] | select(.info.props[\"audio.channel\"] == \"FR\") ][].id"`
+        rm $targetPortsFile
 
-    # Connect targets to virtmic
-    echo "$targetPortsFlIds" | while read -r id; do pw-link $id $virtmicPortFlId; done
-    echo "$targetPortsFrIds" | while read -r id; do pw-link $id $virtmicPortFrId; done
+        # Connect targets to virtmic
+        echo "$targetPortsFlIds" | while read -r id; do pw-link $id $virtmicPortFlId; done
+        echo "$targetPortsFrIds" | while read -r id; do pw-link $id $virtmicPortFrId; done
+    fi
 
     # Watch for new nodes to connect
     tail -f /dev/null | pw-cli -m | tee >(
