@@ -2,7 +2,7 @@
 
   "manifest_version": 3,
   "name": "Pipewire Screenaudio",
-  "version": "0.1.0",
+  "version": "0.1.1",
 
   "description": "Passthrough pipewire audio to WebRTC screenshare",
 
@@ -27,7 +27,8 @@
     {
       "matches": ["<all_urls>"],
       "run_at": "document_start",
-      "js": ["scripts/injector.js"]
+      "js": ["scripts/injector.js"],
+      "all_frames": true
     }
   ],
 
