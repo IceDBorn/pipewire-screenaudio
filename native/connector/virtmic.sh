@@ -71,13 +71,10 @@ else
     fi
 
     # Watch for new nodes to connect
-    tail -f /dev/null | pw-cli -m | tee >(
+    tail -f /dev/null | pw-cli -m | grep --line-buffered -v 'pipewire.sec.label = "hex:' | tee >(
         stdbuf -o0 awk '/remote 0 added global/ && /Node/' |
             grep --line-buffered -oP 'id \K\d+' |
-            while read -r id; do
-                # Changes are not immediately visible in pw-dump
-                sleep 1
-
+            while read -r id; do (
                 # Skip excluded targets
                 pw-dump "$id" | jq --exit-status -c "
                     [
@@ -108,7 +105,7 @@ else
                 # Connect new node to virtmic
                 pw-link $flId $virtmicPortFlId
                 pw-link $frId $virtmicPortFrId
-            done
+            ) & done
     ) \
     >(
         stdbuf -o0 awk '/remote 0 removed global/ && /Node/' |
