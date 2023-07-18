@@ -73,6 +73,9 @@ else
         stdbuf -o0 awk '/remote 0 added global/ && /Node/' |
             grep --line-buffered -oP 'id \K\d+' |
             while read -r id; do
+                # Changes are not immediately visible in pw-dump
+                sleep 1
+
                 # 1. Find the ports with node.id == $id
                 # 2. Get only the FR and FL ports
                 # 3. Sort by audio.channel (FR > FL)
