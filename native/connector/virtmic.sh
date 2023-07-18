@@ -76,6 +76,15 @@ else
                 # Changes are not immediately visible in pw-dump
                 sleep 1
 
+                # Skip excluded targets
+                pw-dump "$id" | jq --exit-status -c "
+                    [
+                        .[] |
+                        select(.id == $id) |
+                        select(.info.props[\"media.name\"] | contains($EXCLUDED_TARGETS) | not)
+                    ][0].id
+                " >/dev/null || continue
+
                 # 1. Find the ports with node.id == $id
                 # 2. Get only the FR and FL ports
                 # 3. Sort by audio.channel (FR > FL)
