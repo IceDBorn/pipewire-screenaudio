@@ -27,7 +27,8 @@
     {
       "matches": ["<all_urls>"],
       "run_at": "document_start",
-      "js": ["scripts/injector.js"]
+      "js": ["scripts/injector.js"],
+      "all_frames": true
     }
   ],
 
