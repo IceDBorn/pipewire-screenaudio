@@ -114,7 +114,7 @@ else
         stdbuf -o0 awk '/remote 0 removed global/ && /Node/' |
             grep --line-buffered -oP "id \\K$virtmicId" |
             while read -r id; do
-                pstree -A -p $myPid | grep -Eow '[0-9]+' | xargs kill
+                pstree -A -p $myPid | grep -Eow '[0-9]+' | xargs kill -2
             done
     )
 fi
