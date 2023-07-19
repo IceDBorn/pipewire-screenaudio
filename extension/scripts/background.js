@@ -2,17 +2,17 @@ function handleMessage (response) {
   if (response.message === 'node-shared') {
     // Passthrough the selected node to pipewire-screenaudio
     chrome.runtime.sendNativeMessage(response.messageName, { cmd: response.cmd, args: response.args })
-      .then(({ micPid }) => {
-        window.localStorage.setItem('micPid', micPid)
-        chrome.runtime.sendMessage('pid-updated')
+      .then(({ micId }) => {
+        window.localStorage.setItem('micId', micId)
+        chrome.runtime.sendMessage('mic-id-updated')
       })
   }
 
   if (response.message === 'node-stopped') {
     chrome.runtime.sendNativeMessage(response.messageName, { cmd: response.cmd, args: response.args })
       .then(() => {
-        window.localStorage.setItem('micPid', null)
-        chrome.runtime.sendMessage('pid-removed')
+        window.localStorage.setItem('micId', null)
+        chrome.runtime.sendMessage('mic-id-removed')
       })
   }
 }

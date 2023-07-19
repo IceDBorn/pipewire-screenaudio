@@ -27,8 +27,24 @@ function toMessage () {
   echo -n "$message"
 }
 
+function GetVersion () {
+  toMessage '{"version":"0.2.0"}'
+}
+
 function GetNodes () {
-  local nodes=`pactl -f json list | jq '.sink_inputs' | jq -c '[{"properties": {"media.name": "[All Desktop Audio]", "application.name": "", "object.serial": -1}}] + [ .[] | select(.properties["media.class"] == "Stream/Output/Audio") ]'`
+  local nodes=`pw-dump | jq -c '
+    [{
+      "properties": {
+        "media.name": "[All Desktop Audio]",
+        "application.name": "",
+        "object.serial": -1
+      }
+    }] + [ .[] |
+      select(.info.props["media.class"] == "Stream/Output/Audio") |
+      .["properties"] = .info.props |
+      del(.info) 
+    ]
+  '`
   toMessage "$nodes"
   exit
 }
@@ -37,23 +53,27 @@ function StartPipewireScreenAudio () {
   local args="$1"
 
   local node=`echo $args | jq -r '.[].node' | head -n 1`
-  echo $node | nohup $projectRoot/out/pipewire-screenaudio > /dev/null &
-  local micPid=$!
+
+  nohup $projectRoot/connector/virtmic.sh $node >/dev/null 2>&1 &
 
   sleep 1
-  local micId=`pw-cli ls Node | grep -B 3 'pipewire-screenaudio' | grep 'object.serial' | awk '{print $3}' | jq -r`
+  local micId=`
+    pw-dump |
+      jq -c '[ .[] | select(.info.props["node.name"] == "pipewire-screenaudio") ][0].id'
+  `
 
-  nohup $projectRoot/connector/watcher.sh $micPid $micId > /dev/null &
-
-  toMessage '{"micPid":'$micPid',"micId":'$micId'}'
+  toMessage '{"micId":'$micId'}'
   exit
 }
 
 function StopPipewireScreenAudio () {
   local args="$1"
-  local micPid=`echo $args | jq '.[].micPid' | xargs | head -n 1`
+  local micId=`echo $args | jq '.[].micId' | xargs | head -n 1`
 
-  kill "$micPid" && toMessage '{"success":true}' && exit
+  if [ ! "`pw-cli info "$micId" 2>/dev/null | wc -l`" -eq "0" ]; then
+    [ "`pw-cli destroy "$micId" 2>&1 | wc -l`" -eq "0" ] &&
+      toMessage '{"success":true}' && exit
+  fi
 
   toMessage '{"success":false}'
   exit
@@ -61,9 +81,11 @@ function StopPipewireScreenAudio () {
 
 function IsPipewireScreenAudioRunning () {
   local args="$1"
-  local micPid=`echo $args | jq '.[].micPid' | xargs | head -n 1`
+  local micId=`echo $args | jq '.[].micId' | xargs | head -n 1`
 
-  (ps -p "$micPid" > /dev/null) && toMessage '{"isRunning":true}' && exit
+  if [ ! "`pw-cli info "$micId" 2>/dev/null | wc -l`" -eq "0" ]; then
+    toMessage '{"isRunning":true}' && exit
+  fi
 
   toMessage '{"isRunning":false}'
   exit
@@ -76,6 +98,9 @@ cmd=`echo "$payload" | jq -r .cmd`
 args=`echo "$payload" | jq .args`
 
 case $cmd in
+  'GetVersion')
+    GetVersion
+    ;;
   'GetNodes')
     GetNodes "$args"
     ;;

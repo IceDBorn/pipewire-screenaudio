@@ -8,28 +8,19 @@ Based on [link-app-to-mic](https://github.com/Soundux/rohrkabel/tree/master/exam
 [![AUR](https://img.shields.io/aur/version/pipewire-screenaudio?style=for-the-badge)](https://aur.archlinux.org/packages/pipewire-screenaudio)
 [![AUR](https://img.shields.io/aur/version/pipewire-screenaudio-git?style=for-the-badge)](https://aur.archlinux.org/packages/pipewire-screenaudio-git)
 
-### Building from Source
+### Installing from Source
 #### Requirements
-- cmake
 - gawk
 - hexdump
 - jq
 - pipewire
-- pipewire-pulse
-- tl-expected 
+- psmisc
 
-### Building
 ```bash
-git clone --recursive https://github.com/IceDBorn/pipewire-screenaudio.git
-cd pipewire-screenaudio/native
-bash build.sh
+git clone https://github.com/IceDBorn/pipewire-screenaudio.git
+cd pipewire-screenaudio
+bash install.sh
 ```
-
-### Installing
-- Edit `pipewire-screenaudio/native/native-messaging-hosts/firefox.json`, replace "path" with the full location of `pipewire-screenaudio/native/connector/pipewire-screen-audio-connector.sh`
-- Rename `firefox.json` to `com.icedborn.pipewirescreenaudioconnector.json` and move it to `~/.mozilla/native-messaging-hosts`
-- Install the [extension](https://addons.mozilla.org/en-US/firefox/addon/pipewire-screenaudio/) for Firefox
-
 ## Usage
 - Optional: Grant extension with access permissions to all sites
 - Join a WebRTC call, click the extension icon, select an audio node and share
