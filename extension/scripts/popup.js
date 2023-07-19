@@ -1,12 +1,12 @@
 const MESSAGE_NAME = 'com.icedborn.pipewirescreenaudioconnector'
-// const ALL_DESKTOP_AUDIO_TEXT = 'All Desktop Audio'
+const EXT_VERSION = browser.runtime.getManifest().version
 
 const dropdown = document.getElementById('dropdown')
 const message = document.getElementById('message')
 const buttonGroup = document.getElementById('btn-group')
 
 let selectedNode = null
-let blacklistBtnEl = null
+let nodesLoop = null
 
 async function isRunning () {
   const micId = window.localStorage.getItem('micId')
@@ -24,28 +24,34 @@ async function isRunning () {
 }
 
 function createShareBtn (root) {
+  if (document.getElementById('share-btn')) return
   const shareBtn = document.createElement('button')
   shareBtn.id = 'share-btn'
   shareBtn.className = 'btn btn-success me-2'
   shareBtn.innerText = 'Share'
   root.appendChild(shareBtn)
-
   const shareBtnEl = document.getElementById('share-btn')
-  shareBtnEl.addEventListener('click', () => {
+
+  const eventListener = () => {
+    shareBtnEl.removeEventListener('click', eventListener)
     const spinner = document.createElement('span')
     const text = document.createElement('span')
     shareBtnEl.innerText = ''
     spinner.className = 'spinner-border spinner-border-sm me-1'
     text.innerText = 'Sharing...'
+    clearInterval(nodesLoop)
     shareBtnEl.appendChild(spinner)
     shareBtnEl.appendChild(text)
-    root.removeChild(blacklistBtnEl)
+    document.getElementById('blacklist-btn').hidden = true
 
     chrome.runtime.sendMessage({ messageName: MESSAGE_NAME, message: 'node-shared', cmd: 'StartPipewireScreenAudio', args: [{ node: selectedNode }] })
-  })
+  } 
+
+  shareBtnEl.addEventListener('click', eventListener)
 }
 
 function createStopBtn (root) {
+  if (document.getElementById('stop-btn')) return
   const stopBtn = document.createElement('button')
   stopBtn.id = 'stop-btn'
   stopBtn.className = 'btn btn-danger mt-3'
@@ -62,13 +68,13 @@ function createStopBtn (root) {
 }
 
 function createBlacklistBtn (root) {
+  if (document.getElementById('blacklist-btn')) return
   const blacklistBtn = document.createElement('button')
   blacklistBtn.id = 'blacklist-btn'
   blacklistBtn.className = 'btn btn-danger px-3'
   blacklistBtn.innerText = 'Hide'
   root.appendChild(blacklistBtn)
 
-  blacklistBtnEl = document.getElementById('blacklist-btn')
   blacklistBtn.addEventListener('click', async () => {
     const nodesList = JSON.parse(window.localStorage.getItem('nodesList'))
     const nodeToBlacklist = { name: nodesList.find(n => n.properties['object.serial'] === dropdown.value).properties['application.name'] }
@@ -118,11 +124,6 @@ async function populateNodesList (response) {
       whitelistedNodes = response.filter(node => !bnNames.includes(node.properties['application.name']))
     }
 
-    // const allDesktopAudioOption = document.createElement('option')
-    // allDesktopAudioOption.innerText = ALL_DESKTOP_AUDIO_TEXT
-    // allDesktopAudioOption.value = ALL_DESKTOP_AUDIO_TEXT
-    // dropdown.appendChild(allDesktopAudioOption)
-
     for (const element of whitelistedNodes) {
       let text = element.properties['media.name']
       if (element.properties['application.name']) {
@@ -157,19 +158,31 @@ async function populateNodesList (response) {
   }
 }
 
-function onReload (response) {
-  populateNodesList(response)
+function checkVersionMatch (nativeVersion) {
+  const extVersionSplit = EXT_VERSION.split('.')
+  const nativeVersionSplit = nativeVersion.split('.')
+  return extVersionSplit[0] === nativeVersionSplit[0] && extVersionSplit[1] === nativeVersionSplit[1]
 }
 
-function onResponse (response) {
+function onReload (response) {
+  populateNodesList(response)
+  updateGui()
+}
+
+function onResponse (response) {  
+  if (!checkVersionMatch(response.version)) {
+    message.innerText = `Version mismatch\nExtension: ${EXT_VERSION}\nNative: ${response.version}`
+    dropdown.hidden = true
+    return
+  } 
   const settings = document.getElementById('settings')
   settings.addEventListener('click', async () => {
     window.open('settings.html')
   })
-  setInterval(() => { chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: 'GetNodes', args: [] }).then(onReload, onError) }, 1000)
+  chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: 'GetNodes', args: [] }).then(onReload, onError)
+  nodesLoop = setInterval(() => { chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: 'GetNodes', args: [] }).then(onReload, onError) }, 1000)
   window.localStorage.setItem('nodesList', null)
   window.localStorage.setItem('selectedNode', null)
-  populateNodesList(response)
   updateGui()
 }
 
@@ -182,7 +195,9 @@ function onError (error) {
 function handleMessage (message) {
   if (message === 'mic-id-updated') {
     const shareBtnEl = document.getElementById('share-btn')
+    const hideBtnEl = document.getElementById('blacklist-btn')
     buttonGroup.removeChild(shareBtnEl)
+    buttonGroup.removeChild(hideBtnEl)
     updateGui()
   }
 
@@ -195,4 +210,5 @@ function handleMessage (message) {
 
 chrome.runtime.onMessage.addListener(handleMessage)
 
-chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: 'GetNodes', args: [] }).then(onResponse, onError)
+chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: 'GetVersion', args: [] }).then(onResponse, onError)
+

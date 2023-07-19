@@ -27,6 +27,10 @@ function toMessage () {
   echo -n "$message"
 }
 
+function GetVersion () {
+  toMessage '{"version":"0.2.0"}'
+}
+
 function GetNodes () {
   local nodes=`pw-dump | jq -c '
     [{
@@ -94,6 +98,9 @@ cmd=`echo "$payload" | jq -r .cmd`
 args=`echo "$payload" | jq .args`
 
 case $cmd in
+  'GetVersion')
+    GetVersion
+    ;;
   'GetNodes')
     GetNodes "$args"
     ;;
