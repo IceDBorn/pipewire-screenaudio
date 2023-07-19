@@ -40,6 +40,8 @@ bash build.sh
 - You can't stream firefox WebRTC calls at all while using `All Desktop Audio`, they are excluded by default
 ### resistFingerprinting
 - privacy.resistFingerprinting (enabled by default in LibreWolf, arkenfox user.js, etc.) breaks the extension. Either disable the preference or add any domains you wish to use Pipewire Screenaudio with to `privacy.resistFingerprinting.exemptedDomains` in `about:config`
+### Audio pitching
+- Firefox recently implemented a feature for spawning WebRTC audio nodes, and while it works, it has a lot of pitching and de-sync issues. We created a [bug report](https://bugzilla.mozilla.org/show_bug.cgi?id=1844181) on bugzilla and we're hoping for the best!
 
 
 ## Planned Features
