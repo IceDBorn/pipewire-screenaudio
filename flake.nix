@@ -1,51 +1,51 @@
-{ lib
-, stdenv
-, fetchFromGitHub
-, gawk
-, hexdump
-, jq
-, pipewire
-, psmisc
-,
-}:
-stdenv.mkDerivation rec {
-  pname = "pipewire-screenaudio";
-  version = "0.2.0";
+{
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+  description = "The native part of the Pipewire Screenaudio extension";
 
-  src = fetchFromGitHub {
-    owner = "IceDBorn";
-    repo = "pipewire-screenaudio";
-    rev = version;
-    hash = "sha256-IfPW0qmIUMIuevMLolYyKpYMBiiBG1OJA7/Wtxp+EzM=";
-  };
+  outputs = {
+    self,
+    nixpkgs,
+  }: let
+    pkgsFor = nixpkgs.legacyPackages;
+    systems = ["aarch64-linux" "i686-linux" "x86_64-linux"];
+    forAllSystems = nixpkgs.lib.genAttrs systems;
+    mkDate = longDate:
+      with builtins; (concatStringsSep "-" [
+      (substring 0 4 longDate)
+      (substring 4 2 longDate)
+      (substring 6 2 longDate)
+      ]);
+  in {
+    packages = forAllSystems (system: {
+      default = with pkgsFor.${system};
+        stdenv.mkDerivation {
+          name = "pipewire-screenaudio";
+          version = mkDate (self.lastModifiedDate or "19700101") + "_" + (self.shortRev or "dirty");
 
-  buildInputs = [
-    gawk
-    hexdump
-    jq
-    pipewire
-    psmisc
-  ];
+          src = self;
 
-  installPhase = ''
-    runHook preInstall
+          buildInputs = [
+            gawk
+            hexdump
+            jq
+            pipewire
+            psmisc
+          ];
 
-    mkdir -p $out/lib/out
-    install -Dm755 native/connector/pipewire-screen-audio-connector.sh $out/lib/connector/pipewire-screen-audio-connector.sh
-    install -Dm755 native/connector/virtmic.sh $out/lib/connector/virtmic.sh
+          installPhase = ''
+            runHook preInstall
 
-    # Firefox manifest
-    sed -i "s|/usr/lib/pipewire-screenaudio|$out/lib|g" native/native-messaging-hosts/firefox.json
-    install -Dm644 native/native-messaging-hosts/firefox.json $out/lib/mozilla/native-messaging-hosts/com.icedborn.pipewirescreenaudioconnector.json
+            mkdir -p $out/lib/out
+            install -Dm755 native/connector/pipewire-screen-audio-connector.sh $out/lib/connector/pipewire-screen-audio-connector.sh
+            install -Dm755 native/connector/virtmic.sh $out/lib/connector/virtmic.sh
 
-    runHook postInstall
-  '';
+            # Firefox manifest
+            sed -i "s|/usr/lib/pipewire-screenaudio|$out/lib|g" native/native-messaging-hosts/firefox.json
+            install -Dm644 native/native-messaging-hosts/firefox.json $out/lib/mozilla/native-messaging-hosts/com.icedborn.pipewirescreenaudioconnector.json
 
-  meta = with lib; {
-    description = "Extension to passthrough pipewire audio to WebRTC Screenshare";
-    homepage = "https://github.com/IceDBorn/pipewire-screenaudio";
-    license = licenses.gpl3Only;
-    maintainers = with maintainers; [ icedborn ];
-    platforms = lib.platforms.linux;
+            runHook postInstall
+          '';
+        };
+    });
   };
 }
