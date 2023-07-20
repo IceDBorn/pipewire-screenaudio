@@ -7,6 +7,33 @@ Based on [link-app-to-mic](https://github.com/Soundux/rohrkabel/tree/master/exam
 ### Packages
 [![AUR](https://img.shields.io/aur/version/pipewire-screenaudio?style=for-the-badge)](https://aur.archlinux.org/packages/pipewire-screenaudio)
 [![AUR](https://img.shields.io/aur/version/pipewire-screenaudio-git?style=for-the-badge)](https://aur.archlinux.org/packages/pipewire-screenaudio-git)
+#### NixOS Flakes
+```nix
+# flake.nix
+
+{
+  inputs.pipewire-screenaudio.url = "github:IceDBorn/pipewire-screenaudio";
+  # ...
+
+  outputs = {nixpkgs, pipewire-screenaudio, ...} @ inputs: {
+    nixosConfigurations.HOSTNAME = nixpkgs.lib.nixosSystem {
+      specialArgs = { inherit inputs; }; # this is the important part
+      modules = [
+        ./configuration.nix
+      ];
+    };
+  } 
+}
+
+# configuration.nix
+
+{inputs, pkgs, ...}: {
+  environment.systemPackages = with pkgs; [
+    (firefox.override { extraNativeMessagingHosts = [ inputs.pipewire-screenaudio.packages.${pkgs.system}.default ]; })
+    # ...
+  ];
+}
+```
 
 ### Installing from Source
 #### Requirements
