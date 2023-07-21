@@ -1,13 +1,22 @@
 #!/usr/bin/env bash
 
 targetNodeSerial="$1"
+currentBrowser="$2"
 virtmicNode='pipewire-screenaudio'
 
 myPid=$$
 
-EXCLUDED_TARGETS='"AudioCallbackDriver"'
+EXCLUDED_TARGETS=''
 
 set -e
+
+if [[ "$currentBrowser" -eq 'firefox' ]]; then
+    EXCLUDED_TARGETS="$EXCLUDED_TARGETS,\"AudioCallbackDriver\""
+fi
+
+if [[ "$currentBrowser" -eq 'chrome' ]]; then
+    EXCLUDED_TARGETS="$EXCLUDED_TARGETS,\"Playback\""
+fi
 
 # Get all nodes to check if $virtmicNode exists, and create it
 pw-dump |
