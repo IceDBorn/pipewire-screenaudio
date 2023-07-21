@@ -53,8 +53,9 @@ function StartPipewireScreenAudio () {
   local args="$1"
 
   local node=`echo $args | jq -r '.[].node' | head -n 1`
+  local browser=`echo $args | jq -r '.[].browser' | head -n 1`
 
-  nohup $projectRoot/connector/virtmic.sh $node >/dev/null 2>&1 &
+  nohup $projectRoot/connector/virtmic.sh $node $browser >/dev/null 2>&1 &
 
   sleep 1
   local micId=`

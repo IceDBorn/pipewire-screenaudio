@@ -1,5 +1,19 @@
 const MESSAGE_NAME = 'com.icedborn.pipewirescreenaudioconnector'
-const EXT_VERSION = browser.runtime.getManifest().version
+const EXT_VERSION = chrome.runtime.getManifest().version
+
+const BROWSER = (function (agent) {
+  switch (true) {
+    case agent.indexOf('edge') > -1: return 'edge'
+    case agent.indexOf('edg') > -1: return 'chromium based edge (dev or canary)'
+    case agent.indexOf('opr') > -1 && !!window.opr: return 'opera'
+    case agent.indexOf('chrome') > -1 && !!window.chrome: return 'chrome'
+    case agent.indexOf('trident') > -1: return 'ie'
+    case agent.indexOf('firefox') > -1: return 'firefox'
+    case agent.indexOf('safari') > -1: return 'safari'
+    default: return 'other'
+  }
+})(window.navigator.userAgent.toLowerCase())
+console.log(BROWSER)
 
 const dropdown = document.getElementById('dropdown')
 const message = document.getElementById('message')
@@ -44,8 +58,8 @@ function createShareBtn (root) {
     shareBtnEl.appendChild(text)
     document.getElementById('blacklist-btn').hidden = true
 
-    chrome.runtime.sendMessage({ messageName: MESSAGE_NAME, message: 'node-shared', cmd: 'StartPipewireScreenAudio', args: [{ node: selectedNode }] })
-  } 
+    chrome.runtime.sendMessage({ messageName: MESSAGE_NAME, message: 'node-shared', cmd: 'StartPipewireScreenAudio', args: [{ node: selectedNode, browser: BROWSER }] })
+  }
 
   shareBtnEl.addEventListener('click', eventListener)
 }
@@ -169,12 +183,12 @@ function onReload (response) {
   updateGui()
 }
 
-function onResponse (response) {  
+function onResponse (response) {
   if (!checkVersionMatch(response.version)) {
     message.innerText = `Version mismatch\nExtension: ${EXT_VERSION}\nNative: ${response.version}`
     dropdown.hidden = true
     return
-  } 
+  }
   const settings = document.getElementById('settings')
   settings.addEventListener('click', async () => {
     window.open('settings.html')
@@ -211,4 +225,3 @@ function handleMessage (message) {
 chrome.runtime.onMessage.addListener(handleMessage)
 
 chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: 'GetVersion', args: [] }).then(onResponse, onError)
-
