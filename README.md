@@ -42,6 +42,7 @@ Based on [link-app-to-mic](https://github.com/Soundux/rohrkabel/tree/master/exam
 - jq
 - pipewire
 - psmisc
+- socat
 
 ```bash
 git clone https://github.com/IceDBorn/pipewire-screenaudio.git
