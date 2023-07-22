@@ -54,7 +54,6 @@ bash install.sh
 - Stream, your transmission should contain both audio and video
  
 ## Known Problems
-- There is no way to change the audio node you're sharing while streaming
 - You can't stream firefox WebRTC calls at all while using `All Desktop Audio`, they are excluded by default
 ### resistFingerprinting
 - privacy.resistFingerprinting (enabled by default in LibreWolf, arkenfox user.js, etc.) breaks the extension. Either disable the preference or add any domains you wish to use Pipewire Screenaudio with to `privacy.resistFingerprinting.exemptedDomains` in `about:config`
@@ -64,6 +63,5 @@ bash install.sh
 
 ## Planned Features
 - Multiple nodes selection
-- Change audio node while streaming
 - More customization options (node matching, watcher behavior etc.)
 - Chromium support
