@@ -42,7 +42,7 @@ function GetNodes () {
     }] + [ .[] |
       select(.info.props["media.class"] == "Stream/Output/Audio") |
       .["properties"] = .info.props |
-      del(.info) 
+      del(.info)
     ]
   '`
   toMessage "$nodes"
@@ -50,11 +50,7 @@ function GetNodes () {
 }
 
 function StartPipewireScreenAudio () {
-  local args="$1"
-
-  local node=`echo $args | jq -r '.[].node' | head -n 1`
-
-  nohup $projectRoot/connector/virtmic.sh $node >/dev/null 2>&1 &
+  setsid $projectRoot/connector/virtmic.sh >/dev/null 2>&1 &
 
   sleep 1
   local micId=`
@@ -63,6 +59,20 @@ function StartPipewireScreenAudio () {
   `
 
   toMessage '{"micId":'$micId'}'
+  exit
+}
+
+function SetSharingNode () {
+  local args="$1"
+
+  local node=`echo $args | jq -r '.[].node' | head -n 1`
+
+  # Get tmp directory path
+  tmpdir=$(dirname $(mktemp -u))
+  idSockFile=$tmpdir/pipewire-screenaudio.sock
+  echo "$node" |
+    socat stdin unix-client:$idSockFile
+
   exit
 }
 
@@ -105,7 +115,10 @@ case $cmd in
     GetNodes "$args"
     ;;
   'StartPipewireScreenAudio')
-    StartPipewireScreenAudio "$args"
+    StartPipewireScreenAudio
+    ;;
+  'SetSharingNode')
+    SetSharingNode "$args"
     ;;
   'IsPipewireScreenAudioRunning')
     IsPipewireScreenAudioRunning "$args"

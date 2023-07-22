@@ -44,8 +44,8 @@ function createShareBtn (root) {
     shareBtnEl.appendChild(text)
     document.getElementById('blacklist-btn').hidden = true
 
-    chrome.runtime.sendMessage({ messageName: MESSAGE_NAME, message: 'node-shared', cmd: 'StartPipewireScreenAudio', args: [{ node: selectedNode }] })
-  } 
+    chrome.runtime.sendMessage({ messageName: MESSAGE_NAME, message: 'sharing-started', cmd: 'StartPipewireScreenAudio', args: [{ node: selectedNode }] })
+  }
 
   shareBtnEl.addEventListener('click', eventListener)
 }
@@ -62,7 +62,7 @@ function createStopBtn (root) {
   stopBtnEl.addEventListener('click', async () => {
     if (await isRunning()) {
       const micId = window.localStorage.getItem('micId')
-      chrome.runtime.sendMessage({ messageName: MESSAGE_NAME, message: 'node-stopped', cmd: 'StopPipewireScreenAudio', args: [{ micId }] })
+      chrome.runtime.sendMessage({ messageName: MESSAGE_NAME, message: 'sharing-stopped', cmd: 'StopPipewireScreenAudio', args: [{ micId }] })
     }
   })
 }
@@ -96,7 +96,7 @@ async function updateGui () {
   if (await isRunning()) {
     message.innerText = `Running virtmic Id: ${window.localStorage.getItem('micId')}`
     message.hidden = false
-    dropdown.hidden = true
+    dropdown.hidden = false
     createStopBtn(buttonGroup)
   } else if (dropdown.children.length) {
     message.hidden = true
@@ -154,6 +154,7 @@ async function populateNodesList (response) {
     dropdown.addEventListener('change', () => {
       selectedNode = dropdown.value
       window.localStorage.setItem('selectedNode', selectedNode)
+      chrome.runtime.sendMessage({ messageName: MESSAGE_NAME, message: 'node-changed', cmd: 'SetSharingNode', args: [{ node: selectedNode }] })
     })
   }
 }
@@ -169,12 +170,12 @@ function onReload (response) {
   updateGui()
 }
 
-function onResponse (response) {  
+function onResponse (response) {
   if (!checkVersionMatch(response.version)) {
     message.innerText = `Version mismatch\nExtension: ${EXT_VERSION}\nNative: ${response.version}`
     dropdown.hidden = true
     return
-  } 
+  }
   const settings = document.getElementById('settings')
   settings.addEventListener('click', async () => {
     window.open('settings.html')
