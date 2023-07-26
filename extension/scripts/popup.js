@@ -122,6 +122,15 @@ async function populateNodesList (response) {
       whitelistedNodes = response.filter(node => !bnNames.includes(node.properties['application.name']))
     }
 
+    // If last selected node doesn't exist in whitelistedNodes, ignore it
+    if (
+      !whitelistedNodes
+        .map(element => element.properties['object.serial'])
+        .includes(parseInt(window.localStorage.getItem('selectedNode')))
+    ) {
+      window.localStorage.setItem('selectedNode', null);
+    }
+
     for (const element of whitelistedNodes) {
       let text = element.properties['media.name']
       if (element.properties['application.name']) {
@@ -182,7 +191,6 @@ function onResponse (response) {
   chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: 'GetNodes', args: [] }).then(onReload, onError)
   nodesLoop = setInterval(() => { chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: 'GetNodes', args: [] }).then(onReload, onError) }, 1000)
   window.localStorage.setItem('nodesList', null)
-  window.localStorage.setItem('selectedNode', null)
   updateGui()
 }
 
