@@ -73,7 +73,7 @@ function createBlacklistBtn (root) {
 
   blacklistBtn.addEventListener('click', async () => {
     const nodesList = JSON.parse(window.localStorage.getItem('nodesList'))
-    const nodeToBlacklist = { name: nodesList.find(n => n.properties['object.serial'] === dropdown.value).properties['application.name'] }
+    const nodeToBlacklist = { name: nodesList.find(n => n.properties['object.serial'] === parseInt(dropdown.value)).properties['application.name'] }
     const blacklistedNodes = []
 
     const items = window.localStorage.getItem('blacklistedNodes')
