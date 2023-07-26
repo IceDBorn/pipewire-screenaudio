@@ -54,7 +54,7 @@ function createStopBtn (root) {
   if (document.getElementById('stop-btn')) return
   const stopBtn = document.createElement('button')
   stopBtn.id = 'stop-btn'
-  stopBtn.className = 'btn btn-danger mt-3'
+  stopBtn.className = 'btn btn-danger'
   stopBtn.innerText = 'Stop'
   root.appendChild(stopBtn)
 
@@ -105,7 +105,6 @@ async function updateGui () {
     createBlacklistBtn(buttonGroup)
   } else {
     message.innerText = 'No nodes available to share...'
-    message.className = 'mt-5'
     message.hidden = false
     dropdown.hidden = true
   }
