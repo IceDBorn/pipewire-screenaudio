@@ -1,4 +1,4 @@
-function handleMessage (response) {
+function handleMessage(response) {
   if (response.message === 'sharing-started') {
     // Start pipewire-screenaudio
     chrome.runtime.sendNativeMessage(response.messageName, { cmd: response.cmd })
@@ -6,7 +6,7 @@ function handleMessage (response) {
         window.localStorage.setItem('micId', micId)
         chrome.runtime.sendMessage('mic-id-updated')
         // Passthrough the selected node to pipewire-screenaudio
-        chrome.runtime.sendNativeMessage(response.messageName, {cmd: 'SetSharingNode', args: response.args })
+        chrome.runtime.sendNativeMessage(response.messageName, { cmd: 'SetSharingNode', args: [{ node: response.args[0].node, micId }] })
       })
   }
 

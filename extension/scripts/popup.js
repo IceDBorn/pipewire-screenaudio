@@ -154,7 +154,8 @@ async function populateNodesList (response) {
     dropdown.addEventListener('change', () => {
       selectedNode = dropdown.value
       window.localStorage.setItem('selectedNode', selectedNode)
-      chrome.runtime.sendMessage({ messageName: MESSAGE_NAME, message: 'node-changed', cmd: 'SetSharingNode', args: [{ node: selectedNode }] })
+      const micId = window.localStorage.getItem('micId')
+      chrome.runtime.sendMessage({ messageName: MESSAGE_NAME, message: 'node-changed', cmd: 'SetSharingNode', args: [{ node: selectedNode, micId }] })
     })
   }
 }

@@ -13,9 +13,6 @@ pw-dump |
 
 fullDumpFile=`mktemp`
 
-# Cleanup on exit
-trap "rm $fullDumpFile; kill -- -$myPid" EXIT
-
 # === Collect required data from PipeWire === #
 # Get all nodes again for further processing
 pw-dump | jq -s "flatten(1)" > $fullDumpFile
@@ -27,6 +24,12 @@ cat "$fullDumpFile" | jq -c "[ .[] | select(.info.direction == \"input\") | sele
 virtmicPortFlId=`cat "$virtmicPortsFile" | jq -c "[ .[] | select(.info.props[\"audio.channel\"] == \"FL\") ][0].id"`
 virtmicPortFrId=`cat "$virtmicPortsFile" | jq -c "[ .[] | select(.info.props[\"audio.channel\"] == \"FR\") ][0].id"`
 rm $virtmicPortsFile
+
+fifoPath="$XDG_RUNTIME_DIR/pipewire-screenaudio-set-node-$virtmicId"
+mkfifo "$fifoPath"
+
+# Cleanup on exit
+trap "rm $fullDumpFile $fifoPath; kill -- -$myPid" EXIT
 
 function monitor-nodes() {
     tail -f /dev/null | pw-cli -m | grep --line-buffered -v 'pipewire.sec.label = "hex:'
@@ -50,7 +53,7 @@ tmpdir=$(dirname $(mktemp -u))
 idSockFile=$tmpdir/pipewire-screenaudio.sock
 
 # Listen to selected node change
-socat unix-listen:$idSockFile,fork,unlink-early stdout | {
+tail -f "$fifoPath" | {
     # Kill connect-and-monitor.sh process if it's still alive
     function killMonitor() {
         if [ ! -z "$monitorProcess" ]; then

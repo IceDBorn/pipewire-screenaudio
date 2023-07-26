@@ -66,12 +66,12 @@ function SetSharingNode () {
   local args="$1"
 
   local node=`echo $args | jq -r '.[].node' | head -n 1`
+  local virtmicId=`echo $args | jq -r '.[].micId' | head -n 1`
+  fifoPath="$XDG_RUNTIME_DIR/pipewire-screenaudio-set-node-$virtmicId"
 
-  # Get tmp directory path
-  tmpdir=$(dirname $(mktemp -u))
-  idSockFile=$tmpdir/pipewire-screenaudio.sock
-  echo "$node" |
-    socat stdin unix-client:$idSockFile
+  if [ -e "$fifoPath" ]; then
+    echo "$node" >> "$fifoPath"
+  fi
 
   exit
 }
