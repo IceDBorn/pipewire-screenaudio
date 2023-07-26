@@ -4,6 +4,7 @@ const EXT_VERSION = browser.runtime.getManifest().version
 const dropdown = document.getElementById('dropdown')
 const message = document.getElementById('message')
 const buttonGroup = document.getElementById('btn-group')
+const shareStopBtn = document.getElementById('share-stop-btn')
 
 let selectedNode = null
 let nodesLoop = null
@@ -23,49 +24,44 @@ async function isRunning () {
   return isRunning
 }
 
-function createShareBtn (root) {
-  if (document.getElementById('share-btn')) return
-  const shareBtn = document.createElement('button')
-  shareBtn.id = 'share-btn'
-  shareBtn.className = 'btn btn-success me-2'
-  shareBtn.innerText = 'Share'
-  root.appendChild(shareBtn)
-  const shareBtnEl = document.getElementById('share-btn')
+function setButtonToShare() {
+  shareStopBtn.className = 'btn btn-success me-2'
+  shareStopBtn.innerText = 'Share'
 
   const eventListener = () => {
-    shareBtnEl.removeEventListener('click', eventListener)
+    shareStopBtn.removeEventListener('click', eventListener)
     const spinner = document.createElement('span')
     const text = document.createElement('span')
-    shareBtnEl.innerText = ''
+    shareStopBtn.innerText = ''
     spinner.className = 'spinner-border spinner-border-sm me-1'
     text.innerText = 'Sharing...'
     clearInterval(nodesLoop)
-    shareBtnEl.appendChild(spinner)
-    shareBtnEl.appendChild(text)
+    shareStopBtn.appendChild(spinner)
+    shareStopBtn.appendChild(text)
     document.getElementById('blacklist-btn').hidden = true
 
     chrome.runtime.sendMessage({ messageName: MESSAGE_NAME, message: 'sharing-started', cmd: 'StartPipewireScreenAudio', args: [{ node: selectedNode }] })
   }
 
-  shareBtnEl.addEventListener('click', eventListener)
+  shareStopBtn.addEventListener('click', eventListener)
 }
 
-function createStopBtn (root) {
-  if (document.getElementById('stop-btn')) return
-  const stopBtn = document.createElement('button')
-  stopBtn.id = 'stop-btn'
-  stopBtn.className = 'btn btn-danger'
-  stopBtn.innerText = 'Stop'
-  root.appendChild(stopBtn)
 
-  const stopBtnEl = document.getElementById('stop-btn')
-  stopBtnEl.addEventListener('click', async () => {
+function setButtonToStop() {
+  shareStopBtn.className = 'btn btn-danger'
+  shareStopBtn.innerText = 'Stop'
+
+  const eventListener = async () => {
+    shareStopBtn.removeEventListener('click', eventListener)
     if (await isRunning()) {
       const micId = window.localStorage.getItem('micId')
       chrome.runtime.sendMessage({ messageName: MESSAGE_NAME, message: 'sharing-stopped', cmd: 'StopPipewireScreenAudio', args: [{ micId }] })
     }
-  })
+  };
+
+  shareStopBtn.addEventListener('click', eventListener)
 }
+
 
 function createBlacklistBtn (root) {
   if (document.getElementById('blacklist-btn')) return
@@ -97,14 +93,17 @@ async function updateGui () {
     message.innerText = `Running virtmic Id: ${window.localStorage.getItem('micId')}`
     message.hidden = false
     dropdown.hidden = false
-    createStopBtn(buttonGroup)
+    shareStopBtn.hidden = false
+    setButtonToStop()
   } else if (dropdown.children.length) {
     message.hidden = true
     dropdown.hidden = false
-    createShareBtn(buttonGroup)
+    shareStopBtn.hidden = false
+    setButtonToShare()
     createBlacklistBtn(buttonGroup)
   } else {
     message.innerText = 'No nodes available to share...'
+    shareStopBtn.hidden = true
     message.hidden = false
     dropdown.hidden = true
   }
@@ -195,16 +194,12 @@ function onError (error) {
 
 function handleMessage (message) {
   if (message === 'mic-id-updated') {
-    const shareBtnEl = document.getElementById('share-btn')
     const hideBtnEl = document.getElementById('blacklist-btn')
-    buttonGroup.removeChild(shareBtnEl)
     buttonGroup.removeChild(hideBtnEl)
     updateGui()
   }
 
   if (message === 'mic-id-removed') {
-    const stopBtnEl = document.getElementById('stop-btn')
-    buttonGroup.removeChild(stopBtnEl)
     updateGui()
   }
 }
