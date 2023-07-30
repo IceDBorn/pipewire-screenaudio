@@ -5,6 +5,7 @@ const dropdown = document.getElementById('dropdown')
 const message = document.getElementById('message')
 const buttonGroup = document.getElementById('btn-group')
 const shareStopBtn = document.getElementById('share-stop-btn')
+let shareStopBtnState = null
 
 let selectedNode = null
 let nodesLoop = null
@@ -25,11 +26,13 @@ async function isRunning () {
 }
 
 function setButtonToShare() {
+  shareStopBtnState = "share"
   shareStopBtn.className = 'btn btn-success me-2'
   shareStopBtn.innerText = 'Share'
 
   const eventListener = () => {
     shareStopBtn.removeEventListener('click', eventListener)
+    shareStopBtnState = "sharing"
     const spinner = document.createElement('span')
     const text = document.createElement('span')
     shareStopBtn.innerText = ''
@@ -48,6 +51,7 @@ function setButtonToShare() {
 
 
 function setButtonToStop() {
+  shareStopBtnState = "stop"
   shareStopBtn.className = 'btn btn-danger'
   shareStopBtn.innerText = 'Stop'
 
@@ -94,12 +98,14 @@ async function updateGui () {
     message.hidden = false
     dropdown.hidden = false
     shareStopBtn.hidden = false
-    setButtonToStop()
+    if (shareStopBtnState !== "stop")
+      setButtonToStop()
   } else if (dropdown.children.length) {
     message.hidden = true
     dropdown.hidden = false
     shareStopBtn.hidden = false
-    setButtonToShare()
+    if (shareStopBtnState !== "share")
+      setButtonToShare()
     createBlacklistBtn(buttonGroup)
   } else {
     message.innerText = 'No nodes available to share...'
