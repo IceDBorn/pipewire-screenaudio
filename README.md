@@ -62,6 +62,7 @@ bash install.sh
 ### resistFingerprinting
 - privacy.resistFingerprinting (enabled by default in LibreWolf, arkenfox user.js, etc.) breaks the extension. Either disable the preference or add any domains you wish to use Pipewire Screenaudio with to `privacy.resistFingerprinting.exemptedDomains` in `about:config`
 ### Audio pitching
+> Note: A Mozilla employee responded and they are currently working on a fix
 - Firefox recently implemented a feature for spawning WebRTC audio nodes, and while it works, it has a lot of pitching and de-sync issues. We created a [bug report](https://bugzilla.mozilla.org/show_bug.cgi?id=1844181) on bugzilla and we're hoping for the best!
 
 
