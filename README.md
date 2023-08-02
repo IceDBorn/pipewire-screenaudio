@@ -65,6 +65,8 @@ bash install.sh
 > Note: A Mozilla employee responded and they are currently working on a fix
 - Firefox recently implemented a feature for spawning WebRTC audio nodes, and while it works, it has a lot of pitching and de-sync issues. We created a [bug report](https://bugzilla.mozilla.org/show_bug.cgi?id=1844181) on bugzilla and we're hoping for the best!
 
+### Duplicated audio (Wayland + Discord)
+- Trying to stream with audio on Discord using Wayland results in hearing the same audio you're streaming. The cause of this issue is the double prompt for the video source - one for the preview and one for the actual stream
 
 ## Planned Features
 - Multiple nodes selection
