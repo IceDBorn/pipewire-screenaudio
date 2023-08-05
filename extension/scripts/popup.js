@@ -4,6 +4,8 @@ const EXT_VERSION = browser.runtime.getManifest().version
 const dropdown = document.getElementById('dropdown')
 const message = document.getElementById('message')
 const buttonGroup = document.getElementById('btn-group')
+const shareStopBtn = document.getElementById('share-stop-btn')
+let shareStopBtnState = null
 
 let selectedNode = null
 let nodesLoop = null
@@ -23,49 +25,47 @@ async function isRunning () {
   return isRunning
 }
 
-function createShareBtn (root) {
-  if (document.getElementById('share-btn')) return
-  const shareBtn = document.createElement('button')
-  shareBtn.id = 'share-btn'
-  shareBtn.className = 'btn btn-success me-2'
-  shareBtn.innerText = 'Share'
-  root.appendChild(shareBtn)
-  const shareBtnEl = document.getElementById('share-btn')
+function setButtonToShare() {
+  shareStopBtnState = "share"
+  shareStopBtn.className = 'btn btn-success me-2'
+  shareStopBtn.innerText = 'Share'
 
   const eventListener = () => {
-    shareBtnEl.removeEventListener('click', eventListener)
+    shareStopBtn.removeEventListener('click', eventListener)
+    shareStopBtnState = "sharing"
     const spinner = document.createElement('span')
     const text = document.createElement('span')
-    shareBtnEl.innerText = ''
+    shareStopBtn.innerText = ''
     spinner.className = 'spinner-border spinner-border-sm me-1'
     text.innerText = 'Sharing...'
     clearInterval(nodesLoop)
-    shareBtnEl.appendChild(spinner)
-    shareBtnEl.appendChild(text)
+    shareStopBtn.appendChild(spinner)
+    shareStopBtn.appendChild(text)
     document.getElementById('blacklist-btn').hidden = true
 
-    chrome.runtime.sendMessage({ messageName: MESSAGE_NAME, message: 'node-shared', cmd: 'StartPipewireScreenAudio', args: [{ node: selectedNode }] })
-  } 
+    chrome.runtime.sendMessage({ messageName: MESSAGE_NAME, message: 'sharing-started', cmd: 'StartPipewireScreenAudio', args: [{ node: selectedNode }] })
+  }
 
-  shareBtnEl.addEventListener('click', eventListener)
+  shareStopBtn.addEventListener('click', eventListener)
 }
 
-function createStopBtn (root) {
-  if (document.getElementById('stop-btn')) return
-  const stopBtn = document.createElement('button')
-  stopBtn.id = 'stop-btn'
-  stopBtn.className = 'btn btn-danger mt-3'
-  stopBtn.innerText = 'Stop'
-  root.appendChild(stopBtn)
 
-  const stopBtnEl = document.getElementById('stop-btn')
-  stopBtnEl.addEventListener('click', async () => {
+function setButtonToStop() {
+  shareStopBtnState = "stop"
+  shareStopBtn.className = 'btn btn-danger'
+  shareStopBtn.innerText = 'Stop'
+
+  const eventListener = async () => {
+    shareStopBtn.removeEventListener('click', eventListener)
     if (await isRunning()) {
       const micId = window.localStorage.getItem('micId')
-      chrome.runtime.sendMessage({ messageName: MESSAGE_NAME, message: 'node-stopped', cmd: 'StopPipewireScreenAudio', args: [{ micId }] })
+      chrome.runtime.sendMessage({ messageName: MESSAGE_NAME, message: 'sharing-stopped', cmd: 'StopPipewireScreenAudio', args: [{ micId }] })
     }
-  })
+  };
+
+  shareStopBtn.addEventListener('click', eventListener)
 }
+
 
 function createBlacklistBtn (root) {
   if (document.getElementById('blacklist-btn')) return
@@ -77,7 +77,7 @@ function createBlacklistBtn (root) {
 
   blacklistBtn.addEventListener('click', async () => {
     const nodesList = JSON.parse(window.localStorage.getItem('nodesList'))
-    const nodeToBlacklist = { name: nodesList.find(n => n.properties['object.serial'] === dropdown.value).properties['application.name'] }
+    const nodeToBlacklist = { name: nodesList.find(n => n.properties['object.serial'] === parseInt(dropdown.value)).properties['application.name'] }
     const blacklistedNodes = []
 
     const items = window.localStorage.getItem('blacklistedNodes')
@@ -96,16 +96,20 @@ async function updateGui () {
   if (await isRunning()) {
     message.innerText = `Running virtmic Id: ${window.localStorage.getItem('micId')}`
     message.hidden = false
-    dropdown.hidden = true
-    createStopBtn(buttonGroup)
+    dropdown.hidden = false
+    shareStopBtn.hidden = false
+    if (shareStopBtnState !== "stop")
+      setButtonToStop()
   } else if (dropdown.children.length) {
     message.hidden = true
     dropdown.hidden = false
-    createShareBtn(buttonGroup)
+    shareStopBtn.hidden = false
+    if (shareStopBtnState !== "share")
+      setButtonToShare()
     createBlacklistBtn(buttonGroup)
   } else {
     message.innerText = 'No nodes available to share...'
-    message.className = 'mt-5'
+    shareStopBtn.hidden = true
     message.hidden = false
     dropdown.hidden = true
   }
@@ -122,6 +126,15 @@ async function populateNodesList (response) {
     if (blacklistedNodes?.length) {
       const bnNames = JSON.parse(blacklistedNodes).map(bn => bn.name)
       whitelistedNodes = response.filter(node => !bnNames.includes(node.properties['application.name']))
+    }
+
+    // If last selected node doesn't exist in whitelistedNodes, ignore it
+    if (
+      !whitelistedNodes
+        .map(element => element.properties['object.serial'])
+        .includes(parseInt(window.localStorage.getItem('selectedNode')))
+    ) {
+      window.localStorage.setItem('selectedNode', null);
     }
 
     for (const element of whitelistedNodes) {
@@ -154,6 +167,8 @@ async function populateNodesList (response) {
     dropdown.addEventListener('change', () => {
       selectedNode = dropdown.value
       window.localStorage.setItem('selectedNode', selectedNode)
+      const micId = window.localStorage.getItem('micId')
+      chrome.runtime.sendMessage({ messageName: MESSAGE_NAME, message: 'node-changed', cmd: 'SetSharingNode', args: [{ node: selectedNode, micId }] })
     })
   }
 }
@@ -169,12 +184,12 @@ function onReload (response) {
   updateGui()
 }
 
-function onResponse (response) {  
+function onResponse (response) {
   if (!checkVersionMatch(response.version)) {
     message.innerText = `Version mismatch\nExtension: ${EXT_VERSION}\nNative: ${response.version}`
     dropdown.hidden = true
     return
-  } 
+  }
   const settings = document.getElementById('settings')
   settings.addEventListener('click', async () => {
     window.open('settings.html')
@@ -182,7 +197,6 @@ function onResponse (response) {
   chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: 'GetNodes', args: [] }).then(onReload, onError)
   nodesLoop = setInterval(() => { chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: 'GetNodes', args: [] }).then(onReload, onError) }, 1000)
   window.localStorage.setItem('nodesList', null)
-  window.localStorage.setItem('selectedNode', null)
   updateGui()
 }
 
@@ -194,16 +208,12 @@ function onError (error) {
 
 function handleMessage (message) {
   if (message === 'mic-id-updated') {
-    const shareBtnEl = document.getElementById('share-btn')
     const hideBtnEl = document.getElementById('blacklist-btn')
-    buttonGroup.removeChild(shareBtnEl)
     buttonGroup.removeChild(hideBtnEl)
     updateGui()
   }
 
   if (message === 'mic-id-removed') {
-    const stopBtnEl = document.getElementById('stop-btn')
-    buttonGroup.removeChild(stopBtnEl)
     updateGui()
   }
 }
