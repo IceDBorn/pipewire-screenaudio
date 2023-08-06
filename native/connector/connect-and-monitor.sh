@@ -73,7 +73,7 @@ else
                         select(.id == $id) |
                         select(.info.props[\"media.name\"] | contains($EXCLUDED_TARGETS) | not)
                     ][0].id
-                " >/dev/null || exit
+                " >/dev/null || exit 0
 
                 # 1. Find the ports with node.id == $id
                 # 2. Get only the FR and FL ports
