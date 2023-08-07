@@ -66,14 +66,15 @@ else
         stdbuf -o0 awk '/remote 0 added global/ && /Node/' |
             grep --line-buffered -oP 'id \K\d+' |
             while read -r id; do (
-                # Skip excluded targets
+                # Skip excluded targets and targets with wrong class
                 pw-dump "$id" | jq --exit-status -c "
                     [
                         .[] |
                         select(.id == $id) |
-                        select(.info.props[\"media.name\"] | contains($EXCLUDED_TARGETS) | not)
+                        select(.info.props[\"media.name\"] | contains($EXCLUDED_TARGETS) | not) |
+                        select(.info.props[\"media.class\"] == \"Stream/Output/Audio\" )
                     ][0].id
-                " >/dev/null || exit
+                " >/dev/null || exit 0
 
                 # 1. Find the ports with node.id == $id
                 # 2. Get only the FR and FL ports
