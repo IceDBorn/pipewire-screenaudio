@@ -47,6 +47,9 @@ function overrideGdm () {
       }
     })
     const [track] = captureSystemAudioStream.getAudioTracks()
+    const fakegdm = await navigator.mediaDevices.chromiumGetDisplayMedia({
+      video: true
+    })
     const gdm = await navigator.mediaDevices.chromiumGetDisplayMedia({
       video: true,
       audio: true
