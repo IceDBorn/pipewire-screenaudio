@@ -14,7 +14,6 @@ function injectCode (src) {
     browser.runtime
       .sendMessage({ messageName: MESSAGE_NAME, message: 'get-session-type' })
       .then(({ type }) => {
-        console.debug(type)
         window.postMessage({ message: "set-session-type", type })
       });
 
