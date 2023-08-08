@@ -28,7 +28,7 @@ function toMessage () {
 }
 
 function GetVersion () {
-  toMessage '{"version":"0.2.0"}'
+  toMessage '{"version":"0.3.0"}'
 }
 
 function GetSessionType () {
