@@ -22,6 +22,10 @@ function handleMessage(response) {
         chrome.runtime.sendMessage('mic-id-removed')
       })
   }
+
+  if (response.message === 'get-session-type') {
+    return chrome.runtime.sendNativeMessage(response.messageName, { cmd: 'GetSessionType', args: [] })
+  }
 }
 
 chrome.runtime.onMessage.addListener(handleMessage)
