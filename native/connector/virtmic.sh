@@ -48,10 +48,6 @@ function disconnectInputs() {
     " | xargs -r -n1 pw-cli destroy
 }
 
-# Get tmp directory path
-tmpdir=$(dirname $(mktemp -u))
-idSockFile=$tmpdir/pipewire-screenaudio.sock
-
 # Listen to selected node change
 tail -f "$fifoPath" | {
     # Kill connect-and-monitor.sh process if it's still alive

@@ -6,13 +6,11 @@ virtmicPortFlId=$1
 virtmicPortFrId=$2
 targetNodeSerial=$3
 
-
 EXCLUDED_TARGETS='"AudioCallbackDriver"'
 
 fullDumpFile=`mktemp`
 streamsFile=`mktemp`
 portsFile=`mktemp`
-
 
 function monitor-nodes() {
     tail -f /dev/null | pw-cli -m | grep --line-buffered -v 'pipewire.sec.label = "hex:'

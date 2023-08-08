@@ -66,7 +66,6 @@ function setButtonToStop() {
   shareStopBtn.addEventListener('click', eventListener)
 }
 
-
 function createBlacklistBtn (root) {
   if (document.getElementById('blacklist-btn')) return
   const blacklistBtn = document.createElement('button')
