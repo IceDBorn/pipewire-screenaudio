@@ -1,3 +1,5 @@
+let sessionType = null;
+
 function overrideGdm () {
   navigator.mediaDevices.chromiumGetDisplayMedia = navigator.mediaDevices.getDisplayMedia
 
@@ -47,6 +49,12 @@ function overrideGdm () {
       }
     })
     const [track] = captureSystemAudioStream.getAudioTracks()
+    let fakegdm;
+    if (new RegExp('^(.+\.)?discord.com$').test(window.location.host) && sessionType === "wayland") {
+      fakegdm = await navigator.mediaDevices.chromiumGetDisplayMedia({
+        video: true
+      })
+    }
     const gdm = await navigator.mediaDevices.chromiumGetDisplayMedia({
       video: true,
       audio: true
@@ -59,3 +67,16 @@ function overrideGdm () {
 }
 
 overrideGdm()
+
+// Store the session type we get (either "x11" or "wayland") into sessionType
+// This message gets sent from the onload listener in injector.js
+const onMessage = (event) => {
+  if (event.target !== window)
+    return;
+  if (event.data.message === "set-session-type") {
+    sessionType = event.data.type
+    window.removeEventListener("message", onMessage);
+  }
+};
+
+window.addEventListener("message", onMessage);
