@@ -30,7 +30,7 @@ jobs:
       - name: Commit updated CHANGELOG
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
-          create-branch: true
+          create_branch: true
           branch: changelog-update-${{ github.event.release.tag_name }}
           commit_message: Update CHANGELOG
           file_pattern: CHANGELOG.md
