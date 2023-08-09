@@ -2,7 +2,7 @@
 
   "manifest_version": 3,
   "name": "Pipewire Screenaudio",
-  "version": "0.3.0",
+  "version": "0.3.1",
 
   "description": "Passthrough pipewire audio to WebRTC screenshare",
 
