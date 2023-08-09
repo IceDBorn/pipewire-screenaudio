@@ -55,10 +55,22 @@ function overrideGdm () {
         video: true
       })
     }
-    const gdm = await navigator.mediaDevices.chromiumGetDisplayMedia({
-      video: true,
-      audio: true
-    })
+    let gdm;
+    try {
+      gdm = await navigator.mediaDevices.chromiumGetDisplayMedia({
+        video: true,
+        audio: true
+      })
+    } catch (error) {
+      console.error(error)
+      if (error instanceof DOMException) {
+        // Forcefully stop fakegdm
+        fakegdm.getTracks().forEach(t => t.stop())
+        delete fakegdm
+        alert("Try sharing again, choose faster or interact with the window before choosing source")
+      }
+      throw error
+    }
     gdm.addTrack(track)
     return gdm
   }
