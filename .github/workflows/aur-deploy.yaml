@@ -1,0 +1,33 @@
+name: "AUR Deploy"
+
+on:
+  release:
+    types: [released]
+
+jobs:
+  aur-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+
+      - name: Install envsubst
+        run: |
+          sudo apt-get update &&
+          sudo apt-get install -y gettext-base
+
+      - name: Generate PKGBUILD
+        run: envsubst '$VERSION' < .github/aur/PKGBUILD.template > PKGBUILD
+        env:
+          VERSION: ${{ github.event.release.tag_name }}
+
+      - name: Publish AUR package
+        uses: KSXGitHub/github-actions-deploy-aur@v2.7.0
+        with:
+          pkgname: pipewire-screenaudio
+          pkgbuild: PKGBUILD
+          commit_username: ${{ secrets.AUR_USERNAME }}
+          commit_email: ${{ secrets.AUR_EMAIL }}
+          ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+          commit_message: Update ${{ github.event.release.tag_name }}
+          ssh_keyscan_types: rsa,dsa,ecdsa,ed25519
