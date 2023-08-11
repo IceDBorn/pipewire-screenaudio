@@ -1,6 +1,7 @@
 name: "AUR Deploy"
 
 on:
+  workflow_dispatch:
   release:
     types: [released]
 
