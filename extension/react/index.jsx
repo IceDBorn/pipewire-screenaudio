@@ -76,7 +76,7 @@ function App() {
               }}
             />
           }
-          sx={{ marginLeft: "0.5rem" }}
+          sx={{ marginLeft: "0.5rem", marginTop: 1 }}
           label="All Desktop Audio"
           disabled={connectorMissing}
         />
