@@ -56,18 +56,18 @@ function App() {
           <Button color="inherit">Settings</Button>
         </Toolbar>
       </AppBar>
-              {(isRunning || connectorMissing) && (
-          <Alert
-            severity={isRunning ? "info" : "error"}
-            color={isRunning ? "info" : "error"}
-            sx={{ maxWidth: 500 }}
-          >
-            {isRunning
-              ? "Running with ID: 50"
-              : "The native connector is missing or misconfigured"}
-          </Alert>
-        )}
-        <Paper sx={{ maxWidth: 500 }}>
+      {(isRunning || connectorMissing) && (
+        <Alert
+          severity={isRunning ? "info" : "error"}
+          color={isRunning ? "info" : "error"}
+          sx={{ maxWidth: 500 }}
+        >
+          {isRunning
+            ? "Running with ID: 50"
+            : "The native connector is missing or misconfigured"}
+        </Alert>
+      )}
+      <Paper sx={{ maxWidth: 500, borderRadius: 0 }}>
         <FormControlLabel
           control={
             <Switch
@@ -82,7 +82,15 @@ function App() {
         />
         </Paper>
       {/* Content */}
-      <TableContainer component={Paper} sx={{ maxWidth: 500, overflow: 'scroll', maxHeight: 275 }}>
+      <TableContainer
+        component={Paper}
+        sx={{
+          maxWidth: 500,
+          overflow: "scroll",
+          maxHeight: 335,
+          borderRadius: 0,
+        }}
+      >
         <Table
           sx={{ minWidth: 500, maxWidth: 500 }}
           size="small"
@@ -133,9 +141,14 @@ function App() {
           </TableBody>
         </Table>
       </TableContainer>
-      <Paper sx={{ maxWidth: 500 }}>
-              <Button
-          sx={{ marginLeft: "10rem", marginTop: 2, marginBottom: 2, minWidth: 75 }}
+      <Paper sx={{ maxWidth: 500, borderRadius: "0" }}>
+        <Button
+          sx={{
+            marginLeft: "10rem",
+            marginTop: 2,
+            marginBottom: 2,
+            minWidth: 75,
+          }}
           variant="contained"
           color={isRunning ? "error" : "success"}
           onClick={() => setIsRunning(!isRunning)}
