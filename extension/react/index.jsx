@@ -31,8 +31,16 @@ const darkTheme = createTheme({
   },
 });
 
+const MESSAGE_NAME = "com.icedborn.pipewirescreenaudioconnector";
+const EXT_VERSION = browser.runtime.getManifest().version;
+
 function createData(name, binary, checked) {
   return { name, binary, checked };
+}
+
+function onError(error) {
+  console.error(error);
+  setConnectorMissing = true;
 }
 
 function App() {
@@ -43,6 +51,26 @@ function App() {
   const [allDesktopAudio, setAllDesktopAudio] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
   const [connectorMissing, setConnectorMissing] = useState(false);
+  const [versionMatch, setVersionMatch] = useState(false);
+  const [NATIVE_VERSION, setNativeVersion] = useState("");
+
+  function checkVersionMatch(nativeVersion) {
+    const extVersionSplit = EXT_VERSION.split(".");
+    const nativeVersionSplit = nativeVersion.split(".");
+    setVersionMatch(
+      extVersionSplit[0] === nativeVersionSplit[0] &&
+        extVersionSplit[1] === nativeVersionSplit[1],
+    );
+    setNativeVersion(nativeVersion);
+  }
+
+  function onResponse(response) {
+    checkVersionMatch(response.version);
+  }
+
+  chrome.runtime
+    .sendNativeMessage(MESSAGE_NAME, { cmd: "GetVersion", args: [] })
+    .then(onResponse, onError);
 
   return (
     <ThemeProvider theme={darkTheme}>
@@ -56,13 +84,15 @@ function App() {
           <Button color="inherit">Settings</Button>
         </Toolbar>
       </AppBar>
-      {(isRunning || connectorMissing) && (
+      {(isRunning || connectorMissing || !versionMatch) && (
         <Alert
           severity={isRunning ? "info" : "error"}
           color={isRunning ? "info" : "error"}
           sx={{ maxWidth: 500 }}
         >
-          {isRunning
+          {!versionMatch
+            ? `Version mismatch! Extension: ${EXT_VERSION}, Native: ${NATIVE_VERSION}`
+            : isRunning
             ? "Running with ID: 50"
             : "The native connector is missing or misconfigured"}
         </Alert>
@@ -76,9 +106,9 @@ function App() {
               }}
             />
           }
-          sx={{ marginLeft: "0.5rem", marginTop: 1 }}
+          sx={{ marginLeft: "0.5rem" }}
           label="All Desktop Audio"
-          disabled={connectorMissing}
+          disabled={connectorMissing || !versionMatch}
         />
       </Paper>
       {/* Content */}
@@ -87,14 +117,14 @@ function App() {
         sx={{
           maxWidth: 500,
           overflow: "scroll",
-          maxHeight: 335,
+          maxHeight: 275,
           borderRadius: 0,
         }}
       >
         <Table
           sx={{ minWidth: 500, maxWidth: 500 }}
           size="small"
-          disabled={connectorMissing}
+          disabled={connectorMissing || !versionMatch}
         >
           <TableHead
             sx={{
@@ -106,7 +136,11 @@ function App() {
           >
             <TableRow>
               <TableCell>
-                <Checkbox disabled={allDesktopAudio || connectorMissing} />
+                <Checkbox
+                  disabled={
+                    allDesktopAudio || connectorMissing || !versionMatch
+                  }
+                />
               </TableCell>
               <TableCell>Name</TableCell>
               <TableCell>Binary</TableCell>
@@ -130,7 +164,9 @@ function App() {
                         }),
                       );
                     }}
-                    disabled={allDesktopAudio || connectorMissing}
+                    disabled={
+                      allDesktopAudio || connectorMissing || !versionMatch
+                    }
                   />
                 </TableCell>
                 <TableCell component="th" scope="row">
@@ -173,7 +209,7 @@ function App() {
           variant="contained"
           color={isRunning ? "error" : "success"}
           onClick={() => setIsRunning(!isRunning)}
-          disabled={connectorMissing}
+          disabled={connectorMissing || !versionMatch}
         >
           {isRunning ? "Stop" : "Start"}
         </Button>
@@ -190,6 +226,7 @@ function App() {
             !rows.some((row) => row.checked) ||
             isRunning ||
             connectorMissing ||
+            !versionMatch ||
             allDesktopAudio
           }
         >
