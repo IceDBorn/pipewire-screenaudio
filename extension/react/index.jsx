@@ -80,7 +80,7 @@ function App() {
           label="All Desktop Audio"
           disabled={connectorMissing}
         />
-        </Paper>
+      </Paper>
       {/* Content */}
       <TableContainer
         component={Paper}
@@ -134,12 +134,26 @@ function App() {
                   />
                 </TableCell>
                 <TableCell component="th" scope="row">
-                  <div style={{overflow: "hidden", width: 200, textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  <div
+                    style={{
+                      overflow: "hidden",
+                      width: 200,
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
                     {row.name}
                   </div>
                 </TableCell>
                 <TableCell>
-                  <div style={{overflow: "hidden", width: 160, textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  <div
+                    style={{
+                      overflow: "hidden",
+                      width: 160,
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
                     {row.binary}
                   </div>
                 </TableCell>
@@ -164,7 +178,12 @@ function App() {
           {isRunning ? "Stop" : "Start"}
         </Button>
         <Button
-          sx={{ marginLeft: "1rem", marginTop: 2, marginBottom: 2, minWidth: 75 }}
+          sx={{
+            marginLeft: "1rem",
+            marginTop: 2,
+            marginBottom: 2,
+            minWidth: 75,
+          }}
           variant="contained"
           color="error"
           disabled={
@@ -176,7 +195,7 @@ function App() {
         >
           Hide
         </Button>
-        </Paper>
+      </Paper>
     </ThemeProvider>
   );
 }
