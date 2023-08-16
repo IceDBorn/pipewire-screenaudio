@@ -96,7 +96,14 @@ function App() {
           size="small"
           disabled={connectorMissing}
         >
-          <TableHead sx={{position: "sticky", top: 0, background: "inherit",  zIndex: 10}}>
+          <TableHead
+            sx={{
+              position: "sticky",
+              top: 0,
+              zIndex: 10,
+              background: "#1e1e1e",
+            }}
+          >
             <TableRow>
               <TableCell>
                 <Checkbox disabled={allDesktopAudio || connectorMissing} />
