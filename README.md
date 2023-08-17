@@ -52,6 +52,7 @@ cd pipewire-screenaudio
 bash install.sh
 ```
 ## Usage
+- Install the [extension](https://addons.mozilla.org/firefox/addon/pipewire-screenaudio)
 - Optional: Grant extension with access permissions to all sites
 - Join a WebRTC call, click the extension icon, select an audio node and share
 - Stream, your transmission should contain both audio and video
