@@ -106,7 +106,7 @@ function App() {
               }}
             />
           }
-          sx={{ marginLeft: "0.5rem" }}
+          sx={{ marginLeft: 1, marginTop: 1 }}
           label="All Desktop Audio"
           disabled={connectorMissing || !versionMatch}
         />
@@ -119,6 +119,7 @@ function App() {
           overflow: "scroll",
           maxHeight: 275,
           borderRadius: 0,
+          marginTop: -1
         }}
       >
         <Table
@@ -202,7 +203,6 @@ function App() {
         <Button
           sx={{
             marginLeft: "10rem",
-            marginTop: 2,
             marginBottom: 2,
             minWidth: 75,
           }}
@@ -216,7 +216,6 @@ function App() {
         <Button
           sx={{
             marginLeft: "1rem",
-            marginTop: 2,
             marginBottom: 2,
             minWidth: 75,
           }}
