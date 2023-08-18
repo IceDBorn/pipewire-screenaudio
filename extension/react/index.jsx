@@ -45,6 +45,7 @@ function App() {
   const [connectorMissing, setConnectorMissing] = useState(false);
   const [versionMatch, setVersionMatch] = useState(false);
   const [NATIVE_VERSION, setNativeVersion] = useState("");
+  let lastResponse = [];
 
   useEffect(() => {
     sendMessages("GetNodes", [], onNodesResponse);
@@ -71,16 +72,19 @@ function App() {
   }
 
   function onNodesResponse(response) {
-    setRows(
-      response.map((element) =>
-        createRows(
-          element.properties["media.name"],
-          element.properties["application.name"],
-          element.properties["object.serial"],
-          false,
+    if (lastResponse !== response.toString()) {
+      lastResponse = response.toString();
+      setRows(
+        response.map((element) =>
+          createRows(
+            element.properties["media.name"],
+            element.properties["application.name"],
+            element.properties["object.serial"],
+            false,
+          ),
         ),
-      ),
-    );
+      );
+    }
   }
 
   function onError(error) {
