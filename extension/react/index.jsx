@@ -1,5 +1,5 @@
 import { createRoot } from "react-dom/client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
@@ -34,27 +34,33 @@ const darkTheme = createTheme({
 const MESSAGE_NAME = "com.icedborn.pipewirescreenaudioconnector";
 const EXT_VERSION = browser.runtime.getManifest().version;
 
-function createData(name, binary, checked) {
-  return { name, binary, checked };
-}
-
-function onError(error) {
-  console.error(error);
-  setConnectorMissing = true;
+function createRows(mediaName, applicationName, serial, checked) {
+  return { mediaName, applicationName, serial, checked };
 }
 
 function App() {
-  const [rows, setRows] = useState([
-    createData("AudioCallbackDriver", "Firefox", false),
-    createData("Dark Souls III", "DarkSoulsIII.exe", false),
-  ]);
+  const [rows, setRows] = useState([]);
   const [allDesktopAudio, setAllDesktopAudio] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
   const [connectorMissing, setConnectorMissing] = useState(false);
   const [versionMatch, setVersionMatch] = useState(false);
   const [NATIVE_VERSION, setNativeVersion] = useState("");
 
-  function checkVersionMatch(nativeVersion) {
+  useEffect(() => {
+    sendMessages("GetNodes", [], onNodesResponse);
+    setInterval(() => {
+      sendMessages("GetNodes", [], onNodesResponse);
+    }, 1000);
+  }, []);
+
+  function sendMessages(command, args, evaluationFunction) {
+    chrome.runtime
+      .sendNativeMessage(MESSAGE_NAME, { cmd: command, args: args })
+      .then(evaluationFunction, onError);
+  }
+
+  function onVersionResponse(response) {
+    const nativeVersion = response.version;
     const extVersionSplit = EXT_VERSION.split(".");
     const nativeVersionSplit = nativeVersion.split(".");
     setVersionMatch(
@@ -64,13 +70,27 @@ function App() {
     setNativeVersion(nativeVersion);
   }
 
-  function onResponse(response) {
-    checkVersionMatch(response.version);
+  function onNodesResponse(response) {
+    setRows(
+      response.map((element) =>
+        createRows(
+          element.properties["media.name"],
+          element.properties["application.name"],
+          element.properties["object.serial"],
+          false,
+        ),
+      ),
+    );
+  }
+
+  function onError(error) {
+    console.error(error);
+    setConnectorMissing(true);
   }
 
   chrome.runtime
     .sendNativeMessage(MESSAGE_NAME, { cmd: "GetVersion", args: [] })
-    .then(onResponse, onError);
+    .then(onVersionResponse, onError);
 
   return (
     <ThemeProvider theme={darkTheme}>
@@ -117,9 +137,10 @@ function App() {
         sx={{
           maxWidth: 500,
           overflow: "scroll",
+          minHeight: 100,
           maxHeight: 275,
           borderRadius: 0,
-          marginTop: -1
+          marginTop: -1,
         }}
       >
         <Table
@@ -141,22 +162,29 @@ function App() {
                   disabled={
                     allDesktopAudio || connectorMissing || !versionMatch
                   }
+                  onChange={(event) => {
+                    setRows(
+                      rows.map((row) => {
+                        return { ...row, checked: event.target.checked };
+                      }),
+                    );
+                  }}
                 />
               </TableCell>
-              <TableCell>Name</TableCell>
-              <TableCell>Binary</TableCell>
+              <TableCell>Media Name</TableCell>
+              <TableCell>Application Name</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {rows.map((row, id) => (
               <TableRow
-                key={row.name}
+                key={row.mediaName}
                 sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
               >
                 <TableCell>
                   <Checkbox
                     onChange={(event) => {
-                      setRows((rows) =>
+                      setRows(
                         rows.map((row, rowId) => {
                           if (rowId !== id) {
                             return row;
@@ -168,6 +196,7 @@ function App() {
                     disabled={
                       allDesktopAudio || connectorMissing || !versionMatch
                     }
+                    checked={row.checked}
                   />
                 </TableCell>
                 <TableCell component="th" scope="row">
@@ -179,7 +208,7 @@ function App() {
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {row.name}
+                    {row.mediaName}
                   </div>
                 </TableCell>
                 <TableCell>
@@ -191,7 +220,7 @@ function App() {
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {row.binary}
+                    {row.applicationName}
                   </div>
                 </TableCell>
               </TableRow>

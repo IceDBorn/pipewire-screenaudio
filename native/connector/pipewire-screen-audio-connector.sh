@@ -39,13 +39,7 @@ function GetSessionType () {
 
 function GetNodes () {
   local nodes=`pw-dump | jq -c '
-    [{
-      "properties": {
-        "media.name": "[All Desktop Audio]",
-        "application.name": "",
-        "object.serial": -1
-      }
-    }] + [ .[] |
+    [ .[] |
       select(.info.props["media.class"] == "Stream/Output/Audio") |
       .["properties"] = .info.props |
       del(.info)
