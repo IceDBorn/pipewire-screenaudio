@@ -45,6 +45,7 @@ function App() {
   const [connectorMissing, setConnectorMissing] = useState(false);
   const [versionMatch, setVersionMatch] = useState(false);
   const [NATIVE_VERSION, setNativeVersion] = useState("");
+  const [allChecked, setAllChecked] = useState(false);
   let lastResponse = [];
 
   useEffect(() => {
@@ -174,7 +175,9 @@ function App() {
                         return { ...row, checked: event.target.checked };
                       }),
                     );
+                    setAllChecked(event.target.checked);
                   }}
+                  checked={allChecked}
                 />
               </TableCell>
               <TableCell>Media Name</TableCell>
@@ -190,13 +193,15 @@ function App() {
                 <TableCell>
                   <Checkbox
                     onChange={(event) => {
-                      setRows(
-                        rows.map((row, rowId) => {
-                          if (rowId !== id) {
-                            return row;
-                          }
-                          return { ...row, checked: event.target.checked };
-                        }),
+                      const tempRows = rows.map((row, rowId) => {
+                        if (rowId !== id) {
+                          return row;
+                        }
+                        return { ...row, checked: event.target.checked };
+                      });
+                      setRows(tempRows);
+                      setAllChecked(
+                        tempRows.map(({ checked }) => checked).every(Boolean),
                       );
                     }}
                     disabled={
