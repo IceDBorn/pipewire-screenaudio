@@ -158,6 +158,8 @@ function App() {
               top: 0,
               zIndex: 10,
               background: "#1e1e1e",
+              borderBottom: "solid",
+              borderColor: "#515151",
             }}
           >
             <TableRow>
