@@ -65,12 +65,12 @@ function StartPipewireScreenAudio () {
 function SetSharingNode () {
   local args="$1"
 
-  local node=`echo $args | jq -r '.[].node' | head -n 1`
+  local nodes=`echo $args | jq -r '.[].nodes | .[]' | tr '\n' ' '`
   local virtmicId=`echo $args | jq -r '.[].micId' | head -n 1`
   fifoPath="$XDG_RUNTIME_DIR/pipewire-screenaudio-set-node-$virtmicId"
 
   if [ -e "$fifoPath" ]; then
-    echo "$node" >> "$fifoPath"
+    echo "$nodes" >> "$fifoPath"
   fi
 
   exit

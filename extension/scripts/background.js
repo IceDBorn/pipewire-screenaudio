@@ -6,7 +6,7 @@ function handleMessage(response) {
         window.localStorage.setItem('micId', micId)
         chrome.runtime.sendMessage('mic-id-updated')
         // Passthrough the selected node to pipewire-screenaudio
-        chrome.runtime.sendNativeMessage(response.messageName, { cmd: 'SetSharingNode', args: [{ node: response.args[0].node, micId }] })
+        chrome.runtime.sendNativeMessage(response.messageName, { cmd: 'SetSharingNode', args: [{ nodes: response.args[0].nodes, micId }] })
       })
   }
 

@@ -279,8 +279,7 @@ function App() {
                 .filter((row) => row.checked === true)
                 .map((row) => ({ serial: row["serial"] }));
               sendMessages("StartPipewireScreenAudio", "sharing-started", [
-                // TODO: Implement multiple nodes selection
-                { node: selectedRows[0].serial },
+                { nodes: selectedRows.map(row => row.serial) },
               ]);
             }
           }}

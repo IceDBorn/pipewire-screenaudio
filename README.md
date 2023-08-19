@@ -25,7 +25,7 @@ You can find us on [Matrix](https://matrix.to/#/#pipewire-screenaudio:matrix.org
         ./configuration.nix
       ];
     };
-  } 
+  }
 }
 
 # configuration.nix
@@ -55,7 +55,7 @@ bash install.sh
 - Optional: Grant extension with access permissions to all sites
 - Join a WebRTC call, click the extension icon, select an audio node and share
 - Stream, your transmission should contain both audio and video
- 
+
 ## Known Problems
 - You can't stream firefox WebRTC calls at all while using `All Desktop Audio`, they are excluded by default
 ### resistFingerprinting
@@ -65,6 +65,5 @@ bash install.sh
 - Firefox recently implemented a feature for spawning WebRTC audio nodes, and while it works, it has a lot of pitching and de-sync issues. We created a [bug report](https://bugzilla.mozilla.org/show_bug.cgi?id=1844181) on bugzilla and we're hoping for the best!
 
 ## Planned Features
-- Multiple nodes selection
 - More customization options (node matching, watcher behavior etc.)
 - Chromium support

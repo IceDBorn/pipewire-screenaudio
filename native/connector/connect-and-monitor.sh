@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
-# This script finds and connects targetNodeSerial to virtual mic
+# This script finds and connects targetNodes to virtual mic
 
 virtmicPortFlId=$1
 virtmicPortFrId=$2
-targetNodeSerial=$3
+targetNodes=$3
 
 EXCLUDED_TARGETS='"AudioCallbackDriver"'
 
@@ -28,20 +28,28 @@ cat "$fullDumpFile" | jq -c '[ .[] | select(.info.props["media.class"] == "Strea
 # Get output ports of streams from $fullDumpFile
 streamIds=`cat "$streamsFile" | jq -c '.[].id' | paste -sd ','`
 cat "$fullDumpFile" | jq -c "[ .[] | select(.type == \"PipeWire:Interface:Port\") | select(.info.direction == \"output\") | select(.info.props[\"node.id\"] | contains($streamIds)) ]" > $portsFile
-if [[ ! "$targetNodeSerial" -eq "-1" ]]; then
-    # Get target node id from $streamsFile
-    targetNodeId=`cat "$streamsFile" | jq -c "[ .[] | select(.info.props[\"object.serial\"] == $targetNodeSerial) ][0].id"`
+if [[ ! "$targetNodes" -eq "-1" ]]; then
+    function connect-node() {
+        targetNode=$1
 
-    # Get target node ports ids from $portsFile
-    targetPortsFile=`mktemp`
-    cat "$portsFile" | jq -c "[ .[] | select(.info.props[\"node.id\"] == $targetNodeId) ]" > $targetPortsFile
-    targetPortFlId=`cat "$targetPortsFile" | jq -c "[ .[] | select(.info.props[\"audio.channel\"] == \"FL\") ][0].id"`
-    targetPortFrId=`cat "$targetPortsFile" | jq -c "[ .[] | select(.info.props[\"audio.channel\"] == \"FR\") ][0].id"`
-    rm $targetPortsFile
+        # Get target node id from $streamsFile
+        targetNodeId=`cat "$streamsFile" | jq -c "[ .[] | select(.info.props[\"object.serial\"] == $targetNode) ][0].id"`
 
-    # Connect target to virtmic
-    pw-link $targetPortFlId $virtmicPortFlId
-    pw-link $targetPortFrId $virtmicPortFrId
+        # Get target node ports ids from $portsFile
+        targetPortsFile=`mktemp`
+        cat "$portsFile" | jq -c "[ .[] | select(.info.props[\"node.id\"] == $targetNodeId) ]" > $targetPortsFile
+        targetPortFlId=`cat "$targetPortsFile" | jq -c "[ .[] | select(.info.props[\"audio.channel\"] == \"FL\") ][0].id"`
+        targetPortFrId=`cat "$targetPortsFile" | jq -c "[ .[] | select(.info.props[\"audio.channel\"] == \"FR\") ][0].id"`
+        rm $targetPortsFile
+
+        # Connect target to virtmic
+        pw-link $targetPortFlId $virtmicPortFlId
+        pw-link $targetPortFrId $virtmicPortFrId
+    }
+
+    for node in $targetNodes; do
+        connect-node "$node"
+    done
 else
     # Get target nodes ids to connect from $streamsFile
     targetNodesIds=`cat $streamsFile | jq -c "[ .[] | select(.info.props[\"media.name\"] | contains($EXCLUDED_TARGETS) | not) ][].id" | paste -sd ','`

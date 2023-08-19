@@ -61,10 +61,10 @@ tail -f "$fifoPath" | {
     trap "killMonitor" EXIT
 
     # Read the new target node
-    while read -r targetNodeSerial; do
+    while read -r targetNodes; do
         killMonitor
         disconnectInputs "$virtmicId"
-        setsid bash -- connect-and-monitor.sh "$virtmicPortFlId" "$virtmicPortFrId" "$targetNodeSerial" &
+        setsid bash -- connect-and-monitor.sh "$virtmicPortFlId" "$virtmicPortFrId" "$targetNodes" &
         monitorProcess=$!
     done
 } &
