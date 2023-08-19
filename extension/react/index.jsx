@@ -49,16 +49,36 @@ function App() {
   let lastResponse = [];
 
   useEffect(() => {
-    sendMessages("GetNodes", [], onNodesResponse);
+    sendNativeMessages("GetNodes", [], onNodesResponse);
     setInterval(() => {
-      sendMessages("GetNodes", [], onNodesResponse);
+      sendNativeMessages("GetNodes", [], onNodesResponse);
     }, 1000);
+    chrome.runtime.onMessage.addListener(handleMessage);
   }, []);
 
-  function sendMessages(command, args, evaluationFunction) {
+  function sendNativeMessages(command, args, evaluationFunction) {
     chrome.runtime
       .sendNativeMessage(MESSAGE_NAME, { cmd: command, args: args })
       .then(evaluationFunction, onError);
+  }
+
+  function sendMessages(command, message, args) {
+    chrome.runtime.sendMessage({
+      messageName: MESSAGE_NAME,
+      message: message,
+      cmd: command,
+      args: args,
+    });
+  }
+
+  function handleMessage(message) {
+    if (message === "mic-id-updated") {
+      setIsRunning(true);
+    }
+
+    if (message === "mic-id-removed") {
+      setIsRunning(false);
+    }
   }
 
   function onVersionResponse(response) {
@@ -118,7 +138,7 @@ function App() {
           {!versionMatch
             ? `Version mismatch! Extension: ${EXT_VERSION}, Native: ${NATIVE_VERSION}`
             : isRunning
-            ? "Running with ID: 50"
+            ? `Running with ID: ${window.localStorage.getItem("micId")}`
             : "The native connector is missing or misconfigured"}
         </Alert>
       )}
@@ -248,7 +268,22 @@ function App() {
           }}
           variant="contained"
           color={isRunning ? "error" : "success"}
-          onClick={() => setIsRunning(!isRunning)}
+          onClick={() => {
+            if (isRunning) {
+              const micId = window.localStorage.getItem("micId");
+              sendMessages("StopPipewireScreenAudio", "sharing-stopped", [
+                { micId },
+              ]);
+            } else {
+              const selectedRows = rows
+                .filter((row) => row.checked === true)
+                .map((row) => ({ serial: row["serial"] }));
+              sendMessages("StartPipewireScreenAudio", "sharing-started", [
+                // TODO: Implement multiple nodes selection
+                { node: selectedRows[0].serial },
+              ]);
+            }
+          }}
           disabled={connectorMissing || !versionMatch}
         >
           {isRunning ? "Stop" : "Start"}
