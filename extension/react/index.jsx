@@ -146,20 +146,6 @@ function App() {
             : "The native connector is missing or misconfigured"}
         </Alert>
       )}
-      <Paper sx={{ maxWidth: 500, borderRadius: 0 }}>
-        <FormControlLabel
-          control={
-            <Switch
-              onChange={() => {
-                setAllDesktopAudio(!allDesktopAudio);
-              }}
-            />
-          }
-          sx={{ marginLeft: 1, marginTop: 1 }}
-          label="All Desktop Audio"
-          disabled={connectorMissing || !versionMatch}
-        />
-      </Paper>
       {/* Content */}
       <TableContainer
         component={Paper}
@@ -169,7 +155,6 @@ function App() {
           minHeight: 100,
           maxHeight: 275,
           borderRadius: 0,
-          marginTop: -1,
         }}
       >
         <Table
@@ -212,8 +197,8 @@ function App() {
                   checked={allChecked}
                 />
               </TableCell>
-              <TableCell>Media Name</TableCell>
-              <TableCell>Application Name</TableCell>
+              <TableCell>Media</TableCell>
+              <TableCell>Application</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -281,11 +266,23 @@ function App() {
         </Table>
       </TableContainer>
       <Paper sx={{ maxWidth: 500, borderRadius: "0" }}>
+        <FormControlLabel
+          control={
+            <Switch
+              onChange={() => {
+                setAllDesktopAudio(!allDesktopAudio);
+              }}
+            />
+          }
+          sx={{ marginLeft: 1, marginTop: -1 }}
+          label="All Desktop Audio"
+          disabled={connectorMissing || !versionMatch}
+        />
         <Button
           sx={{
-            marginLeft: "10rem",
-            marginBottom: 2,
+            marginBottom: 1,
             minWidth: 75,
+            marginLeft: 13,
           }}
           variant="contained"
           color={isRunning ? "error" : "success"}
@@ -311,7 +308,7 @@ function App() {
         <Button
           sx={{
             marginLeft: "1rem",
-            marginBottom: 2,
+            marginBottom: 1,
             minWidth: 75,
           }}
           variant="contained"
