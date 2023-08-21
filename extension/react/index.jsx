@@ -43,23 +43,26 @@ function App() {
   const [allDesktopAudio, setAllDesktopAudio] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
   const [connectorMissing, setConnectorMissing] = useState(false);
-  const [versionMatch, setVersionMatch] = useState(false);
-  const [NATIVE_VERSION, setNativeVersion] = useState("");
+  const [versionMatch, setVersionMatch] = useState(true);
+  const [nativeVersion, setNativeVersion] = useState("");
   const [allChecked, setAllChecked] = useState(false);
   let lastResponse = [];
 
   useEffect(() => {
-    sendNativeMessages("GetNodes", [], onNodesResponse);
-    setInterval(() => {
-      sendNativeMessages("GetNodes", [], onNodesResponse);
-    }, 1000);
-    chrome.runtime.onMessage.addListener(handleMessage);
+    sendNativeMessages("GetVersion", [], onVersionResponse, () =>
+      setConnectorMissing(true),
+    );
   }, []);
 
-  function sendNativeMessages(command, args, evaluationFunction) {
+  function sendNativeMessages(
+    command,
+    args,
+    evaluationFunction,
+    errorFunction,
+  ) {
     chrome.runtime
       .sendNativeMessage(MESSAGE_NAME, { cmd: command, args: args })
-      .then(evaluationFunction, onError);
+      .then(evaluationFunction, errorFunction);
   }
 
   function sendMessages(command, message, args) {
@@ -82,14 +85,20 @@ function App() {
   }
 
   function onVersionResponse(response) {
-    const nativeVersion = response.version;
+    const tempNativeVersion = response.version;
     const extVersionSplit = EXT_VERSION.split(".");
-    const nativeVersionSplit = nativeVersion.split(".");
+    const nativeVersionSplit = tempNativeVersion.split(".");
     setVersionMatch(
       extVersionSplit[0] === nativeVersionSplit[0] &&
         extVersionSplit[1] === nativeVersionSplit[1],
     );
-    setNativeVersion(nativeVersion);
+    setNativeVersion(tempNativeVersion);
+
+    sendNativeMessages("GetNodes", [], onNodesResponse, onError);
+    setInterval(() => {
+      sendNativeMessages("GetNodes", [], onNodesResponse, onError);
+    }, 1000);
+    chrome.runtime.onMessage.addListener(handleMessage);
   }
 
   function onNodesResponse(response) {
@@ -110,12 +119,7 @@ function App() {
 
   function onError(error) {
     console.error(error);
-    setConnectorMissing(true);
   }
-
-  chrome.runtime
-    .sendNativeMessage(MESSAGE_NAME, { cmd: "GetVersion", args: [] })
-    .then(onVersionResponse, onError);
 
   return (
     <ThemeProvider theme={darkTheme}>
@@ -136,7 +140,7 @@ function App() {
           sx={{ maxWidth: 500 }}
         >
           {!versionMatch
-            ? `Version mismatch! Extension: ${EXT_VERSION}, Native: ${NATIVE_VERSION}`
+            ? `Version mismatch! Extension: ${EXT_VERSION}, Native: ${nativeVersion}`
             : isRunning
             ? `Running with ID: ${window.localStorage.getItem("micId")}`
             : "The native connector is missing or misconfigured"}
