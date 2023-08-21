@@ -121,6 +121,24 @@ function App() {
     console.error(error);
   }
 
+  function onCheckboxChanged(event, id, isSingleRow) {
+    const tempRows = rows.map((row, rowId) => {
+      if (isSingleRow && rowId !== id) {
+        return row;
+      }
+      return { ...row, checked: event.target.checked };
+    });
+    setRows(tempRows);
+    setAllChecked(tempRows.map(({ checked }) => checked).every(Boolean));
+    if (!isRunning) return;
+    const selectedRows = tempRows
+      .filter((row) => row.checked)
+      .map((row) => ({ serial: row.serial }));
+    sendMessages("StartPipewireScreenAudio", "sharing-started", [
+      { nodes: selectedRows.map((row) => row.serial) },
+    ]);
+  }
+
   return (
     <ThemeProvider theme={darkTheme}>
       <CssBaseline />
@@ -178,22 +196,7 @@ function App() {
                   disabled={
                     allDesktopAudio || connectorMissing || !versionMatch
                   }
-                  onChange={(event) => {
-                    const tempRows = rows.map((row) => {
-                      return { ...row, checked: event.target.checked };
-                    });
-                    setRows(tempRows);
-                    setAllChecked(event.target.checked);
-                    if (!isRunning) return;
-                    const selectedRows = tempRows
-                      .filter((row) => row.checked)
-                      .map((row) => ({ serial: row.serial }));
-                    sendMessages(
-                      "StartPipewireScreenAudio",
-                      "sharing-started",
-                      [{ nodes: selectedRows.map((row) => row.serial) }],
-                    );
-                  }}
+                  onChange={(event) => onCheckboxChanged(event, null, false)}
                   checked={allChecked}
                 />
               </TableCell>
@@ -209,27 +212,7 @@ function App() {
               >
                 <TableCell>
                   <Checkbox
-                    onChange={(event) => {
-                      const tempRows = rows.map((row, rowId) => {
-                        if (rowId !== id) {
-                          return row;
-                        }
-                        return { ...row, checked: event.target.checked };
-                      });
-                      setRows(tempRows);
-                      setAllChecked(
-                        tempRows.map(({ checked }) => checked).every(Boolean),
-                      );
-                      if (!isRunning) return;
-                      const selectedRows = tempRows
-                        .filter((row) => row.checked)
-                        .map((row) => ({ serial: row.serial }));
-                      sendMessages(
-                        "StartPipewireScreenAudio",
-                        "sharing-started",
-                        [{ nodes: selectedRows.map((row) => row.serial) }],
-                      );
-                    }}
+                    onChange={(event) => onCheckboxChanged(event, id, true)}
                     disabled={
                       allDesktopAudio || connectorMissing || !versionMatch
                     }
