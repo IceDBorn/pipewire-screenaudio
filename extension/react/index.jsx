@@ -194,12 +194,20 @@ function App() {
                     allDesktopAudio || connectorMissing || !versionMatch
                   }
                   onChange={(event) => {
-                    setRows(
-                      rows.map((row) => {
-                        return { ...row, checked: event.target.checked };
-                      }),
-                    );
+                    const tempRows = rows.map((row) => {
+                      return { ...row, checked: event.target.checked };
+                    });
+                    setRows(tempRows);
                     setAllChecked(event.target.checked);
+                    if (!isRunning) return;
+                    const selectedRows = tempRows
+                      .filter((row) => row.checked)
+                      .map((row) => ({ serial: row.serial }));
+                    sendMessages(
+                      "StartPipewireScreenAudio",
+                      "sharing-started",
+                      [{ nodes: selectedRows.map((row) => row.serial) }],
+                    );
                   }}
                   checked={allChecked}
                 />
@@ -226,6 +234,15 @@ function App() {
                       setRows(tempRows);
                       setAllChecked(
                         tempRows.map(({ checked }) => checked).every(Boolean),
+                      );
+                      if (!isRunning) return;
+                      const selectedRows = tempRows
+                        .filter((row) => row.checked)
+                        .map((row) => ({ serial: row.serial }));
+                      sendMessages(
+                        "StartPipewireScreenAudio",
+                        "sharing-started",
+                        [{ nodes: selectedRows.map((row) => row.serial) }],
                       );
                     }}
                     disabled={
@@ -280,10 +297,10 @@ function App() {
               ]);
             } else {
               const selectedRows = rows
-                .filter((row) => row.checked === true)
-                .map((row) => ({ serial: row["serial"] }));
+                .filter((row) => row.checked)
+                .map((row) => ({ serial: row.serial }));
               sendMessages("StartPipewireScreenAudio", "sharing-started", [
-                { nodes: selectedRows.map(row => row.serial) },
+                { nodes: selectedRows.map((row) => row.serial) },
               ]);
             }
           }}
