@@ -46,6 +46,7 @@ function App() {
   const [versionMatch, setVersionMatch] = useState(true);
   const [nativeVersion, setNativeVersion] = useState("");
   const [allChecked, setAllChecked] = useState(false);
+
   let lastResponse = [];
 
   useEffect(() => {
@@ -98,6 +99,15 @@ function App() {
     setInterval(() => {
       sendNativeMessages("GetNodes", [], onNodesResponse, onError);
     }, 1000);
+
+    const micId = window.localStorage.getItem("micId");
+    sendNativeMessages(
+      "IsPipewireScreenAudioRunning",
+      [{ micId }],
+      onRunningResponse,
+      onError,
+    );
+
     chrome.runtime.onMessage.addListener(handleMessage);
   }
 
@@ -115,6 +125,16 @@ function App() {
         ),
       );
     }
+  }
+
+  function onRunningResponse(response) {
+    if (!window.localStorage.getItem("micId")) return;
+
+    if (!response.isRunning) {
+      window.localStorage.setItem("micId", null);
+    }
+
+    setIsRunning(response.isRunning);
   }
 
   function onError(error) {
