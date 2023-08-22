@@ -1,10 +1,10 @@
 import { createRoot } from "react-dom/client";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
-import { Button, Checkbox } from "@mui/material";
+import Button from "@mui/material/Button";
 import Alert from "@mui/material/Alert";
 
 import "@fontsource/roboto/300.css";
@@ -15,15 +15,23 @@ import "@fontsource/roboto/700.css";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 
-import Table from "@mui/material/Table";
-import TableBody from "@mui/material/TableBody";
-import TableCell from "@mui/material/TableCell";
-import TableContainer from "@mui/material/TableContainer";
-import TableHead from "@mui/material/TableHead";
-import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import Switch from "@mui/material/Switch";
+
+import {
+  ERROR_VERSION_MISMATCH,
+  healthCheck,
+  getNodes,
+  isPipewireScreenAudioRunning,
+  startPipewireScreenAudio,
+  stopPipewireScreenAudio,
+} from "./lib/backend";
+
+import { MIC_ID, readLocalStorage } from "./lib/local-storage";
+import { useDidUpdateEffect, useLocalStorage } from "./lib/hooks";
+
+import NodesTable from "./components/nodes-table";
 
 const darkTheme = createTheme({
   palette: {
@@ -31,52 +39,80 @@ const darkTheme = createTheme({
   },
 });
 
-const MESSAGE_NAME = "com.icedborn.pipewirescreenaudioconnector";
-const EXT_VERSION = browser.runtime.getManifest().version;
-
-function createRows(mediaName, applicationName, serial, checked) {
-  return { mediaName, applicationName, serial, checked };
+function mapNode(node) {
+  return {
+    mediaName: node.properties["media.name"],
+    applicationName: node.properties["application.name"],
+    serial: node.properties["object.serial"],
+    checked: false,
+  };
 }
 
 function App() {
-  const [rows, setRows] = useState([]);
+  const [isHealthy, setIsHealthy] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
   const [allDesktopAudio, setAllDesktopAudio] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
-  const [connectorMissing, setConnectorMissing] = useState(false);
-  const [versionMatch, setVersionMatch] = useState(true);
   const [nativeVersion, setNativeVersion] = useState("");
-  const [allChecked, setAllChecked] = useState(false);
-  const [emptyRows, setEmptyRows] = useState(false);
+  const [extensionVersion, setExtensionVersion] = useState("");
+  const [nodes, setNodes] = useState([]);
+  const [micId, setMicId] = useLocalStorage(MIC_ID);
 
-  let lastResponse = [];
+  useEffect(async () => {
+    try {
+      const health = await healthCheck();
+      setIsHealthy(health);
+    } catch (err) {
+      if (err.message === ERROR_VERSION_MISMATCH) {
+        setNativeVersion(err.cause.nativeVersion);
+        setExtensionVersion(err.cause.extensionVersion);
+      }
 
-  useEffect(() => {
-    sendNativeMessages("GetVersion", [], onVersionResponse, () =>
-      setConnectorMissing(true),
-    );
+      setIsHealthy(false);
+      setIsInitialized(true);
+      return;
+    }
+
+    let previousNodes = null;
+    const nodesReceive = () =>
+      getNodes().then((n) => {
+        const currentNodesStr = n.toString();
+        if (currentNodesStr === previousNodes) return;
+        previousNodes = currentNodesStr;
+        setNodes(n.map(mapNode));
+      });
+    nodesReceive();
+    const nodesInterval = setInterval(nodesReceive, 2000);
+
+    if (micId) {
+      const res = await isPipewireScreenAudioRunning(micId);
+      console.log({ res, micId });
+      setIsRunning(res);
+    }
+
+    chrome.runtime.onMessage.addListener(handleMessage);
+
+    setIsInitialized(true);
+
+    return () => {
+      clearInterval(nodesInterval);
+    };
   }, []);
 
-  function sendNativeMessages(
-    command,
-    args,
-    evaluationFunction,
-    errorFunction,
-  ) {
-    chrome.runtime
-      .sendNativeMessage(MESSAGE_NAME, { cmd: command, args: args })
-      .then(evaluationFunction, errorFunction);
-  }
-
-  function sendMessages(command, message, args) {
-    chrome.runtime.sendMessage({
-      messageName: MESSAGE_NAME,
-      message: message,
-      cmd: command,
-      args: args,
-    });
-  }
+  useDidUpdateEffect(() => {
+    if (isRunning) {
+      const id = readLocalStorage(MIC_ID);
+      console.log({ isRunning, id });
+      setMicId(id);
+    } else {
+      console.log({ isRunning, id: null });
+      setMicId(null);
+    }
+  }, [isRunning]);
 
   function handleMessage(message) {
+    console.log({ message });
+
     if (message === "mic-id-updated") {
       setIsRunning(true);
     }
@@ -86,300 +122,122 @@ function App() {
     }
   }
 
-  function onVersionResponse(response) {
-    const tempNativeVersion = response.version;
-    const extVersionSplit = EXT_VERSION.split(".");
-    const nativeVersionSplit = tempNativeVersion.split(".");
-    setVersionMatch(
-      extVersionSplit[0] === nativeVersionSplit[0] &&
-        extVersionSplit[1] === nativeVersionSplit[1],
+  function shareNodes(nodes) {
+    startPipewireScreenAudio(
+      nodes.filter((node) => node.checked).map((node) => node.serial),
     );
-    setNativeVersion(tempNativeVersion);
-
-    sendNativeMessages("GetNodes", [], onNodesResponse, onError);
-    setInterval(() => {
-      sendNativeMessages("GetNodes", [], onNodesResponse, onError);
-    }, 2000);
-
-    const micId = window.localStorage.getItem("micId");
-    sendNativeMessages(
-      "IsPipewireScreenAudioRunning",
-      [{ micId }],
-      onRunningResponse,
-      onError,
-    );
-
-    chrome.runtime.onMessage.addListener(handleMessage);
   }
 
-  function onNodesResponse(response) {
-    if (response.length === 0) {
-      setEmptyRows(true);
-      window.localStorage.setItem("selectedRows", null);
-      return;
-    }
-    setEmptyRows(false);
-
-    if (lastResponse === response.toString()) return;
-    const responseRows = response.map((element) =>
-      createRows(
-        element.properties["media.name"],
-        element.properties["application.name"],
-        element.properties["object.serial"],
-        false,
-      ),
-    );
-    lastResponse = response.toString();
-
-    const savedRows = JSON.parse(window.localStorage.getItem("selectedRows"));
-
-    if (savedRows) {
-      const tempRows = responseRows.map((row) => {
-        let tempRow = row;
-        savedRows.forEach((element) => {
-          if (
-            element.mediaName === row.mediaName &&
-            element.applicationName === row.applicationName &&
-            element.serial === row.serial &&
-            element.checked
-          ) {
-            tempRow = { ...row, checked: true };
-          }
-        });
-        return tempRow;
-      });
-      setRows(tempRows);
-      setAllChecked(tempRows.map(({ checked }) => checked).every(Boolean));
+  function handleStartStop() {
+    if (!isRunning) {
+      const selectedNodesSerials = nodes
+        .filter((node) => node.checked)
+        .map((node) => node.serial);
+      startPipewireScreenAudio(selectedNodesSerials);
     } else {
-      setRows(responseRows);
+      stopPipewireScreenAudio(micId);
     }
-  }
-
-  function onRunningResponse(response) {
-    if (!window.localStorage.getItem("micId")) return;
-
-    if (!response.isRunning) {
-      window.localStorage.setItem("micId", null);
-    }
-
-    setIsRunning(response.isRunning);
-  }
-
-  function onError(error) {
-    console.error(error);
-  }
-
-  function onCheckboxChanged(event, id, isSingleRow) {
-    const tempRows = rows.map((row, rowId) => {
-      if (isSingleRow && rowId !== id) {
-        return row;
-      }
-
-      return { ...row, checked: event.target.checked };
-    });
-
-    setRows(tempRows);
-    window.localStorage.setItem("selectedRows", JSON.stringify(tempRows));
-    setAllChecked(tempRows.map(({ checked }) => checked).every(Boolean));
-
-    if (!isRunning) return;
-    const selectedRows = tempRows
-      .filter((row) => row.checked)
-      .map((row) => ({ serial: row.serial }));
-    sendMessages("StartPipewireScreenAudio", "sharing-started", [
-      { nodes: selectedRows.map((row) => row.serial) },
-    ]);
   }
 
   return (
-    <ThemeProvider theme={darkTheme}>
-      <CssBaseline />
-      {/* Navbar */}
-      <AppBar position="static" sx={{ maxWidth: 500 }}>
-        <Toolbar>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            Pipewire Screenaudio
-          </Typography>
-          <Button color="inherit">Settings</Button>
-        </Toolbar>
-      </AppBar>
-      {(isRunning || connectorMissing || !versionMatch) && (
-        <Alert
-          severity={isRunning ? "info" : "error"}
-          color={isRunning ? "info" : "error"}
-          sx={{ maxWidth: 500 }}
-        >
-          {!versionMatch
-            ? `Version mismatch! Extension: ${EXT_VERSION}, Native: ${nativeVersion}`
-            : isRunning
-            ? `Running with ID: ${window.localStorage.getItem("micId")}`
-            : "The native connector is missing or misconfigured"}
-        </Alert>
-      )}
+    isInitialized && (
+      <ThemeProvider theme={darkTheme}>
+        <CssBaseline />
+        {/* Navbar */}
+        <AppBar position="static" sx={{ maxWidth: 500 }}>
+          <Toolbar>
+            <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+              Pipewire Screenaudio
+            </Typography>
+            <Button color="inherit">Settings</Button>
+          </Toolbar>
+        </AppBar>
+        {(isRunning || !isHealthy) && (
+          <Alert
+            severity={isRunning ? "info" : "error"}
+            color={isRunning ? "info" : "error"}
+            sx={{ maxWidth: 500 }}
+          >
+            {!isHealthy
+              ? `Version mismatch! Extension: ${extensionVersion}, Native: ${nativeVersion}`
+              : isRunning
+              ? `Running with ID: ${micId}`
+              : "The native connector is missing or misconfigured"}
+          </Alert>
+        )}
 
-      {emptyRows && (
-        <Paper sx={{ minWidth: 500, minHeight: 80, borderRadius: 0 }}>
-          <div></div>
-          <Typography
-            variant="h6"
-            component="div"
-            sx={{
-              flexGrow: 1,
-              marginLeft: 13,
-              paddingTop: 5,
-              paddingBottom: 5,
-            }}
-          >
-            No nodes available for sharing
-          </Typography>
-        </Paper>
-      )}
-      {/* Content */}
-      {!emptyRows && (
-        <TableContainer
-          component={Paper}
-          sx={{
-            maxWidth: 500,
-            overflow: "scroll",
-            minHeight: 100,
-            maxHeight: 275,
-            borderRadius: 0,
-          }}
-        >
-          <Table
-            sx={{ minWidth: 500, maxWidth: 500 }}
-            size="small"
-            disabled={connectorMissing || !versionMatch}
-          >
-            <TableHead
+        {!nodes.length && (
+          <Paper sx={{ minWidth: 500, minHeight: 80, borderRadius: 0 }}>
+            <div></div>
+            <Typography
+              variant="h6"
+              component="div"
               sx={{
-                position: "sticky",
-                top: 0,
-                zIndex: 10,
-                background: "#1e1e1e",
-                borderBottom: "solid",
-                borderColor: "#515151",
+                flexGrow: 1,
+                marginLeft: 13,
+                paddingTop: 5,
+                paddingBottom: 5,
               }}
             >
-              <TableRow>
-                <TableCell>
-                  <Checkbox
-                    disabled={
-                      allDesktopAudio || connectorMissing || !versionMatch
-                    }
-                    onChange={(event) => onCheckboxChanged(event, null, false)}
-                    checked={allChecked}
-                  />
-                </TableCell>
-                <TableCell>Media</TableCell>
-                <TableCell>Application</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {rows.map((row, id) => (
-                <TableRow
-                  key={row.mediaName}
-                  sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
-                >
-                  <TableCell>
-                    <Checkbox
-                      onChange={(event) => onCheckboxChanged(event, id, true)}
-                      disabled={
-                        allDesktopAudio || connectorMissing || !versionMatch
-                      }
-                      checked={row.checked}
-                    />
-                  </TableCell>
-                  <TableCell component="th" scope="row">
-                    <div
-                      style={{
-                        overflow: "hidden",
-                        width: 200,
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {row.mediaName}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div
-                      style={{
-                        overflow: "hidden",
-                        width: 160,
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {row.applicationName}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      )}
-      <Paper sx={{ maxWidth: 500, borderRadius: "0" }}>
-        <FormControlLabel
-          control={
-            <Switch
-              onChange={() => {
-                setAllDesktopAudio(!allDesktopAudio);
-              }}
-            />
-          }
-          sx={{ marginLeft: 1, marginTop: -1 }}
-          label="All Desktop Audio"
-          disabled={connectorMissing || !versionMatch}
-        />
-        <Button
-          sx={{
-            marginBottom: 1,
-            minWidth: 75,
-            marginLeft: 13,
-          }}
-          variant="contained"
-          color={isRunning ? "error" : "success"}
-          onClick={() => {
-            if (isRunning) {
-              const micId = window.localStorage.getItem("micId");
-              sendMessages("StopPipewireScreenAudio", "sharing-stopped", [
-                { micId },
-              ]);
-            } else {
-              const selectedRows = rows
-                .filter((row) => row.checked)
-                .map((row) => ({ serial: row.serial }));
-              sendMessages("StartPipewireScreenAudio", "sharing-started", [
-                { nodes: selectedRows.map((row) => row.serial) },
-              ]);
+              No nodes available for sharing
+            </Typography>
+          </Paper>
+        )}
+        {/* Content */}
+        {nodes.length && (
+          <NodesTable
+            shareNodes={shareNodes}
+            nodes={nodes}
+            hasError={!isHealthy}
+            allDesktopAudio={allDesktopAudio}
+          />
+        )}
+        <Paper sx={{ maxWidth: 500, borderRadius: "0" }}>
+          <FormControlLabel
+            control={
+              <Switch
+                onChange={() => {
+                  setAllDesktopAudio(!allDesktopAudio);
+                }}
+              />
             }
-          }}
-          disabled={connectorMissing || !versionMatch}
-        >
-          {isRunning ? "Stop" : "Start"}
-        </Button>
-        <Button
-          sx={{
-            marginLeft: "1rem",
-            marginBottom: 1,
-            minWidth: 75,
-          }}
-          variant="contained"
-          color="error"
-          disabled={
-            !rows.some((row) => row.checked) ||
-            isRunning ||
-            connectorMissing ||
-            !versionMatch ||
-            allDesktopAudio
-          }
-        >
-          Hide
-        </Button>
-      </Paper>
-    </ThemeProvider>
+            sx={{ marginLeft: 1, marginTop: -1 }}
+            label="All Desktop Audio"
+            disabled={isHealthy}
+          />
+          <Button
+            sx={{
+              marginBottom: 1,
+              minWidth: 75,
+              marginLeft: 13,
+            }}
+            variant="contained"
+            color={isRunning ? "error" : "success"}
+            onClick={handleStartStop}
+            disabled={isHealthy}
+          >
+            {isRunning ? "Stop" : "Start"}
+          </Button>
+          <Button
+            sx={{
+              marginLeft: "1rem",
+              marginBottom: 1,
+              minWidth: 75,
+            }}
+            variant="contained"
+            color="error"
+            disabled={
+              !nodes.some((node) => node.checked) ||
+              isRunning ||
+              !isHealthy ||
+              allDesktopAudio
+            }
+          >
+            Hide
+          </Button>
+        </Paper>
+      </ThemeProvider>
+    )
   );
 }
 

@@ -12,5 +12,9 @@
   },
   "env": {
     "browser": true
+  },
+  "globals": {
+    "browser": true,
+    "chrome": true
   }
 }
