@@ -98,7 +98,7 @@ function App() {
     sendNativeMessages("GetNodes", [], onNodesResponse, onError);
     setInterval(() => {
       sendNativeMessages("GetNodes", [], onNodesResponse, onError);
-    }, 1000);
+    }, 2000);
 
     const micId = window.localStorage.getItem("micId");
     sendNativeMessages(
@@ -112,18 +112,45 @@ function App() {
   }
 
   function onNodesResponse(response) {
-    if (lastResponse !== response.toString()) {
-      lastResponse = response.toString();
-      setRows(
-        response.map((element) =>
-          createRows(
-            element.properties["media.name"],
-            element.properties["application.name"],
-            element.properties["object.serial"],
-            false,
-          ),
-        ),
-      );
+    if (response.length === 0) {
+      setEmptyRows(true);
+      window.localStorage.setItem("selectedRows", null);
+      return;
+    }
+    setEmptyRows(false);
+
+    if (lastResponse === response.toString()) return;
+    const responseRows = response.map((element) =>
+      createRows(
+        element.properties["media.name"],
+        element.properties["application.name"],
+        element.properties["object.serial"],
+        false,
+      ),
+    );
+    lastResponse = response.toString();
+
+    const savedRows = JSON.parse(window.localStorage.getItem("selectedRows"));
+
+    if (savedRows) {
+      const tempRows = responseRows.map((row) => {
+        let tempRow = row;
+        savedRows.forEach((element) => {
+          if (
+            element.mediaName === row.mediaName &&
+            element.applicationName === row.applicationName &&
+            element.serial === row.serial &&
+            element.checked
+          ) {
+            tempRow = { ...row, checked: true };
+          }
+        });
+        return tempRow;
+      });
+      setRows(tempRows);
+      setAllChecked(tempRows.map(({ checked }) => checked).every(Boolean));
+    } else {
+      setRows(responseRows);
     }
   }
 
@@ -146,10 +173,14 @@ function App() {
       if (isSingleRow && rowId !== id) {
         return row;
       }
+
       return { ...row, checked: event.target.checked };
     });
+
     setRows(tempRows);
+    window.localStorage.setItem("selectedRows", JSON.stringify(tempRows));
     setAllChecked(tempRows.map(({ checked }) => checked).every(Boolean));
+
     if (!isRunning) return;
     const selectedRows = tempRows
       .filter((row) => row.checked)
