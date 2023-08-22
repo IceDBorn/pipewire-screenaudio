@@ -46,6 +46,7 @@ function App() {
   const [versionMatch, setVersionMatch] = useState(true);
   const [nativeVersion, setNativeVersion] = useState("");
   const [allChecked, setAllChecked] = useState(false);
+  const [emptyRows, setEmptyRows] = useState(false);
 
   let lastResponse = [];
 
@@ -215,90 +216,110 @@ function App() {
             : "The native connector is missing or misconfigured"}
         </Alert>
       )}
-      {/* Content */}
-      <TableContainer
-        component={Paper}
-        sx={{
-          maxWidth: 500,
-          overflow: "scroll",
-          minHeight: 100,
-          maxHeight: 275,
-          borderRadius: 0,
-        }}
-      >
-        <Table
-          sx={{ minWidth: 500, maxWidth: 500 }}
-          size="small"
-          disabled={connectorMissing || !versionMatch}
-        >
-          <TableHead
+
+      {emptyRows && (
+        <Paper sx={{ minWidth: 500, minHeight: 80, borderRadius: 0 }}>
+          <div></div>
+          <Typography
+            variant="h6"
+            component="div"
             sx={{
-              position: "sticky",
-              top: 0,
-              zIndex: 10,
-              background: "#1e1e1e",
-              borderBottom: "solid",
-              borderColor: "#515151",
+              flexGrow: 1,
+              marginLeft: 13,
+              paddingTop: 5,
+              paddingBottom: 5,
             }}
           >
-            <TableRow>
-              <TableCell>
-                <Checkbox
-                  disabled={
-                    allDesktopAudio || connectorMissing || !versionMatch
-                  }
-                  onChange={(event) => onCheckboxChanged(event, null, false)}
-                  checked={allChecked}
-                />
-              </TableCell>
-              <TableCell>Media</TableCell>
-              <TableCell>Application</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {rows.map((row, id) => (
-              <TableRow
-                key={row.mediaName}
-                sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
-              >
+            No nodes available for sharing
+          </Typography>
+        </Paper>
+      )}
+      {/* Content */}
+      {!emptyRows && (
+        <TableContainer
+          component={Paper}
+          sx={{
+            maxWidth: 500,
+            overflow: "scroll",
+            minHeight: 100,
+            maxHeight: 275,
+            borderRadius: 0,
+          }}
+        >
+          <Table
+            sx={{ minWidth: 500, maxWidth: 500 }}
+            size="small"
+            disabled={connectorMissing || !versionMatch}
+          >
+            <TableHead
+              sx={{
+                position: "sticky",
+                top: 0,
+                zIndex: 10,
+                background: "#1e1e1e",
+                borderBottom: "solid",
+                borderColor: "#515151",
+              }}
+            >
+              <TableRow>
                 <TableCell>
                   <Checkbox
-                    onChange={(event) => onCheckboxChanged(event, id, true)}
                     disabled={
                       allDesktopAudio || connectorMissing || !versionMatch
                     }
-                    checked={row.checked}
+                    onChange={(event) => onCheckboxChanged(event, null, false)}
+                    checked={allChecked}
                   />
                 </TableCell>
-                <TableCell component="th" scope="row">
-                  <div
-                    style={{
-                      overflow: "hidden",
-                      width: 200,
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {row.mediaName}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div
-                    style={{
-                      overflow: "hidden",
-                      width: 160,
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {row.applicationName}
-                  </div>
-                </TableCell>
+                <TableCell>Media</TableCell>
+                <TableCell>Application</TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+            </TableHead>
+            <TableBody>
+              {rows.map((row, id) => (
+                <TableRow
+                  key={row.mediaName}
+                  sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
+                >
+                  <TableCell>
+                    <Checkbox
+                      onChange={(event) => onCheckboxChanged(event, id, true)}
+                      disabled={
+                        allDesktopAudio || connectorMissing || !versionMatch
+                      }
+                      checked={row.checked}
+                    />
+                  </TableCell>
+                  <TableCell component="th" scope="row">
+                    <div
+                      style={{
+                        overflow: "hidden",
+                        width: 200,
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {row.mediaName}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div
+                      style={{
+                        overflow: "hidden",
+                        width: 160,
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {row.applicationName}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
       <Paper sx={{ maxWidth: 500, borderRadius: "0" }}>
         <FormControlLabel
           control={
