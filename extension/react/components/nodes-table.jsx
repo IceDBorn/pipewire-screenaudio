@@ -29,7 +29,7 @@ export default function NodesTable({
   const [allChecked, setAllChecked] = useState(false);
   const [rows, setRows] = useState(nodes);
 
-  const debouncedSharedNodes = useDebouncedCallback(shareNodes);
+  const debouncedSharedNodes = useDebouncedCallback(shareNodes, 500);
 
   function onCheckboxChanged(event, id) {
     const isChecked = event.target.checked;
