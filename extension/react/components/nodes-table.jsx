@@ -10,8 +10,6 @@ import TableCell from "@mui/material/TableCell";
 import Paper from "@mui/material/Paper";
 import Checkbox from "@mui/material/Checkbox";
 
-import { useDebouncedCallback } from "use-debounce";
-
 import {
   SELECTED_ROWS,
   readLocalStorage,
@@ -28,8 +26,6 @@ export default function NodesTable({
 }) {
   const [allChecked, setAllChecked] = useState(false);
   const [rows, setRows] = useState(nodes);
-
-  const debouncedSharedNodes = useDebouncedCallback(shareNodes, 500);
 
   function onCheckboxChanged(event, id) {
     const isChecked = event.target.checked;
@@ -63,7 +59,7 @@ export default function NodesTable({
   useEffect(() => {
     setAllChecked(rows.map(({ checked }) => checked).every(Boolean));
     updateLocalStorage(SELECTED_ROWS, rows);
-    debouncedSharedNodes(rows);
+    shareNodes(rows);
   }, [rows]);
 
   return (

@@ -16,5 +16,8 @@
   "globals": {
     "browser": true,
     "chrome": true
+  },
+  "rules": {
+    "react/prop-types": "ignore"
   }
 }

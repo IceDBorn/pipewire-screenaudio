@@ -19,6 +19,8 @@ import Paper from "@mui/material/Paper";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import Switch from "@mui/material/Switch";
 
+import { useDebouncedCallback } from "use-debounce";
+
 import {
   ERROR_VERSION_MISMATCH,
   healthCheck,
@@ -57,6 +59,10 @@ function App() {
   const [extensionVersion, setExtensionVersion] = useState("");
   const [nodes, setNodes] = useState([]);
   const [micId, setMicId] = useLocalStorage(MIC_ID);
+
+  const debouncedStart = useDebouncedCallback((n) => {
+    startPipewireScreenAudio(n, { force: false });
+  }, 1000);
 
   useEffect(async () => {
     try {
@@ -113,7 +119,9 @@ function App() {
   function handleMessage(message) {
     console.log({ message });
 
+    const id = readLocalStorage(MIC_ID);
     if (message === "mic-id-updated") {
+      if (!id) return;
       setIsRunning(true);
     }
 
@@ -122,11 +130,10 @@ function App() {
     }
   }
 
-  function shareNodes(nodes) {
+  function shareNodes(n) {
+    setNodes(n);
     if (!isRunning) return;
-    startPipewireScreenAudio(
-      nodes.filter((node) => node.checked).map((node) => node.serial),
-    );
+    debouncedStart(n.filter((node) => node.checked).map((node) => node.serial));
   }
 
   function handleStartStop() {
@@ -134,7 +141,7 @@ function App() {
       const selectedNodesSerials = nodes
         .filter((node) => node.checked)
         .map((node) => node.serial);
-      startPipewireScreenAudio(selectedNodesSerials);
+      startPipewireScreenAudio(selectedNodesSerials, { force: true });
     } else {
       stopPipewireScreenAudio(micId);
     }
@@ -228,6 +235,7 @@ function App() {
             variant="contained"
             color="error"
             disabled={
+              isRunning ||
               !nodes.some((node) => node.checked) ||
               !isHealthy ||
               allDesktopAudio

@@ -3,6 +3,8 @@ const EXT_VERSION = browser.runtime.getManifest().version;
 
 export const ERROR_VERSION_MISMATCH = "Version Mismatch";
 
+let isStopping = false;
+
 async function sendNativeMessage(command, args = []) {
   try {
     return await chrome.runtime.sendNativeMessage(MESSAGE_NAME, {
@@ -62,12 +64,15 @@ export async function isPipewireScreenAudioRunning(micId) {
   return sendNativeMessage("IsPipewireScreenAudioRunning", [{ micId }]);
 }
 
-export async function startPipewireScreenAudio(nodeSerials) {
+export async function startPipewireScreenAudio(nodeSerials, options) {
+  if (isStopping && !options.force) return;
+
   sendMessage("StartPipewireScreenAudio", "sharing-started", [
     { nodes: nodeSerials },
   ]);
 }
 
 export async function stopPipewireScreenAudio(micId) {
+  isStopping = true;
   sendMessage("StopPipewireScreenAudio", "sharing-stopped", [{ micId }]);
 }
