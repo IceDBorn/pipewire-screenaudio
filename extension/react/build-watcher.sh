@@ -5,5 +5,5 @@ scriptRoot="$( cd -- "$(dirname "$0")" > /dev/null 2>&1 ; pwd -P )"
 cd $scriptRoot
 
 # Watch for file changes
-npx nodemon --ignore ./dist/ --exec "npx vite build && notify-send 'Pipewire Screenaudio' 'Extension rebuilt'"
+npx nodemon -e js,jsx --ignore ./dist/ --exec "npx vite build && notify-send 'Pipewire Screenaudio' 'Extension rebuilt'"
 
