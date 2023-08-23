@@ -123,6 +123,7 @@ function App() {
   }
 
   function shareNodes(nodes) {
+    if (!isRunning) return;
     startPipewireScreenAudio(
       nodes.filter((node) => node.checked).map((node) => node.serial),
     );
@@ -203,7 +204,7 @@ function App() {
             }
             sx={{ marginLeft: 1, marginTop: -1 }}
             label="All Desktop Audio"
-            disabled={isHealthy}
+            disabled={!isHealthy}
           />
           <Button
             sx={{
@@ -214,7 +215,7 @@ function App() {
             variant="contained"
             color={isRunning ? "error" : "success"}
             onClick={handleStartStop}
-            disabled={isHealthy}
+            disabled={!isHealthy}
           >
             {isRunning ? "Stop" : "Start"}
           </Button>
@@ -228,7 +229,6 @@ function App() {
             color="error"
             disabled={
               !nodes.some((node) => node.checked) ||
-              isRunning ||
               !isHealthy ||
               allDesktopAudio
             }
