@@ -51,7 +51,7 @@ export default function NodesTable({
     if (saved) {
       saved.forEach((s) => {
         const row = rowsMap[s.serial];
-        if (matchNode(s, row)) {
+        if (row && matchNode(s, row)) {
           row.checked = !!s.checked;
         }
       });
