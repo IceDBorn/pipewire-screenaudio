@@ -195,7 +195,7 @@ function App() {
           </Paper>
         )}
         {/* Content */}
-        {nodes.length && (
+        {nodes.length > 0 && (
           <NodesTable
             shareNodes={shareNodes}
             nodes={nodes}
