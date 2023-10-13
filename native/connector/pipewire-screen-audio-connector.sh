@@ -8,7 +8,7 @@ function intToBin () {
     sed 's/\(..\)/\1 /g' |          # Split hex to pairs (bytes)
     awk '{printf $4 $3 $2 $1}' |    # Reverse order of bytes
     sed 's/\(..\)\s*/\\\\x\1/g' |   # Prefix bytes with \\x
-    xargs -I {} sh -c "printf '{}'" # Return raw bytes
+    xargs -I {} bash -c "printf '{}'" # Return raw bytes
 }
 
 function binToInt () {
@@ -16,7 +16,7 @@ function binToInt () {
     hexdump |                           # Read raw bytes as hex
     head -n 1 |                         # Discard new line
     awk '{print "0x"$3$2}' |            # Format hex number
-    xargs -I {} sh -c 'echo $(( {} ))'  # Return int
+    xargs -I {} bash -c 'echo $(( {} ))'  # Return int
 }
 
 function toMessage () {
@@ -28,7 +28,7 @@ function toMessage () {
 }
 
 function GetVersion () {
-  toMessage '{"version":"0.3.0"}'
+  toMessage '{"version":"0.3.2"}'
 }
 
 function GetSessionType () {
