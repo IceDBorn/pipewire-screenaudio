@@ -34,8 +34,8 @@ function UtilGetPayload () {
   payloadLength=`UtilBinToInt`
   payload=`head -c "$payloadLength"`
 
-  cmd=`echo "$payload" | jq -r .cmd`
   args=`echo "$payload" | jq .args`
+  echo "$payload" | jq -r .cmd
 }
 
 function UtilGetArg () {

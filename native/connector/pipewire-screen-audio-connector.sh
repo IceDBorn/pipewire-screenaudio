@@ -85,9 +85,7 @@ function IsPipewireScreenAudioRunning () {
   exit
 }
 
-UtilGetPayload
-
-case $cmd in
+case "`UtilGetPayload`" in
   'GetVersion')
     GetVersion
     ;;
