@@ -76,6 +76,12 @@ function SetSharingNode () {
   exit
 }
 
+# TODO Implement as standalone function
+function ShareAllDesktopAudio () {
+  local args="$1"
+  SetSharingNode "$args"
+}
+
 function StopPipewireScreenAudio () {
   local args="$1"
   local micId=`echo $args | jq '.[].micId' | xargs | head -n 1`
@@ -122,6 +128,9 @@ case $cmd in
     ;;
   'SetSharingNode')
     SetSharingNode "$args"
+    ;;
+  'ShareAllDesktopAudio')
+    ShareAllDesktopAudio "$args"
     ;;
   'IsPipewireScreenAudioRunning')
     IsPipewireScreenAudioRunning "$args"
