@@ -1,3 +1,6 @@
+// TODO: Fix all desktop audio
+// TODO: Create settings UI
+// TODO: Add nodes sorting
 import { createRoot } from "react-dom/client";
 import React, { useEffect, useState } from "react";
 
