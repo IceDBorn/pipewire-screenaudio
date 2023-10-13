@@ -6,11 +6,13 @@ virtmicPortFlId=$1
 virtmicPortFrId=$2
 targetNodeSerial=$3
 
+source $PROJECT_ROOT/connector/util.sh
+
 EXCLUDED_TARGETS='"AudioCallbackDriver"'
 
-fullDumpFile=`mktemp`
-streamsFile=`mktemp`
-portsFile=`mktemp`
+fullDumpFile=`UtilGetTempFile`
+streamsFile=`UtilGetTempFile`
+portsFile=`UtilGetTempFile`
 
 function monitor-nodes() {
     tail -f /dev/null | pw-cli -m | grep --line-buffered -v 'pipewire.sec.label = "hex:'
@@ -33,7 +35,7 @@ if [[ ! "$targetNodeSerial" -eq "-1" ]]; then
     targetNodeId=`cat "$streamsFile" | jq -c "[ .[] | select(.info.props[\"object.serial\"] == $targetNodeSerial) ][0].id"`
 
     # Get target node ports ids from $portsFile
-    targetPortsFile=`mktemp`
+    targetPortsFile=`UtilGetTempFile`
     cat "$portsFile" | jq -c "[ .[] | select(.info.props[\"node.id\"] == $targetNodeId) ]" > $targetPortsFile
     targetPortFlId=`cat "$targetPortsFile" | jq -c "[ .[] | select(.info.props[\"audio.channel\"] == \"FL\") ][0].id"`
     targetPortFrId=`cat "$targetPortsFile" | jq -c "[ .[] | select(.info.props[\"audio.channel\"] == \"FR\") ][0].id"`
@@ -48,7 +50,7 @@ else
 
     if [[ ! "$targetNodesIds" -eq "" ]]; then
         # Get target nodes ports ids from $portsFile
-        targetPortsFile=`mktemp`
+        targetPortsFile=`UtilGetTempFile`
         cat "$portsFile" | jq -c "[ .[] | select(.info.props[\"node.id\"] | contains($targetNodesIds)) ]" > $targetPortsFile
         targetPortsFlIds=`cat "$targetPortsFile" | jq -c "[ .[] | select(.info.props[\"audio.channel\"] == \"FL\") ][].id"`
         targetPortsFrIds=`cat "$targetPortsFile" | jq -c "[ .[] | select(.info.props[\"audio.channel\"] == \"FR\") ][].id"`

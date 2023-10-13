@@ -1,7 +1,12 @@
 VERSION="0.3.2"
 VIRTMIC_NODE_NAME='pipewire-screenaudio'
-FIFO_PATH_PREFIX="$XDG_RUNTIME_DIR/pipewire-screenaudio-set-node-"
-LOG_PATH="$XDG_RUNTIME_DIR/pipewire-screenaudio.log"
+
+TEMP_PATH_ROOT="$XDG_RUNTIME_DIR/pipewire-screenaudio"
+FIFO_PATH="$TEMP_PATH_ROOT/fifos"
+LOG_PATH="$TEMP_PATH_ROOT/logs"
+
+mkdir -p $LOG_PATH
+MAIN_LOG_PATH="$LOG_PATH/main.log"
 
 CURRENT_PID=$$
 
@@ -9,7 +14,8 @@ set -e
 
 UtilGetFifoPath () {
   local virtmicId="$1"
-  printf "$FIFO_PATH_PREFIX$virtmicId"
+  mkdir -p $FIFO_PATH
+  printf "$FIFO_PATH/$virtmicId"
 }
 
 function UtilBinToInt () {
@@ -61,11 +67,16 @@ function UtilGetArg () {
 }
 
 function UtilLog () {
-  echo "$@" >> $LOG_PATH
+  echo "$@" >> $MAIN_LOG_PATH
   # notify-send "$@"
 }
 
 function UtilGetLogPathForFile () {
-  mkdir -p "$LOG_PATH.d"
-  echo "$LOG_PATH.d/$1.log"
+  mkdir -p "$LOG_PATH/file"
+  echo "$LOG_PATH/file/$1.log"
+}
+
+function UtilGetTempFile () {
+  mkdir -p "$XDG_RUNTIME_DIR/tmp"
+  mktemp -p "$XDG_RUNTIME_DIR/tmp"
 }
