@@ -56,8 +56,8 @@ function UtilGetArg () {
   local field="$1"
   UtilLog "[util.sh] [Reading Arg] $field"
   local arg=`echo $args | jq -r ".[].$field" | head -n 1`
-  UtilLog "[util.sh] [Arg Value] `[ "$arg" = "" ] && printf 'null' || printf "$arg"`"
-  printf $arg
+  UtilLog "[util.sh] [Arg Value] `[ "$arg" = "" ] && printf 'null' || printf "%s" "$arg"`"
+  printf "%s" "$arg"
 }
 
 function UtilLog () {
