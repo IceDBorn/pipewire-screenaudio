@@ -11,7 +11,7 @@ pw-dump |
       UtilLog "[virtmic.sh] [Created Node] $VIRTMIC_NODE_NAME"
     )
 
-fullDumpFile=`mktemp`
+fullDumpFile=`UtilGetTempFile`
 
 # === Collect required data from PipeWire === #
 # Get all nodes again for further processing
@@ -22,7 +22,7 @@ UtilLog "[virtmic.sh] [Got Dump] File: $fullDumpFile"
 virtmicId=`cat "$fullDumpFile" | jq -c "[ .[] | select(.info.props[\"node.name\"] == \"$VIRTMIC_NODE_NAME\") ][0].id"`
 UtilLog "[virtmic.sh] [Got Id] $virtmicId"
 
-virtmicPortsFile=`mktemp`
+virtmicPortsFile=`UtilGetTempFile`
 cat "$fullDumpFile" | jq -c "[ .[] | select(.info.direction == \"input\") | select(.info.props[\"node.id\"] == $virtmicId) ]" > $virtmicPortsFile
 UtilLog "[virtmic.sh] [Got Ports] File: $virtmicPortsFile"
 
@@ -78,7 +78,7 @@ tail -f "$fifoPath" | {
         UtilLog "[virtmic.sh] [Got FIFO Data] $targetNodeSerial"
         killMonitor
         disconnectInputs "$virtmicId"
-        setsid bash -- connect-and-monitor.sh "$virtmicPortFlId" "$virtmicPortFrId" "$targetNodeSerial" &
+        setsid bash -- connect-and-monitor.sh "$virtmicPortFlId" "$virtmicPortFrId" "$targetNodeSerial" 2>&1 >`UtilGetLogPathForFile 'connect-and-monitor.sh'` &
         monitorProcess=$!
         UtilLog "[virtmic.sh] [Started Background Task] Script: connect-and-monitor.sh, PID: $monitorProcess"
     done
