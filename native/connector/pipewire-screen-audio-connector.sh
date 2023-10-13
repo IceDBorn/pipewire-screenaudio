@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 export LC_ALL=C
-projectRoot="$( cd -- "$(dirname "$0")" > /dev/null 2>&1 ; cd .. ; pwd -P )"
-source $projectRoot/connector/util.sh
+export PROJECT_ROOT="$( cd -- "$(dirname "$0")" > /dev/null 2>&1 ; cd .. ; pwd -P )"
+source $PROJECT_ROOT/connector/util.sh
 
 function GetVersion () {
   UtilTextToMessage '{"version":"0.3.2"}'
@@ -33,7 +33,7 @@ function GetNodes () {
 }
 
 function StartPipewireScreenAudio () {
-  setsid $projectRoot/connector/virtmic.sh >/dev/null 2>&1 &
+  setsid $PROJECT_ROOT/connector/virtmic.sh >`UtilGetLogPathForFile 'virtmic.sh'` 2>&1 &
 
   sleep 1
   local micId=`
@@ -46,8 +46,6 @@ function StartPipewireScreenAudio () {
 }
 
 function SetSharingNode () {
-  local args="$1"
-
   local node=`UtilGetArg 'node'`
   local micId=`UtilGetArg 'micId'`
   local fifoPath=`UtilGetFifoPath "$micId"`
@@ -61,7 +59,6 @@ function SetSharingNode () {
 }
 
 function StopPipewireScreenAudio () {
-  local args="$1"
   local micId=`UtilGetArg 'micId'`
 
   if [ ! "`pw-cli info "$micId" 2>/dev/null | wc -l`" -eq "0" ]; then
@@ -74,7 +71,6 @@ function StopPipewireScreenAudio () {
 }
 
 function IsPipewireScreenAudioRunning () {
-  local args="$1"
   local micId=`UtilGetArg 'micId'`
 
   if pw-cli info "$micId" 2>/dev/null | grep 'node.name' | grep 'pipewire-screenaudio' >/dev/null; then
@@ -85,7 +81,9 @@ function IsPipewireScreenAudioRunning () {
   exit
 }
 
-case "`UtilGetPayload`" in
+UtilGetPayload
+
+case "$cmd" in
   'GetVersion')
     GetVersion
     ;;
@@ -93,18 +91,18 @@ case "`UtilGetPayload`" in
     GetSessionType
     ;;
   'GetNodes')
-    GetNodes "$args"
+    GetNodes
     ;;
   'StartPipewireScreenAudio')
     StartPipewireScreenAudio
     ;;
   'SetSharingNode')
-    SetSharingNode "$args"
+    SetSharingNode
     ;;
   'IsPipewireScreenAudioRunning')
-    IsPipewireScreenAudioRunning "$args"
+    IsPipewireScreenAudioRunning
     ;;
   'StopPipewireScreenAudio')
-    StopPipewireScreenAudio "$args"
+    StopPipewireScreenAudio
     ;;
 esac

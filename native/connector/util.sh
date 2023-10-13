@@ -1,5 +1,11 @@
 VERSION="0.3.2"
+VIRTMIC_NODE_NAME='pipewire-screenaudio'
 FIFO_PATH_PREFIX="$XDG_RUNTIME_DIR/pipewire-screenaudio-set-node-"
+LOG_PATH="$XDG_RUNTIME_DIR/pipewire-screenaudio.log"
+
+CURRENT_PID=$$
+
+set -e
 
 UtilGetFifoPath () {
   local virtmicId="$1"
@@ -26,19 +32,40 @@ function UtilTextToMessage () {
   local message="$1"
   local messageLength=`echo -n "$message" | wc -c`
 
+  UtilLog "[util.sh] [Sending Message] $message Length: $messageLength"
+
   UtilIntToBin $messageLength
   echo -n "$message"
 }
 
 function UtilGetPayload () {
   payloadLength=`UtilBinToInt`
+  UtilLog "[util.sh] [Reading Bytes] $payloadLength"
+
   payload=`head -c "$payloadLength"`
+  UtilLog "[util.sh] [Got Payload] $payload"
+
+  cmd=`echo "$payload" | jq -r .cmd`
+  UtilLog "[util.sh] [Got Cmd] $cmd"
 
   args=`echo "$payload" | jq .args`
-  echo "$payload" | jq -r .cmd
+  UtilLog "[util.sh] [Got Args] $args"
 }
 
 function UtilGetArg () {
   local field="$1"
-  echo $args | jq -r ".[].$field" | head -n 1
+  UtilLog "[util.sh] [Reading Arg] $field"
+  local arg=`echo $args | jq -r ".[].$field" | head -n 1`
+  UtilLog "[util.sh] [Arg Value] `[ "$arg" = "" ] && printf 'null' || printf "$arg"`"
+  printf $arg
+}
+
+function UtilLog () {
+  echo "$@" >> $LOG_PATH
+  # notify-send "$@"
+}
+
+function UtilGetLogPathForFile () {
+  mkdir -p "$LOG_PATH.d"
+  echo "$LOG_PATH.d/$1.log"
 }
