@@ -1,31 +1,36 @@
-function handleMessage(response) {
-  if (response.message === 'sharing-started') {
-    // Start pipewire-screenaudio
-    chrome.runtime.sendNativeMessage(response.messageName, { cmd: response.cmd })
+// Any event, that is handled in here, should have a comment with the reason it is handled in here
+
+function handleMessage(request) {
+  // Asynchronously update micId in LocalStorage
+  if (request.message === "sharing-started") {
+    chrome.runtime
+      .sendNativeMessage(request.messageName, { cmd: request.cmd })
       .then(({ micId }) => {
-        window.localStorage.setItem('micId', micId)
-        chrome.runtime.sendMessage('mic-id-updated')
-        // Passthrough the selected node to pipewire-screenaudio
-        chrome.runtime.sendNativeMessage(response.messageName, { cmd: 'SetSharingNode', args: [{ nodes: response.args[0].nodes, micId }] })
+        window.localStorage.setItem("micId", micId);
+        chrome.runtime.sendMessage("mic-id-updated");
+      });
+  }
+
+  // Asynchronously update micId in LocalStorage
+  if (request.message === "sharing-stopped") {
+    chrome.runtime
+      .sendNativeMessage(request.messageName, {
+        cmd: request.cmd,
+        args: request.args,
       })
-  }
-
-  if (response.message === 'node-changed') {
-    // Passthrough the selected node to pipewire-screenaudio
-    chrome.runtime.sendNativeMessage(response.messageName, { cmd: response.cmd, args: response.args })
-  }
-
-  if (response.message === 'sharing-stopped') {
-    chrome.runtime.sendNativeMessage(response.messageName, { cmd: response.cmd, args: response.args })
       .then(() => {
-        window.localStorage.setItem('micId', null)
-        chrome.runtime.sendMessage('mic-id-removed')
-      })
+        window.localStorage.setItem("micId", null);
+        chrome.runtime.sendMessage("mic-id-removed");
+      });
   }
 
-  if (response.message === 'get-session-type') {
-    return chrome.runtime.sendNativeMessage(response.messageName, { cmd: 'GetSessionType', args: [] })
+  // Called from injector.js - It cannot directly call sendNativeMessage
+  if (request.message === "get-session-type") {
+    return chrome.runtime.sendNativeMessage(request.messageName, {
+      cmd: "GetSessionType",
+      args: [],
+    });
   }
 }
 
-chrome.runtime.onMessage.addListener(handleMessage)
+chrome.runtime.onMessage.addListener(handleMessage);

@@ -73,6 +73,7 @@ function SetSharingNode () {
     echo "$nodes" >> "$fifoPath"
   fi
 
+  toMessage '{"success":true}'
   exit
 }
 
