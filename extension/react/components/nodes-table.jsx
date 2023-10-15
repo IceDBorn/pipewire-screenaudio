@@ -11,6 +11,7 @@ import Paper from "@mui/material/Paper";
 import Checkbox from "@mui/material/Checkbox";
 
 import {
+  ALL_DESKTOP,
   SELECTED_ROWS,
   readLocalStorage,
   updateLocalStorage,
@@ -59,7 +60,7 @@ export default function NodesTable({
   useEffect(() => {
     setAllChecked(rows.map(({ checked }) => checked).every(Boolean));
     updateLocalStorage(SELECTED_ROWS, rows);
-    shareNodes(rows);
+    shareNodes(rows, readLocalStorage(ALL_DESKTOP));
   }, [rows]);
 
   return (

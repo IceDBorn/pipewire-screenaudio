@@ -1,7 +1,6 @@
-import { useState, useEffect } from "react";
-
 export const SELECTED_ROWS = "selectedRows";
 export const MIC_ID = "micId";
+export const ALL_DESKTOP = "allDesktopAudio";
 
 export function readLocalStorage(name) {
   try {

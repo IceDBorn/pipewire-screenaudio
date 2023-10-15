@@ -81,6 +81,7 @@ export async function setSharingNode(micId, nodeSerials) {
   return sendNativeMessage("SetSharingNode", [{ micId, nodes: nodeSerials }]);
 }
 
-export async function shareAllDesktopAudio() {
-  return sendNativeMessage("ShareAllDesktopAudio", [{ micId }]);
+// Remove nodes item after all desktop audio rework
+export async function shareAllDesktopAudio(micId) {
+  return sendNativeMessage("ShareAllDesktopAudio", [{ micId, nodes: [-1] }]);
 }

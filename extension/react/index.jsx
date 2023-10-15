@@ -32,9 +32,15 @@ import {
   startPipewireScreenAudio,
   stopPipewireScreenAudio,
   setSharingNode,
+  shareAllDesktopAudio,
 } from "./lib/backend";
 
-import { MIC_ID, readLocalStorage } from "./lib/local-storage";
+import {
+  MIC_ID,
+  ALL_DESKTOP,
+  readLocalStorage,
+  updateLocalStorage,
+} from "./lib/local-storage";
 import { useDidUpdateEffect, useLocalStorage } from "./lib/hooks";
 
 import NodesTable from "./components/nodes-table";
@@ -66,6 +72,10 @@ function App() {
 
   const debouncedSetSharingNodes = useDebouncedCallback(() => {
     setSharingNode(micId, getNodeSerialsToShare());
+  }, 1000);
+
+  const debouncedShareAllDesktopAudio = useDebouncedCallback(() => {
+    shareAllDesktopAudio(micId);
   }, 1000);
 
   const getNodeSerialsToShare = () =>
@@ -103,6 +113,8 @@ function App() {
       setIsRunning(res);
     }
 
+    setAllDesktopAudio(readLocalStorage(ALL_DESKTOP));
+
     chrome.runtime.onMessage.addListener(handleMessage);
 
     setIsInitialized(true);
@@ -138,9 +150,9 @@ function App() {
     }
   }
 
-  function shareNodes(n) {
+  function shareNodes(n, a) {
     setNodes(n);
-    if (!isRunning) return;
+    if (!isRunning || a) return;
     debouncedSetSharingNodes();
   }
 
@@ -210,12 +222,21 @@ function App() {
             control={
               <Switch
                 onChange={() => {
-                  setAllDesktopAudio(!allDesktopAudio);
+                  const currentAllDesktopAudio = !allDesktopAudio;
+                  setAllDesktopAudio(currentAllDesktopAudio);
+                  updateLocalStorage(ALL_DESKTOP, currentAllDesktopAudio);
+
+                  if (currentAllDesktopAudio) {
+                    debouncedShareAllDesktopAudio();
+                  } else {
+                    shareNodes(nodes, currentAllDesktopAudio);
+                  }
                 }}
               />
             }
             sx={{ marginLeft: 1, marginTop: -1 }}
             label="All Desktop Audio"
+            checked={allDesktopAudio}
             disabled={!isHealthy}
           />
           <Button
