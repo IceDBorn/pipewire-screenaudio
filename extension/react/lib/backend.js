@@ -6,6 +6,8 @@ export const ERROR_VERSION_MISMATCH = "Version Mismatch";
 let isStopping = false;
 
 async function sendNativeMessage(command, args = []) {
+  console.log("Sent native message", { command, args });
+
   try {
     return await chrome.runtime.sendNativeMessage(MESSAGE_NAME, {
       cmd: command,
@@ -20,6 +22,8 @@ async function sendNativeMessage(command, args = []) {
 }
 
 async function sendMessage(command, message, args) {
+  console.log("Sent message", { command, message, args });
+
   try {
     return await chrome.runtime.sendMessage({
       messageName: MESSAGE_NAME,
@@ -63,16 +67,20 @@ export async function getNodes() {
 export async function isPipewireScreenAudioRunning(micId) {
   return sendNativeMessage("IsPipewireScreenAudioRunning", [{ micId }]);
 }
-
-export async function startPipewireScreenAudio(nodeSerials, options) {
-  if (isStopping && !options.force) return;
-
-  sendMessage("StartPipewireScreenAudio", "sharing-started", [
-    { nodes: nodeSerials },
-  ]);
+export async function startPipewireScreenAudio() {
+  isStopping = false;
+  sendMessage("StartPipewireScreenAudio", "sharing-started");
 }
 
 export async function stopPipewireScreenAudio(micId) {
   isStopping = true;
   sendMessage("StopPipewireScreenAudio", "sharing-stopped", [{ micId }]);
+}
+
+export async function setSharingNode(micId, nodeSerials) {
+  return sendNativeMessage("SetSharingNode", [{ micId, nodes: nodeSerials }]);
+}
+
+export async function shareAllDesktopAudio() {
+  return sendNativeMessage("ShareAllDesktopAudio", [{ micId }]);
 }

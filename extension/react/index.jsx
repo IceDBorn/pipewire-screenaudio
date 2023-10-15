@@ -31,6 +31,7 @@ import {
   isPipewireScreenAudioRunning,
   startPipewireScreenAudio,
   stopPipewireScreenAudio,
+  setSharingNode,
 } from "./lib/backend";
 
 import { MIC_ID, readLocalStorage } from "./lib/local-storage";
@@ -63,9 +64,12 @@ function App() {
   const [nodes, setNodes] = useState([]);
   const [micId, setMicId] = useLocalStorage(MIC_ID);
 
-  const debouncedStart = useDebouncedCallback((n) => {
-    startPipewireScreenAudio(n, { force: false });
+  const debouncedSetSharingNodes = useDebouncedCallback(() => {
+    setSharingNode(micId, getNodeSerialsToShare());
   }, 1000);
+
+  const getNodeSerialsToShare = () =>
+    nodes?.filter((node) => node.checked).map((node) => node.serial);
 
   useEffect(async () => {
     try {
@@ -126,6 +130,7 @@ function App() {
     if (message === "mic-id-updated") {
       if (!id) return;
       setIsRunning(true);
+      setSharingNode(id, getNodeSerialsToShare());
     }
 
     if (message === "mic-id-removed") {
@@ -136,15 +141,12 @@ function App() {
   function shareNodes(n) {
     setNodes(n);
     if (!isRunning) return;
-    debouncedStart(n.filter((node) => node.checked).map((node) => node.serial));
+    debouncedSetSharingNodes();
   }
 
   function handleStartStop() {
     if (!isRunning) {
-      const selectedNodesSerials = nodes
-        .filter((node) => node.checked)
-        .map((node) => node.serial);
-      startPipewireScreenAudio(selectedNodesSerials, { force: true });
+      startPipewireScreenAudio();
     } else {
       stopPipewireScreenAudio(micId);
     }
