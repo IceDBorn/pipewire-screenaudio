@@ -9,9 +9,16 @@ let shareStopBtnState = null
 
 let selectedNode = null
 let nodesLoop = null
+let micId = null
+
+function setMicId (id, skipStorage) {
+  micId = id
+  skipStorage || window.localStorage.setItem('micId', id)
+}
 
 async function isRunning () {
-  const micId = window.localStorage.getItem('micId')
+  setMicId(window.localStorage.getItem('micId'), true)
+
   if (!micId) {
     return false
   }
@@ -19,7 +26,7 @@ async function isRunning () {
   const { isRunning } = await chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: 'IsPipewireScreenAudioRunning', args: [{ micId }] })
 
   if (!isRunning) {
-    window.localStorage.setItem('micId', null)
+    setMicId(null)
   }
 
   return isRunning
@@ -41,9 +48,9 @@ function setButtonToShare() {
     clearInterval(nodesLoop)
     shareStopBtn.appendChild(spinner)
     shareStopBtn.appendChild(text)
-    document.getElementById('blacklist-btn').hidden = true
-
-    chrome.runtime.sendMessage({ messageName: MESSAGE_NAME, message: 'sharing-started', cmd: 'StartPipewireScreenAudio', args: [{ node: selectedNode }] })
+    if (document.getElementById('blacklist-btn'))
+      document.getElementById('blacklist-btn').hidden = true
+    chrome.runtime.sendMessage({ messageName: MESSAGE_NAME, message: 'sharing-started', cmd: 'StartPipewireScreenAudio' })
   }
 
   shareStopBtn.addEventListener('click', eventListener)
@@ -58,7 +65,6 @@ function setButtonToStop() {
   const eventListener = async () => {
     shareStopBtn.removeEventListener('click', eventListener)
     if (await isRunning()) {
-      const micId = window.localStorage.getItem('micId')
       chrome.runtime.sendMessage({ messageName: MESSAGE_NAME, message: 'sharing-stopped', cmd: 'StopPipewireScreenAudio', args: [{ micId }] })
     }
   };
@@ -93,7 +99,7 @@ function createBlacklistBtn (root) {
 
 async function updateGui () {
   if (await isRunning()) {
-    message.innerText = `Running virtmic Id: ${window.localStorage.getItem('micId')}`
+    message.innerText = `Running virtmic Id: ${micId}`
     message.hidden = false
     dropdown.hidden = false
     shareStopBtn.hidden = false
@@ -166,8 +172,7 @@ async function populateNodesList (response) {
     dropdown.addEventListener('change', () => {
       selectedNode = dropdown.value
       window.localStorage.setItem('selectedNode', selectedNode)
-      const micId = window.localStorage.getItem('micId')
-      chrome.runtime.sendMessage({ messageName: MESSAGE_NAME, message: 'node-changed', cmd: 'SetSharingNode', args: [{ node: selectedNode, micId }] })
+      chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: 'SetSharingNode', args: [{ node: selectedNode, micId }] })
     })
   }
 }
@@ -207,9 +212,13 @@ function onError (error) {
 
 function handleMessage (message) {
   if (message === 'mic-id-updated') {
+    setMicId(window.localStorage.getItem('micId'), true)
+
     const hideBtnEl = document.getElementById('blacklist-btn')
     buttonGroup.removeChild(hideBtnEl)
     updateGui()
+
+    chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: 'SetSharingNode', args: [{ node: selectedNode, micId }] })
   }
 
   if (message === 'mic-id-removed') {
