@@ -26,6 +26,8 @@ import { useDebouncedCallback } from "use-debounce";
 
 import {
   ERROR_VERSION_MISMATCH,
+  EVENT_MIC_ID_UPDATED,
+  EVENT_MIC_ID_REMOVED,
   healthCheck,
   getNodes,
   isPipewireScreenAudioRunning,
@@ -115,7 +117,8 @@ function App() {
 
     setAllDesktopAudio(readLocalStorage(ALL_DESKTOP));
 
-    chrome.runtime.onMessage.addListener(handleMessage);
+    document.addEventListener(EVENT_MIC_ID_UPDATED, handleMicIdUpdated);
+    document.addEventListener(EVENT_MIC_ID_REMOVED, handleMicIdRemoved);
 
     setIsInitialized(true);
 
@@ -135,19 +138,13 @@ function App() {
     }
   }, [isRunning]);
 
-  function handleMessage(message) {
-    console.log({ message });
+  function handleMicIdUpdated(id) {
+    if (!id) return;
+    setIsRunning(true);
+  }
 
-    const id = readLocalStorage(MIC_ID);
-    if (message === "mic-id-updated") {
-      if (!id) return;
-      setIsRunning(true);
-      setSharingNode(id, getNodeSerialsToShare());
-    }
-
-    if (message === "mic-id-removed") {
-      setIsRunning(false);
-    }
+  function handleMicIdRemoved() {
+    setIsRunning(false);
   }
 
   function shareNodes(n, a) {
@@ -156,9 +153,10 @@ function App() {
     debouncedSetSharingNodes();
   }
 
-  function handleStartStop() {
+  async function handleStartStop() {
     if (!isRunning) {
-      startPipewireScreenAudio();
+      const id = await startPipewireScreenAudio();
+      setSharingNode(id, getNodeSerialsToShare());
     } else {
       stopPipewireScreenAudio(micId);
     }
