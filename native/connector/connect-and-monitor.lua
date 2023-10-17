@@ -3,9 +3,9 @@
 node_mgr = ObjectManager {
   Interest {
     type = "node",
-    -- Repeat this line to add more exclusions
-    Constraint { "media.name", "!", "AudioCallbackDriver" },
     Constraint { "media.class", "=", "Stream/Output/Audio" },
+    -- Repeat this line to add more exclusions
+    Constraint { "media.name", "!", "AudioCallbackDriver", type = "pw" },
   },
 }
 
@@ -29,6 +29,7 @@ end
 node_mgr:connect(
   "object-added",
   function(_, node)
+    Log.info(node.properties["media.class"])
     PrintPorts(node)
     -- sometimes ports are added after node creation
     node:connect("ports-changed", function(node)
