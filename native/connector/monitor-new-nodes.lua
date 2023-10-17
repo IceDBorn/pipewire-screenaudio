@@ -1,4 +1,4 @@
-#!/usr/bin/wpexec
+#!/usr/bin/env /usr/bin/wpexec
 
 node_mgr = ObjectManager {
   Interest {
