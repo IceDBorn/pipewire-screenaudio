@@ -1,44 +1,40 @@
 #!/usr/bin/wpexec
 
-
---local argv = ...
-
---print("Command-line arguments:")
---for k, v in pairs(argv) do
-  --print("\t" .. k .. ": " .. v)
---end
-
 node_mgr = ObjectManager {
   Interest {
     type = "node",
+    -- Repeat this line to add more exclusions
     Constraint { "media.name", "!", "AudioCallbackDriver" },
-    --Constraint { "media.name", "!", "AudioCallbackDriver" },
     Constraint { "media.class", "=", "Stream/Output/Audio" },
   },
 }
-port_mgr = ObjectManager {
-  Interest {
-    type = "port",
-  },
-}
+
+-- prints FL and FR port ids from a node
+function PrintPorts(node)
+  local ports = {}
+  for port in node:iterate_ports {
+    Constraint { "audio.channel", "in-list", "FR", "FL" }
+  } do
+    local channel = port.properties["audio.channel"]
+    local port_id = port.properties["object.id"]
+    ports[channel] = port_id
+  end
+  if ports["FL"] == nil or ports["FR"] == nil then
+    return
+  end
+  Log.info(node.properties["media.name"])
+  print(ports["FL"] .. ' ' .. ports["FR"])
+end
 
 node_mgr:connect(
   "object-added",
   function(_, node)
-    local node_id = node.properties["object.id"]
-    local ports = {}
-    for port in port_mgr:iterate {
-      type = "port",
-      Constraint { "node.id", "=", tostring(node_id) },
-      Constraint { "audio.channel", "in-list", "FR", "FL" }
-    } do
-      local channel = port.properties["audio.channel"]
-      local port_id = port.properties["object.id"]
-      ports[channel] = port_id
-    end
-    print(ports["FL"] .. ' ' .. ports["FR"])
+    PrintPorts(node)
+    -- sometimes ports are added after node creation
+    node:connect("ports-changed", function(node)
+      PrintPorts(node)
+    end)
   end
 )
 
-port_mgr:activate()
 node_mgr:activate()
