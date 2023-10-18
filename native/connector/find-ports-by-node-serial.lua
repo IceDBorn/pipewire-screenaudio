@@ -19,8 +19,8 @@ node_finder = ObjectManager {
   },
 }
 
-node_finder:connect("installed", function()
-  node = node_finder:lookup()
+node_finder:connect("installed", function(om)
+  node = om:lookup()
 
   if node ~= nil then
     utils:PrintPorts(node, direction)

@@ -20,7 +20,7 @@ node_mgr:connect(
         }
       }
     }
-    for node in node_mgr:iterate() do
+    for node in om:iterate() do
       local props = {}
       for key, value in pairs(node.properties) do
         props[key] = value
