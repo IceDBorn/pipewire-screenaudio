@@ -1,18 +1,17 @@
 #!/usr/bin/env /usr/bin/wpexec
-utils = require("utils"):Configure(Constraint, Log)
+utils = require("utils"):Configure(Constraint, Log, Interest)
 
 node_mgr = ObjectManager {
-  Interest {
-    type = "node",
-    Constraint { "node.name", "=", "pipewire-screenaudio" },
-  },
+  utils.screenaudioNode
 }
 
 node_mgr:connect(
   "installed",
   function(om)
     local node = om:lookup()
-    print(node.properties["object.id"])
+    if node ~= nil then
+      print(node.properties["object.id"])
+    end
     Core.quit()
   end
 )

@@ -1,5 +1,5 @@
 #!/usr/bin/env /usr/bin/wpexec
-utils = require("utils"):Configure(Constraint, Log)
+utils = require("utils"):Configure(Constraint, Log, Interest)
 
 argv = ...
 

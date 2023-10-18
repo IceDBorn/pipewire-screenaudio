@@ -1,8 +1,13 @@
 local utils = {}
 
-function utils:Configure(Constraint, Log)
+function utils:Configure(Constraint, Log, Interest)
   self.Constraint = Constraint
   self.Log = Log
+  self.Interest = Interest
+  self.screenaudioNode = Interest {
+    type = "node",
+    Constraint { "node.name", "=", "pipewire-screenaudio" },
+  }
   return self
 end
 
@@ -22,6 +27,5 @@ function utils:PrintPorts(node)
   self.Log.info(node.properties["media.name"])
   print(ports["FL"] .. ' ' .. ports["FR"])
 end
-
 
 return utils
