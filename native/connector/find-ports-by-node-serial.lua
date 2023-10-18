@@ -5,6 +5,11 @@ argv = ...
 
 targetSerial = argv.targetSerial
 
+if targetSerial == nil then
+  Core.quit()
+  return
+end
+
 node_finder = ObjectManager {
   Interest {
     type = "node",

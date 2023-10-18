@@ -5,6 +5,11 @@ argv = ...
 
 targetId = argv.targetId
 
+if targetId == nil then
+  Core.quit()
+  return
+end
+
 node_mgr = ObjectManager {
   Interest {
     type = "node",
