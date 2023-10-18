@@ -24,8 +24,7 @@ function GetNodes () {
 function StartPipewireScreenAudio () {
   setsid $PROJECT_ROOT/connector/virtmic.sh &
 
-  sleep 1
-  local micId=`./find-screenaudio-node.lua`
+  local micId=`./wait-screenaudio-node.lua`
 
   UtilTextToMessage '{"micId":'$micId'}'
   exit
