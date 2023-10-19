@@ -33,7 +33,7 @@ function GetNodes () {
 }
 
 function StartPipewireScreenAudio () {
-  setsid $PROJECT_ROOT/connector/virtmic.sh >`UtilGetLogPathForFile 'virtmic.sh'` 2>&1 &
+  setsid $PROJECT_ROOT/connector/virtmic.sh >>`UtilGetLogPathForFile 'virtmic.sh'` 2>&1 &
 
   sleep 1
   local micId=`

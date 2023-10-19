@@ -78,7 +78,7 @@ tail -f "$fifoPath" | {
         UtilLog "[virtmic.sh] [Got FIFO Data] $targetNodeSerial"
         killMonitor
         disconnectInputs "$virtmicId"
-        setsid bash -- connect-and-monitor.sh "$virtmicPortFlId" "$virtmicPortFrId" "$targetNodeSerial" 2>&1 >`UtilGetLogPathForFile 'connect-and-monitor.sh'` &
+        setsid bash -- connect-and-monitor.sh "$virtmicPortFlId" "$virtmicPortFrId" "$targetNodeSerial" 2>&1 >>`UtilGetLogPathForFile 'connect-and-monitor.sh'` &
         monitorProcess=$!
         UtilLog "[virtmic.sh] [Started Background Task] Script: connect-and-monitor.sh, PID: $monitorProcess"
     done
