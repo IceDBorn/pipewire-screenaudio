@@ -1,4 +1,4 @@
-#!/usr/bin/env /usr/bin/wpexec
+#!/usr/bin/env wpexec
 utils = require("utils"):Configure(Constraint, Log, Interest)
 
 function PrintNodeID(node)
