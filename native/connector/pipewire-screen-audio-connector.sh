@@ -100,7 +100,7 @@ function IsPipewireScreenAudioRunning () {
   local args="$1"
   local micId=`echo $args | jq '.[].micId' | xargs | head -n 1`
 
-  if [ ! pw-cli info "$micId" 2>/dev/null | grep '"node.name"' | grep 'pipewire-screenaudio' ]; then
+  if pw-cli info "$micId" 2>/dev/null | grep 'node.name' | grep 'pipewire-screenaudio' >/dev/null; then
     toMessage '{"isRunning":true}' && exit
   fi
 
