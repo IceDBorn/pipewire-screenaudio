@@ -38,7 +38,7 @@ function StartPipewireScreenAudio () {
   sleep 1
   local micId=`
     pw-dump |
-      jq -c '[ .[] | select(.info.props["node.name"] == "pipewire-screenaudio") ][0].id'
+      jq -c "[ .[] | select(.info.props[\"node.name\"] == \"$VIRTMIC_NODE_NAME\") ][0].id"
   `
 
   UtilTextToMessage '{"micId":'$micId'}'
@@ -73,7 +73,7 @@ function StopPipewireScreenAudio () {
 function IsPipewireScreenAudioRunning () {
   local micId=`UtilGetArg 'micId'`
 
-  if pw-cli info "$micId" 2>/dev/null | grep 'node.name' | grep 'pipewire-screenaudio' >/dev/null; then
+  if pw-cli info "$micId" 2>/dev/null | grep 'node.name' | grep "$VIRTMIC_NODE_NAME" >/dev/null; then
     toMessage '{"isRunning":true}' && exit
   fi
 
