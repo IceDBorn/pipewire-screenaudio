@@ -54,7 +54,7 @@ function SetSharingNode () {
     echo "$node" >> "$fifoPath"
   fi
 
-  toMessage '{"success":true}'
+  UtilTextToMessage '{"success":true}'
   exit
 }
 
@@ -74,7 +74,7 @@ function IsPipewireScreenAudioRunning () {
   local micId=`UtilGetArg 'micId'`
 
   if pw-cli info "$micId" 2>/dev/null | grep 'node.name' | grep "$VIRTMIC_NODE_NAME" >/dev/null; then
-    toMessage '{"isRunning":true}' && exit
+    UtilTextToMessage '{"isRunning":true}' && exit
   fi
 
   UtilTextToMessage '{"isRunning":false}'
