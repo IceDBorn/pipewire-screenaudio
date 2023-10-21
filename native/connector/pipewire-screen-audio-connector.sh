@@ -32,8 +32,7 @@ function GetVersion () {
 }
 
 function GetSessionType () {
-  # https://unix.stackexchange.com/a/325972
-  type=`loginctl show-session $(awk '/tty/ {print $1}' <(loginctl)) -p Type | awk -F= '{print $2}'`
+  type=`[[ -z "$WAYLAND_DISPLAY" ]] && echo "x11" || echo "wayland"`
   toMessage "{\"type\": \"$type\"}"
 }
 
