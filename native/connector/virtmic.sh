@@ -43,10 +43,6 @@ UtilLog "[virtmic.sh] [Created FIFO] $fifoPath"
 # Cleanup on exit
 trap "rm $fullDumpFile $fifoPath; kill -- -$CURRENT_PID" EXIT
 
-function monitor-nodes() {
-    tail -f /dev/null | pw-cli -m | grep --line-buffered -v 'pipewire.sec.label = "hex:'
-}
-
 function disconnectInputs() {
     node=$1
     UtilLog "[virtmic.sh] [Disconnecting Inputs] Node: $node"
@@ -87,13 +83,10 @@ tail -f "$fifoPath" | {
 } &
 
 # Send SIGTERM to this process when the virtmic gets removed
-monitor-nodes |
-    stdbuf -o0 awk '/remote 0 removed global/ && /Node/' |
-    grep --line-buffered -oP "id \\K$virtmicId" | {
-    while read -r id; do
-        UtilLog "[virtmic.sh] [Killing] PID: $CURRENT_PID (self)"
-        kill -SIGTERM $CURRENT_PID
-    done
+{
+  ./monitor-node-deletion.lua targetId="$virtmicId"
+  UtilLog "[virtmic.sh] [Killing] PID: $CURRENT_PID (self)"
+  kill -SIGTERM $CURRENT_PID
 } &
 
 wait
