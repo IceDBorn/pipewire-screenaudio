@@ -25,10 +25,7 @@ function StartPipewireScreenAudio () {
   setsid $PROJECT_ROOT/connector/virtmic.sh &
 
   sleep 1
-  local micId=`
-    pw-dump |
-      jq -c "[ .[] | select(.info.props[\"node.name\"] == \"$VIRTMIC_NODE_NAME\") ][0].id"
-  `
+  local micId=`./find-screenaudio-node.lua`
 
   UtilTextToMessage '{"micId":'$micId'}'
   exit
