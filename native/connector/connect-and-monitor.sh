@@ -120,10 +120,10 @@ else
                 frId=`echo "$ids" | awk '{print $2}'`
 
                 # If the node has been removed, ports will be empty. Skip node
-                if [[ -z "$flId" ]] || [[ -z "$frId" ]]; then
+                [[ -z "$flId" ]] || [[ -z "$frId" ]] && {
                     UtilLog "[connect-and-monitor.sh] [Skipped Node ID] ID: $id. Reason: Could not find all ports"
-                    exit 0;
-                fi
+                    exit 0
+                }
 
                 UtilLog "[connect-and-monitor.sh] [Got Ports IDs] FL IDs: $flId, FR IDs: $frId"
 
