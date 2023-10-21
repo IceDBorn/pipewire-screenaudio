@@ -118,12 +118,36 @@ else
                 # As channels were sorted, $1 is FR and $2 is FL
                 flId=`echo "$ids" | awk '{print $1}'`
                 frId=`echo "$ids" | awk '{print $2}'`
+
+                # If the node has been removed, ports will be empty. Skip node
+                [[ -z "$flId" ]] || [[ -z "$frId" ]] && {
+                    UtilLog "[connect-and-monitor.sh] [Skipped Node ID] ID: $id. Reason: Could not find all ports"
+                    exit 0
+                }
+
                 UtilLog "[connect-and-monitor.sh] [Got Ports IDs] FL IDs: $flId, FR IDs: $frId"
 
+                linkLog="[connect-and-monitor.sh] [Linking Ports]"
+
                 # Connect new node to virtmic
-                pw-link $flId $virtmicPortFlId
-                pw-link $frId $virtmicPortFrId
-                UtilLog "[connect-and-monitor.sh] [Linked Ports] $flId -> $virtmicPortFlId, $frId -> $virtmicPortFrId"
+                # Link FL
+                linkLog="$linkLog ($flId -> $virtmicPortFlId"
+                pw-link $flId $virtmicPortFlId && {
+                    linkLog="$linkLog Success)"
+                } || {
+                    linkLog="$linkLog Fail)"
+                }
+
+                # Link FR
+                linkLog="$linkLog ($frId -> $virtmicPortFrId"
+                pw-link $frId $virtmicPortFrId && {
+                    linkLog="$linkLog Success)"
+                } || {
+                    linkLog="$linkLog Fail)"
+                }
+
+                UtilLog "$linkLog"
+
             ) done
     } &
 fi
