@@ -46,15 +46,7 @@ trap "rm $fullDumpFile $fifoPath; kill -- -$CURRENT_PID" EXIT
 function disconnectInputs() {
     node=$1
     UtilLog "[virtmic.sh] [Disconnecting Inputs] Node: $node"
-    pw-dump | jq -s -r "
-        flatten(1) |
-        [
-            .[] |
-            select(.info[\"input-node-id\"] == $node) |
-            .id
-        ] |
-        .[]
-    " | xargs -r -n1 pw-cli destroy
+    ./list-node-inputs.lua nodeId="$node" | xargs -r -n1 pw-cli destroy
     UtilLog "[virtmic.sh] [Disconnected Inputs] Node: $node"
 }
 
