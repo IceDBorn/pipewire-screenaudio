@@ -160,6 +160,10 @@ export default function Popup() {
     }
   }
 
+  function openSettingsPage() {
+    window.open(window.location.href + "?page=settings");
+  }
+
   return (
     isInitialized && (
       <ThemeProvider theme={darkTheme}>
@@ -169,7 +173,9 @@ export default function Popup() {
             <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
               Pipewire Screenaudio
             </Typography>
-            <Button color="inherit">Settings</Button>
+            <Button color="inherit" onClick={openSettingsPage}>
+              Settings
+            </Button>
           </Toolbar>
         </AppBar>
         {(isRunning || !isHealthy) && (
