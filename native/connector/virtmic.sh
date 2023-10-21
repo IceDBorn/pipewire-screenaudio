@@ -2,6 +2,8 @@
 
 source $PROJECT_ROOT/connector/util.sh
 
+exec 1>>`UtilGetLogPathForFile $(basename $0)` 2>&1
+
 # Get all nodes to check if $VIRTMIC_NODE_NAME exists, and create it
 pw-dump |
     jq --exit-status -c -s "flatten(1) | [ .[] | select(.info.props[\"node.name\"] == \"$VIRTMIC_NODE_NAME\") ][0]" >/dev/null && (
@@ -78,7 +80,7 @@ tail -f "$fifoPath" | {
         UtilLog "[virtmic.sh] [Got FIFO Data] $targetNodeSerial"
         killMonitor
         disconnectInputs "$virtmicId"
-        setsid bash -- connect-and-monitor.sh "$virtmicPortFlId" "$virtmicPortFrId" "$targetNodeSerial" >>`UtilGetLogPathForFile 'connect-and-monitor.sh'` 2>&1 &
+        setsid bash -- connect-and-monitor.sh "$virtmicPortFlId" "$virtmicPortFrId" "$targetNodeSerial" &
         monitorProcess=$!
         UtilLog "[virtmic.sh] [Started Background Task] Script: connect-and-monitor.sh, PID: $monitorProcess"
     done

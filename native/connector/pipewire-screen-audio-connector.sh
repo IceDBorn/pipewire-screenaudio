@@ -4,6 +4,8 @@ export LC_ALL=C
 export PROJECT_ROOT="$( cd -- "$(dirname "$0")" > /dev/null 2>&1 ; cd .. ; pwd -P )"
 source $PROJECT_ROOT/connector/util.sh
 
+exec 2>>`UtilGetLogPathForFile $(basename $0)`
+
 function GetVersion () {
   UtilTextToMessage '{"version":"0.3.2"}'
 }
@@ -32,7 +34,7 @@ function GetNodes () {
 }
 
 function StartPipewireScreenAudio () {
-  setsid $PROJECT_ROOT/connector/virtmic.sh >>`UtilGetLogPathForFile 'virtmic.sh'` 2>&1 &
+  setsid $PROJECT_ROOT/connector/virtmic.sh &
 
   sleep 1
   local micId=`

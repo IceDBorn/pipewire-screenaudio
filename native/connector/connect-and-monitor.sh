@@ -8,6 +8,8 @@ targetNodeSerial=$3
 
 source $PROJECT_ROOT/connector/util.sh
 
+exec 2>>`UtilGetLogPathForFile $(basename $0)`
+
 EXCLUDED_TARGETS='"AudioCallbackDriver"'
 
 fullDumpFile=`UtilGetTempFile`
