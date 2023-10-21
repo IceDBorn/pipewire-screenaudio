@@ -127,17 +127,26 @@ else
 
                 UtilLog "[connect-and-monitor.sh] [Got Ports IDs] FL IDs: $flId, FR IDs: $frId"
 
+                linkLog="[connect-and-monitor.sh] [Linking Ports]"
+
                 # Connect new node to virtmic
+                # Link FL
+                linkLog="$linkLog ($flId -> $virtmicPortFlId"
                 pw-link $flId $virtmicPortFlId && {
-                    UtilLog "[connect-and-monitor.sh] [Linked Left Ports] $flId -> $virtmicPortFlId"
+                    linkLog="$linkLog Success)"
                 } || {
-                    UtilLog "[connect-and-monitor.sh] [Could Not Link Left Ports] $flId -> $virtmicPortFlId"
+                    linkLog="$linkLog Fail)"
                 }
+
+                # Link FR
+                linkLog="$linkLog ($frId -> $virtmicPortFrId"
                 pw-link $frId $virtmicPortFrId && {
-                    UtilLog "[connect-and-monitor.sh] [Linked Right Ports] $frId -> $virtmicPortFrId"
+                    linkLog="$linkLog Success)"
                 } || {
-                    UtilLog "[connect-and-monitor.sh] [Could Not Link Right Ports] $frId -> $virtmicPortFrId"
+                    linkLog="$linkLog Fail)"
                 }
+
+                UtilLog "$linkLog"
 
             ) done
     } &
