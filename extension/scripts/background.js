@@ -22,7 +22,7 @@ async function runQueuedCommands () {
     }
 
     console.log(args)
-    const result = await sendNativeMessage(command.messageName, command.cmd, command.args, command.maps)
+    const result = await sendNativeMessage(command.messageName, command.cmd, args, command.maps)
     console.log(result)
 
     if (outMap) {
