@@ -93,10 +93,10 @@ else
                         select(.info.props[\"media.name\"] | contains($EXCLUDED_TARGETS) | not) |
                         select(.info.props[\"media.class\"] == \"Stream/Output/Audio\" )
                     ][0].id
-                " >/dev/null || (
+                " >/dev/null || {
                     UtilLog "[connect-and-monitor.sh] [Skipped Node ID] ID: $id"
                     exit 0
-                )
+                }
 
                 # 1. Find the ports with node.id == $id
                 # 2. Get only the FR and FL ports
