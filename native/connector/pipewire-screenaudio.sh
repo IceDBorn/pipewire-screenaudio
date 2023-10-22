@@ -7,12 +7,12 @@ source $PROJECT_ROOT/connector/util.sh
 exec 2>>`UtilGetLogPathForFile $(basename $0)`
 
 function GetVersion () {
-  UtilTextToMessage "{\"version\":\"$VERSION\"}"
+  echo "{\"version\":\"$VERSION\"}"
 }
 
 function GetSessionType () {
   type=`[[ -z "$WAYLAND_DISPLAY" ]] && echo "x11" || echo "wayland"`
-  UtilTextToMessage "{\"type\": \"$type\"}"
+  echo "{\"type\": \"$type\"}"
 }
 
 function GetNodes () {
@@ -23,7 +23,7 @@ function GetNodes () {
       del(.info)
     ]
   '`
-  UtilTextToMessage "$nodes"
+  echo "$nodes"
   exit
 }
 
@@ -36,7 +36,7 @@ function StartPipewireScreenAudio () {
       jq -c "[ .[] | select(.info.props[\"node.name\"] == \"$VIRTMIC_NODE_NAME\") ][0].id"
   `
 
-  UtilTextToMessage '{"micId":'$micId'}'
+  echo '{"micId":'$micId'}'
   exit
 }
 
@@ -49,7 +49,7 @@ function SetSharingNode () {
     echo "$nodes" >> "$fifoPath"
   fi
 
-  UtilTextToMessage '{"success":true}'
+  echo '{"success":true}'
   exit
 }
 
@@ -65,10 +65,10 @@ function StopPipewireScreenAudio () {
 
   if [ ! "`pw-cli info "$micId" 2>/dev/null | wc -l`" -eq "0" ]; then
     [ "`pw-cli destroy "$micId" 2>&1 | wc -l`" -eq "0" ] &&
-      UtilTextToMessage '{"success":true}' && exit
+      echo '{"success":true}' && exit
   fi
 
-  UtilTextToMessage '{"success":false}'
+  echo '{"success":false}'
   exit
 }
 
@@ -76,14 +76,14 @@ function IsPipewireScreenAudioRunning () {
   local micId=`UtilGetArg 'micId'`
 
   if pw-cli info "$micId" 2>/dev/null | grep 'node.name' | grep "$VIRTMIC_NODE_NAME" >/dev/null; then
-    UtilTextToMessage '{"isRunning":true}' && exit
+    echo '{"isRunning":true}' && exit
   fi
 
-  UtilTextToMessage '{"isRunning":false}'
+  echo '{"isRunning":false}'
   exit
 }
 
-UtilGetPayload
+UtilReadPayload "$1"
 
 case "$cmd" in
   'GetVersion')

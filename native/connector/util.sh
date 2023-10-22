@@ -35,7 +35,7 @@ function UtilIntToBin () {
 }
 
 function UtilTextToMessage () {
-  local message="$1"
+  read message
   local messageLength=`echo -n "$message" | wc -c`
 
   UtilLog "[util.sh] [Sending Message] $message Length: $messageLength"
@@ -44,12 +44,8 @@ function UtilTextToMessage () {
   echo -n "$message"
 }
 
-function UtilGetPayload () {
-  payloadLength=`UtilBinToInt`
-  UtilLog "[util.sh] [Reading Bytes] $payloadLength"
-
-  payload=`head -c "$payloadLength"`
-  UtilLog "[util.sh] [Got Payload] $payload"
+function UtilReadPayload () {
+  local payload="$1"
 
   cmd=`echo "$payload" | jq -r .cmd`
   UtilLog "[util.sh] [Got Cmd] $cmd"
