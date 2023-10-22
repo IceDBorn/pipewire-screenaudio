@@ -3,47 +3,48 @@
 let commandsQueue = [];
 let commandsQueueRunning = false;
 
-function sendNativeMessage(messageName, cmd, args) {
-  return chrome.runtime.sendNativeMessage(messageName, {
-    cmd,
-    args: args ? [args] : undefined,
-  });
+function sendNativeMessage(messageName, cmd, args = null) {
+  return chrome.runtime.sendNativeMessage(messageName, { cmd, args });
 }
 
 async function runQueuedCommands() {
   commandsQueueRunning = true;
 
   while (commandsQueue.length) {
-    const command = commandsQueue.shift();
-    const args = { ...command.args };
-    const { inMap, outMap } = command.maps || {};
+    try {
+      const command = commandsQueue.shift();
+      const args = { ...command.args };
+      const { inMap, outMap } = command.maps || {};
 
-    if (inMap) {
-      inMap.forEach(([storageKey, argKey]) => {
-        args[argKey] = window.localStorage.getItem(storageKey);
-      });
-    }
+      if (inMap) {
+        inMap.forEach(([storageKey, argKey]) => {
+          args[argKey] = window.localStorage.getItem(storageKey);
+        });
+      }
 
-    console.log(args);
-    const result = await sendNativeMessage(
-      command.messageName,
-      command.cmd,
-      args,
-      command.maps,
-    );
-    console.log(result);
+      console.log(args);
+      const result = await sendNativeMessage(
+        command.messageName,
+        command.cmd,
+        args,
+        command.maps,
+      );
+      console.log(result);
 
-    if (outMap) {
-      outMap.forEach(([storageKey, resultKey]) => {
-        window.localStorage.setItem(
-          storageKey,
-          resultKey ? result[resultKey] : null,
-        );
-      });
-    }
+      if (outMap) {
+        outMap.forEach(([storageKey, resultKey]) => {
+          window.localStorage.setItem(
+            storageKey,
+            resultKey ? result[resultKey] : null,
+          );
+        });
+      }
 
-    if (command.event) {
-      chrome.runtime.sendMessage(command.event);
+      if (command.event) {
+        chrome.runtime.sendMessage(command.event);
+      }
+    } catch (err) {
+      console.error(err);
     }
   }
 

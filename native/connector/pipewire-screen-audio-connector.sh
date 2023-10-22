@@ -56,8 +56,8 @@ function SetSharingNode () {
 # TODO Implement as standalone function
 function ShareAllDesktopAudio () {
   local micId=`UtilGetArg 'micId'`
-  local args="[{\"micId\":\"$micId\",\"nodes\":[-1]}]"
-  SetSharingNode "$args"
+  args="{\"micId\":\"$micId\",\"nodes\":[-1]}"
+  SetSharingNode
 }
 
 function StopPipewireScreenAudio () {
