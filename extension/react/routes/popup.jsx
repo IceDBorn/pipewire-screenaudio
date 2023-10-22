@@ -170,6 +170,7 @@ export default function Popup() {
 
   function openSettingsPage() {
     window.open(window.location.href + "?page=settings");
+    window.close();
   }
 
   return (
