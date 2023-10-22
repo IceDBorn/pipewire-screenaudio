@@ -10,6 +10,10 @@ export const EVENT_MIC_ID_REMOVED = "onMicIdRemoved";
 
 let isStopping = false;
 
+function enqueueCommandToBackground(command) {
+  sendMessage("enqueue-command", command);
+}
+
 async function sendNativeMessage(command, args = []) {
   console.log("Sent native message", { command, args });
 
@@ -26,19 +30,18 @@ async function sendNativeMessage(command, args = []) {
   }
 }
 
-async function sendMessage(command, message, args) {
-  console.log("Sent message", { command, message, args });
+async function sendMessage(message, command) {
+  console.log("Sent message", { command, message });
 
   try {
     return await chrome.runtime.sendMessage({
       messageName: MESSAGE_NAME,
       message: message,
-      cmd: command,
-      args: args,
+      command: command,
     });
   } catch (err) {
     console.error(
-      `Failed message "${message}" with args: ${JSON.stringify(args)}`,
+      `Failed message "${message}" with command: ${JSON.stringify(command)}`,
     );
     throw err;
   }
@@ -63,7 +66,7 @@ function getNewPromise() {
 function handleMessage(message) {
   console.log({ message });
 
-  if (message === "mic-id-updated") {
+  if (message === EVENT_MIC_ID_UPDATED) {
     const micId = readLocalStorage(MIC_ID);
     const event = new CustomEvent(EVENT_MIC_ID_UPDATED, {
       detail: { micId },
@@ -71,7 +74,7 @@ function handleMessage(message) {
     document.dispatchEvent(event);
   }
 
-  if (message === "mic-id-removed") {
+  if (message === EVENT_MIC_ID_REMOVED) {
     const event = new CustomEvent(EVENT_MIC_ID_REMOVED);
     document.dispatchEvent(event);
   }
@@ -102,45 +105,37 @@ export async function isPipewireScreenAudioRunning(micId) {
   return sendNativeMessage("IsPipewireScreenAudioRunning", [{ micId }]);
 }
 
-export async function startPipewireScreenAudio() {
+export function startPipewireScreenAudio() {
   isStopping = false;
-
-  const { promise, resolvePromise, rejectPromise } = getNewPromise();
-  const listener = (event) => resolvePromise(event.detail.micId);
-  document.addEventListener(EVENT_MIC_ID_UPDATED, listener, { once: true });
-
-  try {
-    await sendMessage("StartPipewireScreenAudio", "sharing-started");
-  } catch (err) {
-    rejectPromise(err);
-  }
-
-  return promise;
+  enqueueCommandToBackground({
+    cmd: "StartPipewireScreenAudio",
+    maps: { outMap: [[MIC_ID, "micId"]] }, // Set the `micId` in LocalStorage to the incoming `micId`
+    event: EVENT_MIC_ID_UPDATED,
+  });
 }
 
-export async function stopPipewireScreenAudio(micId) {
+export function stopPipewireScreenAudio(micId) {
   isStopping = true;
-
-  const { promise, resolvePromise, rejectPromise } = getNewPromise();
-  const listener = (micId) => resolvePromise(micId);
-  document.addEventListener(EVENT_MIC_ID_UPDATED, listener, { once: true });
-
-  try {
-    await sendMessage("StopPipewireScreenAudio", "sharing-stopped", [
-      { micId },
-    ]);
-  } catch (err) {
-    rejectPromise(err);
-  }
-
-  return promise;
+  enqueueCommandToBackground({
+    cmd: "StopPipewireScreenAudio",
+    args: { micId },
+    maps: { outMap: [[MIC_ID, null]] }, // Clear the `micId` in LocalStorage
+    event: EVENT_MIC_ID_REMOVED,
+  });
 }
 
-export async function setSharingNode(micId, nodeSerials) {
-  return sendNativeMessage("SetSharingNode", [{ micId, nodes: nodeSerials }]);
+export function setSharingNode(nodeSerials) {
+  enqueueCommandToBackground({
+    cmd: "SetSharingNode",
+    args: { nodes: nodeSerials },
+    maps: { inMap: [[MIC_ID, "micId"]] }, // Read the `micId` from LocalStorage and pass it as the `micId` arg
+  });
 }
 
-// Remove nodes item after all desktop audio rework
-export async function shareAllDesktopAudio(micId) {
-  return sendNativeMessage("ShareAllDesktopAudio", [{ micId, nodes: [-1] }]);
+// TODO Remove nodes item after all desktop audio rework
+export function shareAllDesktopAudio() {
+  enqueueCommandToBackground({
+    cmd: "ShareAllDesktopAudio",
+    maps: { inMap: [[MIC_ID, "micId"]] }, // Read the `micId` from LocalStorage and pass it as the `micId` arg
+  });
 }

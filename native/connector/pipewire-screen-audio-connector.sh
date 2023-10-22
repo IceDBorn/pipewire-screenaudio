@@ -55,7 +55,8 @@ function SetSharingNode () {
 
 # TODO Implement as standalone function
 function ShareAllDesktopAudio () {
-  local args="$1"
+  local micId=`UtilGetArg 'micId'`
+  local args="[{\"micId\":\"$micId\",\"nodes\":[-1]}]"
   SetSharingNode "$args"
 }
 

@@ -39,7 +39,7 @@ UtilLog "[connect-and-monitor.sh] [Got Stream IDs] IDs: $streamIds"
 cat "$fullDumpFile" | jq -c "[ .[] | select(.type == \"PipeWire:Interface:Port\") | select(.info.direction == \"output\") | select(.info.props[\"node.id\"] | contains($streamIds)) ]" > $portsFile
 UtilLog "[connect-and-monitor.sh] [Got Ports] File: $portsFile"
 
-if [[ ! "$targetNodes" -eq "-1" ]]; then
+if [[ ! "$targetNodes" = "[-1]" ]]; then
     UtilLog "[connect-and-monitor.sh] [Entering Selected Nodes Mode] Serials: $targetNodes"
 
     function connect-node() {
@@ -63,7 +63,7 @@ if [[ ! "$targetNodes" -eq "-1" ]]; then
         UtilLog "[connect-and-monitor.sh] [Linked Ports] $targetPortFlId -> $virtmicPortFlId, $targetPortFrId -> $virtmicPortFrId"
     }
 
-    for node in $targetNodes; do
+    for node in `echo $targetNodes | jq '.[]'`; do
         UtilLog "[connect-and-monitor.sh] [Got Node Serial] Serial: $node"
         connect-node "$node"
     done

@@ -71,11 +71,15 @@ export default function Popup() {
   const [micId, setMicId] = useLocalStorage(MIC_ID);
 
   const debouncedSetSharingNodes = useDebouncedCallback(() => {
-    setSharingNode(micId, getNodeSerialsToShare());
+    setSharingNode(getNodeSerialsToShare());
   }, 1000);
 
   const debouncedShareAllDesktopAudio = useDebouncedCallback(() => {
-    shareAllDesktopAudio(micId);
+    if (allDesktopAudio) {
+      shareAllDesktopAudio();
+    } else {
+      setSharingNode([]);
+    }
   }, 1000);
 
   const getNodeSerialsToShare = () =>
@@ -153,8 +157,12 @@ export default function Popup() {
 
   async function handleStartStop() {
     if (!isRunning) {
-      const id = await startPipewireScreenAudio();
-      setSharingNode(id, getNodeSerialsToShare());
+      startPipewireScreenAudio();
+      if (allDesktopAudio) {
+        shareAllDesktopAudio();
+      } else {
+        setSharingNode(getNodeSerialsToShare());
+      }
     } else {
       stopPipewireScreenAudio(micId);
     }

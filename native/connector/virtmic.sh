@@ -77,7 +77,7 @@ tail -f "$fifoPath" | {
 
     # Read the new target node
     while read -r targetNodes; do
-        UtilLog "[virtmic.sh] [Got FIFO Data] $targetNodes"
+        UtilLog "[virtmic.sh] [Got FIFO Data] Target Nodes: $targetNodes"
         killMonitor
         disconnectInputs "$virtmicId"
         setsid bash -- connect-and-monitor.sh "$virtmicPortFlId" "$virtmicPortFrId" "$targetNodes" &
