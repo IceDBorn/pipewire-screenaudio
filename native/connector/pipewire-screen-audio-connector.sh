@@ -102,7 +102,7 @@ case "$cmd" in
     SetSharingNode
     ;;
   'ShareAllDesktopAudio')
-    ShareAllDesktopAudio "$args"
+    ShareAllDesktopAudio
     ;;
   'IsPipewireScreenAudioRunning')
     IsPipewireScreenAudioRunning
