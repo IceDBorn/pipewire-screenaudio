@@ -13,7 +13,7 @@
   },
 
   "action": {
-    "default_popup": "assets/web/html/popup.html"
+    "default_popup": "react/dist/index.html"
   },
 
   "icons": {

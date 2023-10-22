@@ -17,13 +17,7 @@ function GetSessionType () {
 
 function GetNodes () {
   local nodes=`pw-dump | jq -c '
-    [{
-      "properties": {
-        "media.name": "[All Desktop Audio]",
-        "application.name": "",
-        "object.serial": -1
-      }
-    }] + [ .[] |
+    [ .[] |
       select(.info.props["media.class"] == "Stream/Output/Audio") |
       .["properties"] = .info.props |
       del(.info)
@@ -47,16 +41,23 @@ function StartPipewireScreenAudio () {
 }
 
 function SetSharingNode () {
-  local node=`UtilGetArg 'node'`
+  local nodes=`UtilGetArg 'nodes'`
   local micId=`UtilGetArg 'micId'`
   local fifoPath=`UtilGetFifoPath "$micId"`
 
   if [ -e "$fifoPath" ]; then
-    echo "$node" >> "$fifoPath"
+    echo "$nodes" >> "$fifoPath"
   fi
 
   UtilTextToMessage '{"success":true}'
   exit
+}
+
+# TODO Implement as standalone function
+function ShareAllDesktopAudio () {
+  local micId=`UtilGetArg 'micId'`
+  local args="[{\"micId\":\"$micId\",\"nodes\":[-1]}]"
+  SetSharingNode "$args"
 }
 
 function StopPipewireScreenAudio () {
@@ -99,6 +100,9 @@ case "$cmd" in
     ;;
   'SetSharingNode')
     SetSharingNode
+    ;;
+  'ShareAllDesktopAudio')
+    ShareAllDesktopAudio
     ;;
   'IsPipewireScreenAudioRunning')
     IsPipewireScreenAudioRunning

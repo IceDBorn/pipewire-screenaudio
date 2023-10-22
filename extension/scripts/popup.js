@@ -8,6 +8,12 @@ const shareStopBtn = document.getElementById('share-stop-btn')
 let shareStopBtnState = null
 
 let nodesLoop = null
+let micId = null
+
+function setMicId (id, skipStorage) {
+  micId = id
+  skipStorage || window.localStorage.setItem('micId', id)
+}
 
 let selectedNode = null
 function setSelectedNode (id) {
@@ -253,6 +259,8 @@ function handleMessage (message) {
     const blacklistBtn = document.getElementById('blacklist-btn')
     buttonGroup.removeChild(blacklistBtn)
     updateGui()
+
+    chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: 'SetSharingNode', args: [{ node: selectedNode, micId }] })
   }
 
   if (message === 'mic-id-removed') {
