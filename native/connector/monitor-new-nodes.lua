@@ -1,4 +1,5 @@
 #!/usr/bin/env /usr/bin/wpexec
+utils = require("utils"):Configure(Constraint, Log)
 
 node_mgr = ObjectManager {
   Interest {
@@ -9,31 +10,15 @@ node_mgr = ObjectManager {
   },
 }
 
--- prints FL and FR port ids from a node
-function PrintPorts(node)
-  local ports = {}
-  for port in node:iterate_ports {
-    Constraint { "audio.channel", "in-list", "FR", "FL" }
-  } do
-    local channel = port.properties["audio.channel"]
-    local port_id = port.properties["object.id"]
-    ports[channel] = port_id
-  end
-  if ports["FL"] == nil or ports["FR"] == nil then
-    return
-  end
-  Log.info(node.properties["media.name"])
-  print(ports["FL"] .. ' ' .. ports["FR"])
-end
-
 node_mgr:connect(
   "object-added",
   function(_, node)
-    Log.info(node.properties["media.class"])
-    PrintPorts(node)
+    local props = node.properties;
+    Log.info(props["media.name"] .. ' [' .. props["object.serial"] .. ']')
+    utils:PrintPorts(node)
     -- sometimes ports are added after node creation
     node:connect("ports-changed", function(node)
-      PrintPorts(node)
+      utils:PrintPorts(node)
     end)
   end
 )
