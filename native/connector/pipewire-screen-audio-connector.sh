@@ -7,7 +7,7 @@ source $PROJECT_ROOT/connector/util.sh
 exec 2>>`UtilGetLogPathForFile $(basename $0)`
 
 function GetVersion () {
-  UtilTextToMessage '{"version":"0.3.2"}'
+  UtilTextToMessage "{\"version\":\"$VERSION\"}"
 }
 
 function GetSessionType () {
