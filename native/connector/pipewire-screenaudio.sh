@@ -8,11 +8,13 @@ exec 2>>`UtilGetLogPathForFile $(basename $0)`
 
 function GetVersion () {
   echo "{\"version\":\"$VERSION\"}"
+  exit
 }
 
 function GetSessionType () {
   type=`[[ -z "$WAYLAND_DISPLAY" ]] && echo "x11" || echo "wayland"`
   echo "{\"type\": \"$type\"}"
+  exit
 }
 
 function GetNodes () {
