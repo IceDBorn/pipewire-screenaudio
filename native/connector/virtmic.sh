@@ -1,35 +1,47 @@
 #!/usr/bin/env bash
 
-virtmicNode='pipewire-screenaudio'
+source $PROJECT_ROOT/connector/util.sh
 
-myPid=$$
+exec 1>>`UtilGetLogPathForFile $(basename $0)` 2>&1
 
-set -e
-
-# Get all nodes to check if $virtmicNode exists, and create it
+# Get all nodes to check if $VIRTMIC_NODE_NAME exists, and create it
 pw-dump |
-    jq --exit-status -c -s "flatten(1) | [ .[] | select(.info.props[\"node.name\"] == \"$virtmicNode\") ][0]" >/dev/null ||
-    pw-cli create-node adapter "{ factory.name=support.null-audio-sink node.name=$virtmicNode media.class=Audio/Source/Virtual object.linger=1 audio.position=[FL,FR] }"
+    jq --exit-status -c -s "flatten(1) | [ .[] | select(.info.props[\"node.name\"] == \"$VIRTMIC_NODE_NAME\") ][0]" >/dev/null && (
+      UtilLog "[virtmic.sh] [Found Node] $VIRTMIC_NODE_NAME"
+    ) || (
+      pw-cli create-node adapter "{ factory.name=support.null-audio-sink node.name=$VIRTMIC_NODE_NAME media.class=Audio/Source/Virtual object.linger=1 audio.position=[FL,FR] }"
+      UtilLog "[virtmic.sh] [Created Node] $VIRTMIC_NODE_NAME"
+    )
 
-fullDumpFile=`mktemp`
+fullDumpFile=`UtilGetTempFile`
 
 # === Collect required data from PipeWire === #
 # Get all nodes again for further processing
 pw-dump | jq -s "flatten(1)" > $fullDumpFile
+UtilLog "[virtmic.sh] [Got Dump] File: $fullDumpFile"
 
-# Get id and ports of $virtmicNode
-virtmicId=`cat "$fullDumpFile" | jq -c "[ .[] | select(.info.props[\"node.name\"] == \"$virtmicNode\") ][0].id"`
-virtmicPortsFile=`mktemp`
+# Get id and ports of $VIRTMIC_NODE_NAME
+virtmicId=`cat "$fullDumpFile" | jq -c "[ .[] | select(.info.props[\"node.name\"] == \"$VIRTMIC_NODE_NAME\") ][0].id"`
+UtilLog "[virtmic.sh] [Got Id] $virtmicId"
+
+virtmicPortsFile=`UtilGetTempFile`
 cat "$fullDumpFile" | jq -c "[ .[] | select(.info.direction == \"input\") | select(.info.props[\"node.id\"] == $virtmicId) ]" > $virtmicPortsFile
+UtilLog "[virtmic.sh] [Got Ports] File: $virtmicPortsFile"
+
 virtmicPortFlId=`cat "$virtmicPortsFile" | jq -c "[ .[] | select(.info.props[\"audio.channel\"] == \"FL\") ][0].id"`
 virtmicPortFrId=`cat "$virtmicPortsFile" | jq -c "[ .[] | select(.info.props[\"audio.channel\"] == \"FR\") ][0].id"`
-rm $virtmicPortsFile
+UtilLog "[virtmic.sh] [Got Ports] FL: $virtmicPortFlId"
+UtilLog "[virtmic.sh] [Got Ports] FR: $virtmicPortFrId"
 
-fifoPath="$XDG_RUNTIME_DIR/pipewire-screenaudio-set-node-$virtmicId"
+rm $virtmicPortsFile
+UtilLog "[virtmic.sh] [Cleared Ports] File: $virtmicPortsFile"
+
+fifoPath=`UtilGetFifoPath "$virtmicId"`
 mkfifo "$fifoPath"
+UtilLog "[virtmic.sh] [Created FIFO] $fifoPath"
 
 # Cleanup on exit
-trap "rm $fullDumpFile $fifoPath; kill -- -$myPid" EXIT
+trap "rm $fullDumpFile $fifoPath; kill -- -$CURRENT_PID" EXIT
 
 function monitor-nodes() {
     tail -f /dev/null | pw-cli -m | grep --line-buffered -v 'pipewire.sec.label = "hex:'
@@ -37,6 +49,7 @@ function monitor-nodes() {
 
 function disconnectInputs() {
     node=$1
+    UtilLog "[virtmic.sh] [Disconnecting Inputs] Node: $node"
     pw-dump | jq -s -r "
         flatten(1) |
         [
@@ -46,6 +59,7 @@ function disconnectInputs() {
         ] |
         .[]
     " | xargs -r -n1 pw-cli destroy
+    UtilLog "[virtmic.sh] [Disconnected Inputs] Node: $node"
 }
 
 # Listen to selected node change
@@ -53,6 +67,7 @@ tail -f "$fifoPath" | {
     # Kill connect-and-monitor.sh process if it's still alive
     function killMonitor() {
         if [ ! -z "$monitorProcess" ]; then
+            UtilLog "[virtmic.sh] [Killing] PID: $monitorProcess"
             kill $monitorProcess || :
         fi
     }
@@ -62,10 +77,12 @@ tail -f "$fifoPath" | {
 
     # Read the new target node
     while read -r targetNodes; do
+        UtilLog "[virtmic.sh] [Got FIFO Data] $targetNodes"
         killMonitor
         disconnectInputs "$virtmicId"
         setsid bash -- connect-and-monitor.sh "$virtmicPortFlId" "$virtmicPortFrId" "$targetNodes" &
         monitorProcess=$!
+        UtilLog "[virtmic.sh] [Started Background Task] Script: connect-and-monitor.sh, PID: $monitorProcess"
     done
 } &
 
@@ -74,7 +91,8 @@ monitor-nodes |
     stdbuf -o0 awk '/remote 0 removed global/ && /Node/' |
     grep --line-buffered -oP "id \\K$virtmicId" | {
     while read -r id; do
-        kill -SIGTERM $myPid
+        UtilLog "[virtmic.sh] [Killing] PID: $CURRENT_PID (self)"
+        kill -SIGTERM $CURRENT_PID
     done
 } &
 
