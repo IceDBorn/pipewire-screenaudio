@@ -7,15 +7,6 @@ import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import Alert from "@mui/material/Alert";
-
-import "@fontsource/roboto/300.css";
-import "@fontsource/roboto/400.css";
-import "@fontsource/roboto/500.css";
-import "@fontsource/roboto/700.css";
-
-import { ThemeProvider, createTheme } from "@mui/material/styles";
-import CssBaseline from "@mui/material/CssBaseline";
-
 import Paper from "@mui/material/Paper";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import Switch from "@mui/material/Switch";
@@ -44,12 +35,6 @@ import {
 import { useDidUpdateEffect, useLocalStorage } from "../lib/hooks";
 
 import NodesTable from "../components/nodes-table";
-
-const darkTheme = createTheme({
-  palette: {
-    mode: "dark",
-  },
-});
 
 function mapNode(node) {
   return {
@@ -175,8 +160,7 @@ export default function Popup() {
 
   return (
     isInitialized && (
-      <ThemeProvider theme={darkTheme}>
-        <CssBaseline />
+      <>
         <AppBar position="static" sx={{ maxWidth: 500 }}>
           <Toolbar>
             <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
@@ -200,7 +184,6 @@ export default function Popup() {
               : "The native connector is missing or misconfigured"}
           </Alert>
         )}
-
         {!nodes.length && (
           <Paper sx={{ minWidth: 500, minHeight: 80, borderRadius: 0 }}>
             <div></div>
@@ -280,7 +263,7 @@ export default function Popup() {
             Hide
           </Button>
         </Paper>
-      </ThemeProvider>
+      </>
     )
   );
 }
