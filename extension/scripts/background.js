@@ -25,13 +25,21 @@ async function runQueuedCommands() {
         });
       }
 
-      console.log(args)
-      const result = await sendNativeMessage(command.messageName, command.cmd, args, command.maps)
-      console.log(result)
+      console.log(args);
+      const result = await sendNativeMessage(
+        command.messageName,
+        command.cmd,
+        args,
+        command.maps,
+      );
+      console.log(result);
 
       if (outMap) {
         outMap.forEach(([storageKey, resultKey]) => {
-          window.localStorage.setItem(storageKey, (resultKey ? result[resultKey] : null));
+          window.localStorage.setItem(
+            storageKey,
+            resultKey ? result[resultKey] : null,
+          );
         });
       }
 
@@ -39,7 +47,7 @@ async function runQueuedCommands() {
         chrome.runtime.sendMessage(command.event);
       }
     } catch (err) {
-      console.error(err)
+      console.error(err);
     }
   }
 
