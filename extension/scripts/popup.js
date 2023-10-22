@@ -31,6 +31,10 @@ function shouldDisableBlacklistBtn () {
   return selectedNode.toString() === '-1'
 }
 
+function enqueueCommandToBackground (command) {
+  chrome.runtime.sendMessage({ messageName: MESSAGE_NAME, message: 'enqueue-command', command })
+}
+
 async function isRunning () {
   setMicId(window.localStorage.getItem('micId'), true)
 
@@ -63,9 +67,21 @@ function setButtonToShare() {
     clearInterval(nodesLoop)
     shareStopBtn.appendChild(spinner)
     shareStopBtn.appendChild(text)
-    if (document.getElementById('blacklist-btn'))
+    if (document.getElementById('blacklist-btn')) {
       document.getElementById('blacklist-btn').hidden = true
-    chrome.runtime.sendMessage({ messageName: MESSAGE_NAME, message: 'sharing-started', cmd: 'StartPipewireScreenAudio' })
+    }
+
+    enqueueCommandToBackground({
+      cmd: 'StartPipewireScreenAudio',
+      maps: { outMap: [[ 'micId', 'micId' ]] }, // Set the `micId` in LocalStorage to the incoming `micId`
+      event: 'mic-id-updated'
+    })
+
+    enqueueCommandToBackground({
+      cmd: 'SetSharingNode',
+      args: { node: selectedNode },
+      maps: { inMap: [[ 'micId', 'micId' ]] } // Read the `micId` from LocalStorage and pass it as the `micId` arg
+    })
   }
 
   shareStopBtn.addEventListener('click', eventListener)
@@ -80,7 +96,12 @@ function setButtonToStop() {
   const eventListener = async () => {
     shareStopBtn.removeEventListener('click', eventListener)
     if (await isRunning()) {
-      chrome.runtime.sendMessage({ messageName: MESSAGE_NAME, message: 'sharing-stopped', cmd: 'StopPipewireScreenAudio', args: [{ micId }] })
+      enqueueCommandToBackground({
+        cmd: 'StopPipewireScreenAudio',
+        args: { micId },
+        maps: { outMap: [[ 'micId', null ]] }, // Clear the `micId` in LocalStorage
+        event: 'mic-id-removed'
+      })
     }
   };
 
@@ -232,8 +253,6 @@ function handleMessage (message) {
     const blacklistBtn = document.getElementById('blacklist-btn')
     buttonGroup.removeChild(blacklistBtn)
     updateGui()
-
-    chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: 'SetSharingNode', args: [{ node: selectedNode, micId }] })
   }
 
   if (message === 'mic-id-removed') {

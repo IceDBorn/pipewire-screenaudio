@@ -1,35 +1,56 @@
 // Any event, that is handled in here, should have a comment with the reason it is handled in here
 
-function handleMessage(request) {
-  // Asynchronously update micId in LocalStorage
-  if (request.message === "sharing-started") {
-    chrome.runtime
-      .sendNativeMessage(request.messageName, { cmd: request.cmd })
-      .then(({ micId }) => {
-        window.localStorage.setItem("micId", micId);
-        chrome.runtime.sendMessage("mic-id-updated");
+let commandsQueue = []
+let commandsQueueRunning = false
+
+function sendNativeMessage (messageName, cmd, args) {
+  return chrome.runtime.sendNativeMessage(messageName, { cmd, args: (args ? [args] : undefined) })
+}
+
+async function runQueuedCommands () {
+  commandsQueueRunning = true;
+
+  while (commandsQueue.length) {
+    const command = commandsQueue.shift();
+    const args = { ...command.args };
+    const { inMap, outMap } = command.maps || {};
+
+    if (inMap) {
+      inMap.forEach(([storageKey, argKey]) => {
+        args[argKey] = window.localStorage.getItem(storageKey);
       });
+    }
+
+    console.log(args)
+    const result = await sendNativeMessage(command.messageName, command.cmd, args, command.maps)
+    console.log(result)
+
+    if (outMap) {
+      outMap.forEach(([storageKey, resultKey]) => {
+        window.localStorage.setItem(storageKey, (resultKey ? result[resultKey] : null));
+      });
+    }
+
+    if (command.event) {
+      chrome.runtime.sendMessage(command.event);
+    }
   }
 
-  // Asynchronously update micId in LocalStorage
-  if (request.message === "sharing-stopped") {
-    chrome.runtime
-      .sendNativeMessage(request.messageName, {
-        cmd: request.cmd,
-        args: request.args,
-      })
-      .then(() => {
-        window.localStorage.setItem("micId", null);
-        chrome.runtime.sendMessage("mic-id-removed");
-      });
+  commandsQueueRunning = false;
+}
+
+function handleMessage(request) {
+  // Run multiple commands sequentially
+  if (request.message === "enqueue-command") {
+    commandsQueue.push({ ...request.command, messageName: request.messageName })
+    if (!commandsQueueRunning) {
+      runQueuedCommands();
+    }
   }
 
   // Called from injector.js - It cannot directly call sendNativeMessage
   if (request.message === "get-session-type") {
-    return chrome.runtime.sendNativeMessage(request.messageName, {
-      cmd: "GetSessionType",
-      args: [],
-    });
+    return sendNativeMessage(request.messageName, "GetSessionType");
   }
 }
 
