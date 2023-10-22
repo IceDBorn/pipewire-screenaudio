@@ -14,7 +14,7 @@ function enqueueCommandToBackground(command) {
   sendMessage("enqueue-command", command);
 }
 
-async function sendNativeMessage(command, args = []) {
+async function sendNativeMessage(command, args) {
   console.log("Sent native message", { command, args });
 
   try {
@@ -102,7 +102,7 @@ export async function getNodes() {
 }
 
 export async function isPipewireScreenAudioRunning(micId) {
-  return sendNativeMessage("IsPipewireScreenAudioRunning", [{ micId }]);
+  return sendNativeMessage("IsPipewireScreenAudioRunning", { micId });
 }
 
 export function startPipewireScreenAudio() {

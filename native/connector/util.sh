@@ -61,7 +61,7 @@ function UtilGetPayload () {
 function UtilGetArg () {
   local field="$1"
   UtilLog "[util.sh] [Reading Arg] $field"
-  local arg=`echo "$args" | jq -rc ".[].$field" | head -n 1`
+  local arg=`echo "$args" | jq -rc ".$field" | head -n 1`
   UtilLog "[util.sh] [Arg Value] `[ "$arg" = "" ] && printf 'null' || printf "%s" "$arg"`"
   printf "%s" "$arg"
 }
