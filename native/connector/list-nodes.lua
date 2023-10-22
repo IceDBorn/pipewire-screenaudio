@@ -21,12 +21,13 @@ node_mgr:connect(
       }
     }
     for node in om:iterate() do
-      local props = {}
-      for key, value in pairs(node.properties) do
-        props[key] = value
-      end
+      local props = node.properties
       table.insert(nodes, Json.Object {
-        properties = Json.Object(props)
+        properties = Json.Object {
+          ["media.name"] = props["media.name"],
+          ["application.name"] = props["application.name"],
+          ["object.serial"] = tonumber(props["object.serial"]),
+        }
       })
     end
     print(Json.Array(nodes):get_data())
