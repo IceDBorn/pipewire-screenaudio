@@ -4,8 +4,9 @@ utils = require("utils"):Configure(Constraint, Log, Interest)
 argv = ...
 
 targetSerial = argv.targetSerial
+direction = argv.direction
 
-if targetSerial == nil then
+if targetSerial == nil or direction == nil then
   Core.quit()
   return
 end
@@ -22,7 +23,7 @@ node_finder:connect("installed", function()
   node = node_finder:lookup()
 
   if node ~= nil then
-    utils:PrintPorts(node)
+    utils:PrintPorts(node, direction)
   end
 
   Core.quit()

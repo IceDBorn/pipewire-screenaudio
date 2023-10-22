@@ -15,7 +15,7 @@ else
     UtilLog "[virtmic.sh] [Found Node] $VIRTMIC_NODE_NAME (id = $virtmicId)"
 fi
 
-read -r virtmicPortFlId virtmicPortFrId <<< `./find-ports-by-node-id.lua targetId="$virtmicId"`
+read -r virtmicPortFlId virtmicPortFrId <<< `./find-ports-by-node-id.lua targetId="$virtmicId" direction=in`
 
 UtilLog "[virtmic.sh] [Got Ports] FL: $virtmicPortFlId"
 UtilLog "[virtmic.sh] [Got Ports] FR: $virtmicPortFrId"

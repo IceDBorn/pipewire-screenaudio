@@ -15,10 +15,10 @@ node_mgr:connect(
   function(_, node)
     local props = node.properties;
     Log.info(props["media.name"] .. ' [' .. props["object.serial"] .. ']')
-    utils:PrintPorts(node)
+    utils:PrintPorts(node, "out")
     -- sometimes ports are added after node creation
     node:connect("ports-changed", function(node)
-      utils:PrintPorts(node)
+      utils:PrintPorts(node, "out")
     end)
   end
 )

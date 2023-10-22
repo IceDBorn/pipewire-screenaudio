@@ -12,10 +12,11 @@ function utils:Configure(Constraint, Log, Interest)
 end
 
 -- prints FL and FR port ids from a node
-function utils:PrintPorts(node)
+function utils:PrintPorts(node, direction)
   local ports = {}
   for port in node:iterate_ports {
-    self.Constraint { "audio.channel", "in-list", "FR", "FL" }
+    self.Constraint { "audio.channel", "in-list", "FR", "FL" },
+    self.Constraint { "port.direction", "=", direction },
   } do
     local channel = port.properties["audio.channel"]
     local port_id = port.properties["object.id"]

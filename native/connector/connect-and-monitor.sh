@@ -18,7 +18,7 @@ trap "trap - SIGTERM && kill -- -$$" SIGTERM EXIT
   # Watch for new nodes to connect
   [[ ! "$targetNodeSerial" -eq "-1" ]] && {
       UtilLog "[connect-and-monitor.sh] [Entering Single Node Mode] Serial: $targetNodeSerial"
-      ./find-ports-by-node-serial.lua targetSerial="$targetNodeSerial"
+      ./find-ports-by-node-serial.lua targetSerial="$targetNodeSerial" direction=out
     } || {
       UtilLog "[connect-and-monitor.sh] [Entering All Desktop Audio Mode] Serial: $targetNodeSerial"
       ./monitor-new-nodes.lua
