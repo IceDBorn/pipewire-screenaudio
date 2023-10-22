@@ -1,4 +1,4 @@
-VERSION="0.3.2"
+VERSION="0.3.3"
 VIRTMIC_NODE_NAME='pipewire-screenaudio'
 
 TEMP_PATH_ROOT="$XDG_RUNTIME_DIR/pipewire-screenaudio"
