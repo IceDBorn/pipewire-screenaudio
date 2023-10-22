@@ -132,7 +132,6 @@ export function setSharingNode(nodeSerials) {
   });
 }
 
-// TODO Remove nodes item after all desktop audio rework
 export function shareAllDesktopAudio() {
   enqueueCommandToBackground({
     cmd: "ShareAllDesktopAudio",
