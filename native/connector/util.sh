@@ -38,7 +38,7 @@ function UtilTextToMessage () {
   read message
   local messageLength=`echo -n "$message" | wc -c`
 
-  # UtilLog "[util.sh] [Sending Message] $message Length: $messageLength"
+  UtilLog "[util.sh] [Sending Message] $message Length: $messageLength"
 
   UtilIntToBin $messageLength
   echo -n "$message"
