@@ -38,7 +38,7 @@ function UtilTextToMessage () {
   read message
   local messageLength=`echo -n "$message" | wc -c`
 
-  UtilLog "[util.sh] [Sending Message] $message Length: $messageLength"
+  # UtilLog "[util.sh] [Sending Message] $message Length: $messageLength"
 
   UtilIntToBin $messageLength
   echo -n "$message"
@@ -52,6 +52,8 @@ function UtilReadPayload () {
 
   args=`echo "$payload" | jq .args`
   UtilLog "[util.sh] [Got Args] $args"
+
+  UtilLoadArgs
 }
 
 function UtilGetArg () {
@@ -60,6 +62,32 @@ function UtilGetArg () {
   local arg=`echo "$args" | jq -rc ".$field" | head -n 1`
   UtilLog "[util.sh] [Arg Value] `[ "$arg" = "" ] && printf 'null' || printf "%s" "$arg"`"
   printf "%s" "$arg"
+}
+
+function UtilLoadArgs () {
+  if [[ "$args" = "null" ]]; then
+    UtilLog "[util.sh] [Loaded Args] null - Leaving..."
+    return
+  fi
+
+  local argsKeys=`echo $args | jq -r 'keys_unsorted | .[]'`
+
+  if [[ "$argsKeys" = "" ]]; then
+    UtilLog "[util.sh] [Loaded Args] No keys - Leaving..."
+    return
+  fi
+
+  UtilLog "[util.sh] [Loaded Args] Keys: $argsKeys"
+  local argsFile=`UtilGetTempFile`
+
+  echo "$argsKeys" | while read -r key; do
+    local argValue=`UtilGetArg "$key"`
+    UtilLog "[util.sh] [Got Arg Value] Key: $key, Value: $argValue"
+    echo "args_$key='$argValue'" >> $argsFile
+  done
+
+  source $argsFile
+  rm $argsFile
 }
 
 function UtilLog () {

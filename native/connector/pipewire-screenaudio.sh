@@ -43,12 +43,10 @@ function StartPipewireScreenAudio () {
 }
 
 function SetSharingNode () {
-  local nodes=`UtilGetArg 'nodes'`
-  local micId=`UtilGetArg 'micId'`
-  local fifoPath=`UtilGetFifoPath "$micId"`
+  local fifoPath=`UtilGetFifoPath "$args_micId"`
 
   if [ -e "$fifoPath" ]; then
-    echo "$nodes" >> "$fifoPath"
+    echo "$args_nodes" >> "$fifoPath"
   fi
 
   echo '{"success":true}'
@@ -57,16 +55,13 @@ function SetSharingNode () {
 
 # TODO Implement as standalone function
 function ShareAllDesktopAudio () {
-  local micId=`UtilGetArg 'micId'`
-  args="{\"micId\":\"$micId\",\"nodes\":[-1]}"
+  args_nodes='[-1]'
   SetSharingNode
 }
 
 function StopPipewireScreenAudio () {
-  local micId=`UtilGetArg 'micId'`
-
-  if [ ! "`pw-cli info "$micId" 2>/dev/null | wc -l`" -eq "0" ]; then
-    [ "`pw-cli destroy "$micId" 2>&1 | wc -l`" -eq "0" ] &&
+  if [ ! "`pw-cli info "$args_micId" 2>/dev/null | wc -l`" -eq "0" ]; then
+    [ "`pw-cli destroy "$args_micId" 2>&1 | wc -l`" -eq "0" ] &&
       echo '{"success":true}' && exit
   fi
 
@@ -75,9 +70,7 @@ function StopPipewireScreenAudio () {
 }
 
 function IsPipewireScreenAudioRunning () {
-  local micId=`UtilGetArg 'micId'`
-
-  if pw-cli info "$micId" 2>/dev/null | grep 'node.name' | grep "$VIRTMIC_NODE_NAME" >/dev/null; then
+  if pw-cli info "$args_micId" 2>/dev/null | grep 'node.name' | grep "$VIRTMIC_NODE_NAME" >/dev/null; then
     echo '{"isRunning":true}' && exit
   fi
 
