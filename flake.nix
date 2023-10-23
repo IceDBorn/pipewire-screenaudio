@@ -39,6 +39,7 @@
             install -Dm755 native/connector/pipewire-screen-audio-connector.sh $out/lib/connector/pipewire-screen-audio-connector.sh
             install -Dm755 native/connector/virtmic.sh $out/lib/connector/virtmic.sh
             install -Dm755 native/connector/connect-and-monitor.sh $out/lib/connector/connect-and-monitor.sh
+            install -Dm755 native/connector/util.sh $out/lib/connector/util.sh
 
             # Firefox manifest
             sed -i "s|/usr/lib/pipewire-screenaudio|$out/lib|g" native/native-messaging-hosts/firefox.json
