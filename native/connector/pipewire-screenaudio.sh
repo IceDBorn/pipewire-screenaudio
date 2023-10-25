@@ -82,27 +82,27 @@ UtilReadPayload "$1"
 
 case "$cmd" in
   'GetVersion')
-    GetVersion
+    UtilCallCommand GetVersion
     ;;
   'GetSessionType')
-    GetSessionType
+    UtilCallCommand GetSessionType
     ;;
   'GetNodes')
-    GetNodes
+    UtilCallCommand GetNodes
     ;;
   'StartPipewireScreenAudio')
-    StartPipewireScreenAudio
+    UtilCallCommand StartPipewireScreenAudio
     ;;
   'SetSharingNode')
-    SetSharingNode
+    UtilCallCommand --required-args 'micId,nodes' SetSharingNode
     ;;
   'ShareAllDesktopAudio')
-    ShareAllDesktopAudio
+    UtilCallCommand --required-args 'micId' ShareAllDesktopAudio
     ;;
   'IsPipewireScreenAudioRunning')
-    IsPipewireScreenAudioRunning
+    UtilCallCommand --required-args 'micId' IsPipewireScreenAudioRunning
     ;;
   'StopPipewireScreenAudio')
-    StopPipewireScreenAudio
+    UtilCallCommand --required-args 'micId' StopPipewireScreenAudio
     ;;
 esac

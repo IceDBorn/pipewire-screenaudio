@@ -104,3 +104,29 @@ function UtilGetTempFile () {
   mkdir -p "$XDG_RUNTIME_DIR/tmp"
   mktemp -p "$XDG_RUNTIME_DIR/tmp"
 }
+
+function UtilCallCommand () {
+  local requiredArgs=""
+
+  while [[ $# -gt 1 ]]; do
+    case $1 in
+      --required-args)
+        requiredArgs="$2"
+        shift ; shift
+        ;;
+    esac
+  done
+
+  if [ ! "$requiredArgs" = "" ]; then
+    UtilLog "[util.sh] [Got Required Args] Args: $requiredArgs"
+    echo "$requiredArgs" | while IFS="," read -r arg; do
+      if [ `UtilGetArg "$arg"` = 'null' ]; then
+        UtilLog "[util.sh] [Missing Arg] Arg: $arg"
+        exit 1
+      fi
+    done
+  fi
+
+  UtilLog "[util.sh] [Executing Command] Cmd: $1"
+  $1
+}
