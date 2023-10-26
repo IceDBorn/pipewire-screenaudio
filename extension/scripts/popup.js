@@ -65,7 +65,6 @@ function setButtonToShare() {
     shareStopBtn.innerText = ''
     spinner.className = 'spinner-border spinner-border-sm me-1'
     text.innerText = 'Sharing...'
-    clearInterval(nodesLoop)
     shareStopBtn.appendChild(spinner)
     shareStopBtn.appendChild(text)
     if (document.getElementById('blacklist-btn')) {
