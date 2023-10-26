@@ -28,6 +28,7 @@ function setMicId (id, skipStorage) {
 
 function shouldDisableBlacklistBtn () {
   // Disable on All Desktop Audio
+  if (!selectedNode) return false
   return selectedNode.toString() === '-1'
 }
 
