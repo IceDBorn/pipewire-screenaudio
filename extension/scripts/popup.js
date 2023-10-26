@@ -22,8 +22,8 @@ function setSelectedNode (id) {
 
 let micId = null
 function setMicId (id, skipStorage) {
-  micId = id
-  skipStorage || window.localStorage.setItem('micId', id)
+  micId = JSON.parse(id)
+  skipStorage || window.localStorage.setItem('micId', micId)
 }
 
 function shouldDisableBlacklistBtn () {
