@@ -6,8 +6,12 @@ const message = document.getElementById('message')
 const buttonGroup = document.getElementById('btn-group')
 const shareStopBtn = document.getElementById('share-stop-btn')
 let shareStopBtnState = null
-
 let nodesLoop = null
+
+dropdown.addEventListener('change', () => {
+  setSelectedNode(dropdown.value)
+  chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: 'SetSharingNode', args: [{ node: selectedNode, micId }] })
+})
 
 let selectedNode = null
 function setSelectedNode (id) {
@@ -206,10 +210,6 @@ async function populateNodesList (response) {
     }
 
     selectedNode = dropdown.value
-    dropdown.addEventListener('change', () => {
-      setSelectedNode(dropdown.value)
-      chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: 'SetSharingNode', args: [{ node: selectedNode, micId }] })
-    })
   }
 }
 
