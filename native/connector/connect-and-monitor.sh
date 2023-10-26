@@ -38,10 +38,10 @@ UtilLog "[connect-and-monitor.sh] [Got Stream IDs] IDs: $streamIds"
 
 if [[ -n "$streamIds" ]]; then
     cat "$fullDumpFile" | jq -c "[ .[] | select(.type == \"PipeWire:Interface:Port\") | select(.info.direction == \"output\") | select(.info.props[\"node.id\"] | contains($streamIds)) ]" > $portsFile
-    UtilLog "[connect-and-monitor.sh] [Got Ports] File: $portsFile"
 else
-    portsFile=/dev/null
+    echo '[]' > $portsFile
 fi
+UtilLog "[connect-and-monitor.sh] [Got Ports] File: $portsFile"
 
 if [[ ! "$targetNodeSerial" -eq "-1" ]]; then
     UtilLog "[connect-and-monitor.sh] [Entering Single Node Mode] Serial: $targetNodeSerial"
