@@ -6,8 +6,12 @@ const message = document.getElementById('message')
 const buttonGroup = document.getElementById('btn-group')
 const shareStopBtn = document.getElementById('share-stop-btn')
 let shareStopBtnState = null
-
 let nodesLoop = null
+
+dropdown.addEventListener('change', () => {
+  setSelectedNode(dropdown.value)
+  chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: 'SetSharingNode', args: [{ node: selectedNode, micId }] })
+})
 
 let selectedNode = null
 function setSelectedNode (id) {
@@ -22,12 +26,13 @@ function setSelectedNode (id) {
 
 let micId = null
 function setMicId (id, skipStorage) {
-  micId = id
-  skipStorage || window.localStorage.setItem('micId', id)
+  micId = JSON.parse(id)
+  skipStorage || window.localStorage.setItem('micId', micId)
 }
 
 function shouldDisableBlacklistBtn () {
   // Disable on All Desktop Audio
+  if (!selectedNode) return false
   return selectedNode.toString() === '-1'
 }
 
@@ -64,7 +69,6 @@ function setButtonToShare() {
     shareStopBtn.innerText = ''
     spinner.className = 'spinner-border spinner-border-sm me-1'
     text.innerText = 'Sharing...'
-    clearInterval(nodesLoop)
     shareStopBtn.appendChild(spinner)
     shareStopBtn.appendChild(text)
     if (document.getElementById('blacklist-btn')) {
@@ -206,10 +210,6 @@ async function populateNodesList (response) {
     }
 
     selectedNode = dropdown.value
-    dropdown.addEventListener('change', () => {
-      setSelectedNode(dropdown.value)
-      chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: 'SetSharingNode', args: [{ node: selectedNode, micId }] })
-    })
   }
 }
 
