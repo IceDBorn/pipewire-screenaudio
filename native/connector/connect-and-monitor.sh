@@ -36,7 +36,11 @@ UtilLog "[connect-and-monitor.sh] [Got Streams] File: $streamsFile"
 streamIds=`cat "$streamsFile" | jq -c '.[].id' | paste -sd ','`
 UtilLog "[connect-and-monitor.sh] [Got Stream IDs] IDs: $streamIds"
 
-cat "$fullDumpFile" | jq -c "[ .[] | select(.type == \"PipeWire:Interface:Port\") | select(.info.direction == \"output\") | select(.info.props[\"node.id\"] | contains($streamIds)) ]" > $portsFile
+if [[ -n "$streamIds" ]]; then
+    cat "$fullDumpFile" | jq -c "[ .[] | select(.type == \"PipeWire:Interface:Port\") | select(.info.direction == \"output\") | select(.info.props[\"node.id\"] | contains($streamIds)) ]" > $portsFile
+else
+    echo '[]' > $portsFile
+fi
 UtilLog "[connect-and-monitor.sh] [Got Ports] File: $portsFile"
 
 if [[ ! "$targetNodeSerial" -eq "-1" ]]; then
