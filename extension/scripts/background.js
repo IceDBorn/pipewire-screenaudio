@@ -66,7 +66,7 @@ function handleMessage(request) {
 
     // Called from injector.js - It cannot directly call sendNativeMessage
     case "get-session-type":
-      sendNativeMessage(request.messageName, "GetSessionType");
+      return sendNativeMessage(request.messageName, "GetSessionType");
       break;
 
     default:
