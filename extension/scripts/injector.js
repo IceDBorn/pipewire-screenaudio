@@ -14,7 +14,12 @@ function injectCode(src) {
     browser.runtime
       .sendMessage({ messageName: MESSAGE_NAME, message: "get-session-type" })
       .then(({ type }) => {
-        window.postMessage({ message: "set-session-type", type });
+        window.postMessage({
+          message: "set-data",
+          sessionType: type,
+          iframeResizerUrl: chrome.runtime.getURL("/scripts/override-gdm.js"),
+          popupUrl: chrome.runtime.getURL("/react/dist/index.html"),
+        });
       });
 
     this.remove();

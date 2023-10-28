@@ -1,4 +1,6 @@
 let sessionType = null;
+let iframeResizerUrl = null;
+let popupUrl = null;
 
 function overrideGdm () {
   navigator.mediaDevices.chromiumGetDisplayMedia = navigator.mediaDevices.getDisplayMedia
@@ -18,6 +20,58 @@ function overrideGdm () {
   }
 
   const getDisplayMedia = async () => {
+    try {
+      const newPopupIframe = document.createElement('iframe');
+      const popupIframeId = 'screenaudio__popup';
+
+      newPopupIframe.src = 'about:blank';
+      newPopupIframe.frameBorder = "0";
+      newPopupIframe.allowTransparency="true";
+      newPopupIframe.id = popupIframeId;
+
+      let popupIframeStyle = "";
+      popupIframeStyle += "width: 100vw !important;";
+      popupIframeStyle += "height: 100vh !important;";
+      popupIframeStyle += "top: 0 !important;";
+      popupIframeStyle += "left: 0 !important;";
+      popupIframeStyle += "display: block !important;";
+      popupIframeStyle += "position: fixed !important;";
+      popupIframeStyle += "backgroundColor: transparent !important;";
+      newPopupIframe.style = popupIframeStyle;
+
+      document.body.appendChild(newPopupIframe);
+
+      const popupIframe = document.getElementById(popupIframeId);
+      const iframeDocument = (() => {
+        const content = popupIframe.contentWindow || popupIframe.contentDocument
+        return content.document || content
+      })();
+
+      let bodyStyle = ""
+      bodyStyle += "display: flex;"
+      bodyStyle += "background-color: color-mix(in srgb, gray, transparent 70%);"
+      bodyStyle += "padding: 0;"
+      bodyStyle += "margin: 0;"
+      iframeDocument.body.style = bodyStyle;
+
+      const iframeResizerScript = document.createElement('script');
+      iframeResizerScript.src = iframeResizerUrl;
+      iframeDocument.body.appendChild(iframeResizerScript);
+
+      const innerIframe = document.createElement('iframe');
+
+      let innerIframeStyle = "";
+      innerIframeStyle += "display: block;"
+      innerIframeStyle += "margin: auto;"
+      innerIframe.style = innerIframeStyle;
+
+      innerIframe.src = popupUrl;
+
+      iframeDocument.body.appendChild(innerIframe);
+    } catch (err) {
+      console.error(err)
+    }
+
     let id
     try {
       const myDiscordAudioSink = await getAudioDevice('pipewire-screenaudio')
@@ -73,8 +127,10 @@ overrideGdm()
 const onMessage = (event) => {
   if (event.target !== window)
     return;
-  if (event.data.message === "set-session-type") {
-    sessionType = event.data.type
+  if (event.data.message === "set-data") {
+    sessionType = event.data.sessionType
+    iframeResizerUrl = event.data.iframeResizerUrl
+    popupUrl = event.data.popupUrl
     window.removeEventListener("message", onMessage);
   }
 };
