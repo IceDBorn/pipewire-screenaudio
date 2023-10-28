@@ -17,7 +17,7 @@ function injectCode(src) {
         window.postMessage({
           message: "set-data",
           sessionType: type,
-          iframeResizerUrl: chrome.runtime.getURL("/scripts/override-gdm.js"),
+          iframeResizerUrl: chrome.runtime.getURL("/assets/iframeResizer.min.js"),
           popupUrl: chrome.runtime.getURL("/react/dist/index.html"),
         });
       });

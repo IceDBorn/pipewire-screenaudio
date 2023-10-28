@@ -43,7 +43,11 @@
   "web_accessible_resources": [
     {
       "matches": ["<all_urls>"],
-      "resources": [ "scripts/override-gdm.js", "assets/iframeResizer.min.js" ]
+      "resources": [
+        "scripts/override-gdm.js",
+        "assets/iframeResizer.min.js",
+        "react/dist/index.html"
+      ]
     }
   ]
 

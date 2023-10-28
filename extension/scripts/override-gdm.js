@@ -37,11 +37,17 @@ function overrideGdm () {
       popupIframeStyle += "display: block !important;";
       popupIframeStyle += "position: fixed !important;";
       popupIframeStyle += "backgroundColor: transparent !important;";
+      popupIframeStyle += "opacity: 0;";
       newPopupIframe.style = popupIframeStyle;
 
       document.body.appendChild(newPopupIframe);
 
       const popupIframe = document.getElementById(popupIframeId);
+      let resolveIframeLoaded
+      const iframeLoadedPromise = new Promise(resolve => { resolveIframeLoaded = resolve })
+      popupIframe.addEventListener("load", () => { resolveIframeLoaded(); });
+      await iframeLoadedPromise;
+
       const iframeDocument = (() => {
         const content = popupIframe.contentWindow || popupIframe.contentDocument
         return content.document || content
@@ -49,25 +55,37 @@ function overrideGdm () {
 
       let bodyStyle = ""
       bodyStyle += "display: flex;"
+      bodyStyle += "height: 100vh;"
       bodyStyle += "background-color: color-mix(in srgb, gray, transparent 70%);"
       bodyStyle += "padding: 0;"
       bodyStyle += "margin: 0;"
       iframeDocument.body.style = bodyStyle;
-
-      const iframeResizerScript = document.createElement('script');
-      iframeResizerScript.src = iframeResizerUrl;
-      iframeDocument.body.appendChild(iframeResizerScript);
+      newPopupIframe.style.opacity = 1;
 
       const innerIframe = document.createElement('iframe');
 
       let innerIframeStyle = "";
+      innerIframeStyle += "width: 500px;"
       innerIframeStyle += "display: block;"
       innerIframeStyle += "margin: auto;"
       innerIframe.style = innerIframeStyle;
 
       innerIframe.src = popupUrl;
+      innerIframe.id = "iframe";
 
       iframeDocument.body.appendChild(innerIframe);
+
+      const iframeResizerScript = document.createElement('script');
+      iframeResizerScript.src = iframeResizerUrl;
+      iframeDocument.body.appendChild(iframeResizerScript);
+
+      const resizeScript = document.createElement('script');
+      resizeScript.innerText = " \
+        document.getElementById('iframe').addEventListener('load', () => { \
+          iFrameResize({ log: true }, '#iframe'); \
+        }) \
+      ";
+      iframeDocument.body.appendChild(resizeScript);
     } catch (err) {
       console.error(err)
     }
