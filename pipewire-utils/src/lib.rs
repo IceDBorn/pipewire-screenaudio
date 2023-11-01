@@ -6,6 +6,7 @@ use std::{
 
 use pipewire::{
     keys,
+    link::Link,
     node::Node,
     properties,
     proxy::ProxyT,
@@ -105,6 +106,36 @@ pub fn create_node(node_name: &str, core: &Core) -> Result<Node, pipewire::Error
     )
 }
 
+pub fn link_ports(
+    output: &Ports,
+    input: &Ports,
+    core: &Core,
+) -> Result<[Link; 2], pipewire::Error> {
+    println!("Linking {output:?} with {input:?}");
+
+    let links = [
+        (input.fl_port, output.fl_port),
+        (input.fr_port, output.fr_port),
+    ]
+    .map(|(input, output)| {
+        core.create_object::<Link, _>(
+            "link-factory",
+            &properties! {
+                *keys::FACTORY_NAME => "support.null-audio-sink",
+                *keys::LINK_INPUT_PORT => input.to_string(),
+                *keys::LINK_OUTPUT_PORT => output.to_string(),
+                *keys::OBJECT_LINGER => "1",
+            },
+        )
+    });
+
+    Ok(links
+        .into_iter()
+        .collect::<Result<Vec<_>, _>>()?
+        .try_into()
+        .unwrap())
+}
+
 pub fn await_node_creation(node: Node, mainloop: &MainLoop, core: &Core) -> u32 {
     let node_id = Rc::new(OnceCell::new());
 
@@ -126,6 +157,7 @@ pub fn await_node_creation(node: Node, mainloop: &MainLoop, core: &Core) -> u32 
     return node_id;
 }
 
+#[derive(Debug, Clone, Copy)]
 pub struct Ports {
     pub fl_port: u32,
     pub fr_port: u32,
