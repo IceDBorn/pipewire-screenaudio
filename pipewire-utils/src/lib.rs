@@ -139,11 +139,11 @@ pub fn await_find_fl_fr_input_ports(node_id: u32, mainloop: &MainLoop, registry:
         let fr_port = fr_port.clone();
         move |global| {
             let Some(ref props) = global.props else {
-            return false;
-        };
+                return false;
+            };
             if global.type_ == ObjectType::Port
                 && props.get(*keys::NODE_ID) == Some(&node_id.to_string())
-                && props.get(*keys::PORT_DIRECTION) == Some("out")
+                && props.get(*keys::PORT_DIRECTION) == Some("in")
             {
                 let port_id: u32 = global.id;
                 let Some(audio_channel) = props.get(*keys::AUDIO_CHANNEL) else {
