@@ -54,6 +54,8 @@ fn connect_node(
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mainloop = MainLoop::new()?;
+
+    // Make SIGINT stop mainloop
     let _sig_int = mainloop.add_signal_local(Signal::SIGINT, {
         let mainloop = mainloop.downgrade();
         move || {
@@ -62,11 +64,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     });
+
+    // Connect with Pipewire
     let context = Context::new(&mainloop)?;
     let core = context.connect(None)?;
 
     let virtmic = create_virtmic_node(&mainloop, &core)?;
 
+    // Start monitoring new nodes
     let registry = core.get_registry()?;
     pipewire_utils::monitor_nodes(
         {
@@ -74,6 +79,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let mainloop = MainLoop::new()?;
             let context = Context::new(&mainloop)?;
             move |node| {
+                // Moving this line outside of the closure causes a SIGSEGV
                 let core = context.connect(None).unwrap();
                 dbg!(node);
                 connect_node(node, &virtmic_ports, &mainloop, &core).unwrap();
@@ -83,6 +89,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         &registry,
     );
 
+    // Destroy virtmic node
     core.get_registry()?.destroy_global(virtmic.id);
     do_roundtrip(&mainloop, &core);
 
