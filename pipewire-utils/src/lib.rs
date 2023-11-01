@@ -130,9 +130,23 @@ pub struct Ports {
     pub fr_port: u32,
 }
 
-pub fn await_find_fl_fr_input_ports(node_id: u32, mainloop: &MainLoop, registry: &Registry) -> Ports {
+pub enum PortDirection {
+    INPUT,
+    OUTPUT,
+}
+
+pub fn await_find_fl_fr_ports(
+    node_id: u32,
+    direction: PortDirection,
+    mainloop: &MainLoop,
+    registry: &Registry,
+) -> Ports {
     let fl_port = Rc::new(OnceCell::new());
     let fr_port = Rc::new(OnceCell::new());
+    let direction_name = match direction {
+        PortDirection::INPUT => "in",
+        PortDirection::OUTPUT => "out",
+    };
 
     iterate_objects(&mainloop, &registry, {
         let fl_port = fl_port.clone();
@@ -143,7 +157,7 @@ pub fn await_find_fl_fr_input_ports(node_id: u32, mainloop: &MainLoop, registry:
             };
             if global.type_ == ObjectType::Port
                 && props.get(*keys::NODE_ID) == Some(&node_id.to_string())
-                && props.get(*keys::PORT_DIRECTION) == Some("in")
+                && props.get(*keys::PORT_DIRECTION) == Some(direction_name)
             {
                 let port_id: u32 = global.id;
                 let Some(audio_channel) = props.get(*keys::AUDIO_CHANNEL) else {
@@ -178,4 +192,3 @@ pub fn await_find_fl_fr_input_ports(node_id: u32, mainloop: &MainLoop, registry:
 
     Ports { fl_port, fr_port }
 }
-
