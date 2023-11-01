@@ -1,6 +1,7 @@
 use std::{
     cell::{Cell, OnceCell},
     rc::Rc,
+    sync::mpsc::Sender,
 };
 
 use pipewire::{
@@ -191,4 +192,20 @@ pub fn await_find_fl_fr_ports(
     let fr_port = *fr_port.get().unwrap();
 
     Ports { fl_port, fr_port }
+}
+
+pub fn monitor_nodes(node_channel: Sender<u32>, mainloop: &MainLoop, registry: &Registry) {
+    iterate_objects(&mainloop, &registry, move |global| {
+        let Some(ref props) = global.props else {
+            return false;
+        };
+        // TODO: Add exclusions
+        if global.type_ == ObjectType::Node
+            && props.get(*keys::MEDIA_CLASS) == Some("Stream/Output/Audio")
+        {
+            let node_id: u32 = global.id;
+            node_channel.send(node_id).unwrap();
+        };
+        false
+    });
 }
