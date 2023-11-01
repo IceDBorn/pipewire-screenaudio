@@ -71,12 +71,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     pipewire_utils::monitor_nodes(
         {
             let virtmic_ports = virtmic.ports;
-            //let mainloop = MainLoop::new()?;
-            //let context = Context::new(&mainloop)?;
-            //let core = context.connect(None)?;
+            let mainloop = MainLoop::new()?;
+            let context = Context::new(&mainloop)?;
             move |node| {
-                let mainloop = MainLoop::new().unwrap();
-                let context = Context::new(&mainloop).unwrap();
                 let core = context.connect(None).unwrap();
                 dbg!(node);
                 connect_node(node, &virtmic_ports, &mainloop, &core).unwrap();
