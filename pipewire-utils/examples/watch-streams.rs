@@ -13,7 +13,11 @@ fn monitor_nodes(node_channel: Sender<u32>) -> Result<(), Box<dyn Error>> {
     let context = Context::new(&mainloop)?;
     let core = context.connect(None)?;
     let registry = core.get_registry()?;
-    pipewire_utils::monitor_nodes(node_channel, &mainloop, &registry);
+    pipewire_utils::monitor_nodes(
+        move |node| node_channel.send(node).unwrap(),
+        &mainloop,
+        &registry,
+    );
 
     Ok(())
 }
