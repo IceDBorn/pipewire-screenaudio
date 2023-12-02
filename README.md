@@ -76,9 +76,7 @@ bash install.sh
 
 ### Audio pitching
 
-> Note: The bug is now fixed in the nightly branch of Firefox. This is set to release to the stable branch on December 5th!
-
-- ~~Firefox recently implemented a feature for spawning WebRTC audio nodes, and while it works, it has a lot of pitching and de-sync issues. We created a [bug report](https://bugzilla.mozilla.org/show_bug.cgi?id=1844181) on bugzilla and we're hoping for the best!~~
+- This bug exclusively impacts Firefox versions predating 120
 
 ## Planned Features
 
