@@ -49,6 +49,31 @@ function overrideGdm () {
       }
     })
     const [track] = captureSystemAudioStream.getAudioTracks()
+
+    // Firefox 121+ workaround
+    const randomText = 'Pending PipeWire - ' + (Math.random() * 256 + 1).toString(36).substring(3)
+    const getTitleWithRandom = (title) => `${title} | ${randomText}`
+
+    let lastTitle = document.title
+    let lastTitleWithRandom = getTitleWithRandom(lastTitle)
+    document.title = lastTitleWithRandom
+    const titleWatcher = new MutationObserver(function(mutations) {
+      const newTitle = mutations[0].target.nodeValue
+      if (newTitle !== lastTitleWithRandom) {
+        lastTitle = newTitle
+        lastTitleWithRandom = getTitleWithRandom(newTitle)
+        document.title = lastTitleWithRandom
+      }
+    }).observe(
+      document.querySelector('title'),
+      { subtree: true, characterData: true, childList: true }
+    )
+
+    // Send $lastTitleWithRandom to native
+
+
+    // Wait for confirmation
+
     const gdm = await navigator.mediaDevices.chromiumGetDisplayMedia({
       video: true,
       audio: true
@@ -62,6 +87,8 @@ function overrideGdm () {
 
 overrideGdm()
 
+const onMessageHooks = {}
+
 // Store the session type we get (either "x11" or "wayland") into sessionType
 // This message gets sent from the onload listener in injector.js
 const onMessage = (event) => {
@@ -71,6 +98,8 @@ const onMessage = (event) => {
     sessionType = event.data.type
     window.removeEventListener("message", onMessage);
   }
+
+  Object.values(onMessageHooks).forEach(hook => hook(event))
 };
 
 window.addEventListener("message", onMessage);
