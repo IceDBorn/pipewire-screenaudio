@@ -36,8 +36,8 @@ pub fn get_output_nodes() -> Vec<JsonValue> {
     match get_node_media_class(&node) {
       Ok(v) => v == "Stream/Output/Audio",
       Err(e) => {
-      debug! ("Error: {}", e);
-      return false;
+        debug! ("Error: {}", e);
+        return false;
       },
     }
   }).collect::<Vec<_>>();
