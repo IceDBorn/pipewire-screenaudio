@@ -65,7 +65,7 @@ pub fn node_exists(id: i32, node_name: String) -> bool {
     };
 
     let node_name_match = match get_node_name(&node) {
-      Ok(v) => v == "Stream/Output/Audio",
+      Ok(v) => v == node_name,
       Err(e) => {
         debug! ("Error: {}", e);
         return false;
