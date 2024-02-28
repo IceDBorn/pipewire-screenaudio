@@ -42,7 +42,14 @@ fn SetSharingNode(payload: io::Payload) -> Result<JsonValue, String> {
 }
 
 fn IsPipewireScreenAudioRunning(payload: io::Payload) -> Result<JsonValue, String> {
-  Ok(JsonValue::new_object())
+  let is_running = pipewire::node_exists(
+    payload.arguments["id"].as_i32().unwrap(),
+    String::from("pipewire-screenaudio"),
+  );
+
+  Ok(object! {
+    "isRunning": is_running
+  })
 }
 
 fn StopPipewireScreenAudio(payload: io::Payload) -> Result<JsonValue, String> {
