@@ -1,5 +1,4 @@
 extern crate env_logger;
-extern crate json;
 
 mod command;
 mod helpers;
