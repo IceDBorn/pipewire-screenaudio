@@ -1,11 +1,10 @@
 extern crate env_logger;
-
 extern crate json;
-use json::{object,JsonValue};
 
 mod command;
 mod helpers;
-mod io;
+
+use helpers::io;
 
 fn main() {
   env_logger::init();
