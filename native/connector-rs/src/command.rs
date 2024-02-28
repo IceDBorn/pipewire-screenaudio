@@ -1,5 +1,7 @@
 #![allow(non_snake_case)]
 
+use std::env;
+
 extern crate json;
 use json::{object, JsonValue};
 
@@ -14,7 +16,14 @@ fn GetVersion(payload: io::Payload) -> Result<JsonValue, String> {
 }
 
 fn GetSessionType(payload: io::Payload) -> Result<JsonValue, String> {
-  Ok(JsonValue::new_object())
+  let session_type = match env::var_os("WAYLAND_DISPLAY") {
+    Some(val) => "wayland",
+    None => "x11"
+  };
+
+  Ok(object! {
+    "type": session_type
+  })
 }
 
 fn GetNodes(payload: io::Payload) -> Result<JsonValue, String> {
