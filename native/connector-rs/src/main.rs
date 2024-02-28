@@ -4,6 +4,7 @@ extern crate json;
 use json::{object,JsonValue};
 
 mod command;
+mod helpers;
 mod io;
 
 fn main() {
