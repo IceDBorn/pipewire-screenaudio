@@ -30,7 +30,7 @@ pub fn read() -> Result<Payload, String> {
 
   let payload = json::parse(payload_string).unwrap();
   let cmd = payload["cmd"].as_str().unwrap();
-  let args = &payload["args"];
+  let args = &payload["args"][0];
 
   debug!("Cmd: {}", cmd);
   debug!("Args: {}", args);
