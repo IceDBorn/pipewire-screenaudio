@@ -10,6 +10,7 @@ use json::{object, JsonValue};
 extern crate log;
 use log::debug;
 
+use super::helpers::JsonGetters;
 use super::io;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -41,21 +42,13 @@ fn GetNodes(payload: io::Payload) -> Result<JsonValue, String> {
   let dump = json::parse(dump_string).unwrap();
 
   let dump_filtered = dump.members().filter(|&node| {
-    if !node.has_key("info") { return false; }
-    let info = node["info"].to_owned();
-    debug! ("Info: {}", info.dump());
-    if info.is_null() { return false; }
+    let media_class_result = node.get_fields_chain(vec!["info","props","media.class"]);
+    if let Err(e) = media_class_result {
+      debug! ("Error: {}", e);
+      return false;
+    }
 
-    if !info.has_key("props") { return false; }
-    let props = info["props"].to_owned();
-    debug! ("Props: {}", props.dump());
-    if props.is_null() { return false; }
-
-    if !props.has_key("media.class") { return false; }
-    let media_class = props["media.class"].to_owned();
-    debug! ("Media Class: {}", media_class.dump());
-    if media_class.is_null() { return false; }
-
+    let media_class = media_class_result.unwrap();
     let media_class_string = media_class.as_str().unwrap();
     media_class_string == "Stream/Output/Audio"
   }).collect::<Vec<_>>();

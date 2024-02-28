@@ -43,6 +43,8 @@ pub fn read() -> Result<Payload, String> {
 
 pub fn write(payload: JsonValue) -> Result<(), String> {
   let payload_string = payload.dump();
+  debug! ("Response: {}", payload_string);
+
   let payload_buffer = payload_string.as_bytes();
   let length = payload_buffer.len();
   let length_buffer = u32::try_from(length).unwrap().to_le_bytes();
