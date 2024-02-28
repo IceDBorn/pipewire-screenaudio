@@ -21,19 +21,25 @@ fn get_pw_dump() -> Vec<JsonValue> {
   dump.members().map(|node| node.to_owned()).collect::<Vec<_>>()
 }
 
+fn get_node_media_class(node: &JsonValue) -> Result<String,String> {
+  let result = node.get_fields_chain(vec!["info","props","media.class"]);
+  match result {
+    Ok(v) => Ok(String::from(v.as_str().unwrap())),
+    Err(e) => Err(e),
+  }
+}
+
 pub fn get_output_nodes() -> Vec<JsonValue> {
   let dump = get_pw_dump();
 
   let dump_filtered = dump.iter().filter(|&node| {
-    let media_class_result = node.get_fields_chain(vec!["info","props","media.class"]);
-    if let Err(e) = media_class_result {
+    match get_node_media_class(&node) {
+      Ok(v) => v == "Stream/Output/Audio",
+      Err(e) => {
       debug! ("Error: {}", e);
       return false;
+      },
     }
-
-    let media_class = media_class_result.unwrap();
-    let media_class_string = media_class.as_str().unwrap();
-    media_class_string == "Stream/Output/Audio"
   }).collect::<Vec<_>>();
 
   let dump_converted = dump_filtered.iter().map(|&node| object! { "properties": node["info"]["props"].to_owned() }).collect::<Vec<_>>();
