@@ -55,23 +55,68 @@ pub fn get_output_nodes() -> Vec<JsonValue> {
   return dump_converted;
 }
 
-pub fn node_exists(id: i32, node_name: String) -> bool {
+pub fn find_node_by_id(id: i32) -> Option<JsonValue> {
   let dump = get_pw_dump();
 
-  dump.iter().any(|node| {
-    let id_match = match node["id"].as_i32() {
-      Some(v) => v == id,
-      None => false,
-    };
+  let found_node = dump.iter().find(|&node| node["id"].as_i32().unwrap() == id);
 
-    let node_name_match = match get_node_name(&node) {
-      Ok(v) => v == node_name,
-      Err(e) => {
-        debug! ("Error: {}", e);
-        return false;
-      },
-    };
+  if found_node.is_none() {
+    return None;
+  }
 
-    return id_match && node_name_match;
-  })
+  Some((*found_node.unwrap()).clone())
+}
+
+pub fn find_node_by_name(name: &String) -> Option<JsonValue> {
+  let dump = get_pw_dump();
+
+  let found_node = dump.iter().find(|&node| {
+    match get_node_name(node) {
+      Ok(v) => v == *name,
+      Err(_) => false,
+    }
+  });
+
+  if found_node.is_none() {
+    return None;
+  }
+
+  Some((*found_node.unwrap()).clone())
+}
+
+pub fn node_exists(id: i32, node_name: &String) -> bool { // TODO Result<bool,String>
+  let some_node = find_node_by_id(id);
+
+  if some_node.is_none() {
+    return false;
+  }
+
+  match get_node_name(&some_node.unwrap()) {
+    Ok(v) => v == *node_name,
+    Err(_) => false,
+  }
+}
+
+pub fn create_virtual_source(node_name: &String) -> i32 { // TODO Result<i32,String>
+  let result = Command::new("pw-cli")
+    .arg("create-node")
+    .arg("adapter")
+    .arg(format!("{{ factory.name=support.null-audio-sink node.name={} media.class=Audio/Source/Virtual object.linger=1 audio.position=[FL,FR] }}", node_name))
+    .output();
+
+  if result.is_err() {
+    return -1;
+  }
+
+  match find_node_by_name(node_name) {
+    Some(v) => v["id"].as_i32().unwrap(),
+    None => -1,
+  }
+}
+
+pub fn create_virtual_source_if_not_exists(node_name: &String) -> i32 {
+  match find_node_by_name(node_name) {
+    Some(v) => v["id"].as_i32().unwrap(),
+    None => create_virtual_source(node_name),
+  }
 }
