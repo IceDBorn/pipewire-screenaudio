@@ -10,6 +10,7 @@ use crate::helpers::io;
 use crate::helpers::pipewire;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
+const VIRTMIC_NODE_NAME: &str = "pipewire-screenaudio";
 
 fn GetVersion(_: io::Payload) -> Result<JsonValue, String> {
   Ok(object! {
@@ -34,7 +35,11 @@ fn GetNodes(_: io::Payload) -> Result<JsonValue, String> {
 }
 
 fn StartPipewireScreenAudio(payload: io::Payload) -> Result<JsonValue, String> {
-  Ok(JsonValue::new_object())
+  let node_id = pipewire::create_virtual_source_if_not_exists(&VIRTMIC_NODE_NAME.to_string());
+
+  Ok(object! {
+    "micId": node_id
+  })
 }
 
 fn SetSharingNode(payload: io::Payload) -> Result<JsonValue, String> {
@@ -43,8 +48,8 @@ fn SetSharingNode(payload: io::Payload) -> Result<JsonValue, String> {
 
 fn IsPipewireScreenAudioRunning(payload: io::Payload) -> Result<JsonValue, String> {
   let is_running = pipewire::node_exists(
-    payload.arguments["id"].as_i32().unwrap(),
-    "pipewire-screenaudio".to_string(),
+    payload.arguments["micId"].as_i32().unwrap(),
+    &VIRTMIC_NODE_NAME.to_string(),
   );
 
   Ok(object! {
