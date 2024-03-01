@@ -17,7 +17,7 @@ pub trait JsonGetters {
 impl JsonGetters for JsonValue {
   fn get_field_or_fail(&self, field: &str) -> Result<JsonValue,String> {
     if self.has_key(field) && !self[field].is_null() {
-      Ok(self[field].to_owned())
+      Ok(self[field].clone())
     } else {
       Err(format! ("Field does not exist or null: {}", field))
     }

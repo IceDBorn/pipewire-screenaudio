@@ -11,13 +11,13 @@ use crate::helpers::pipewire;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
-fn GetVersion(payload: io::Payload) -> Result<JsonValue, String> {
+fn GetVersion(_: io::Payload) -> Result<JsonValue, String> {
   Ok(object! {
     "version": VERSION
   })
 }
 
-fn GetSessionType(payload: io::Payload) -> Result<JsonValue, String> {
+fn GetSessionType(_: io::Payload) -> Result<JsonValue, String> {
   let session_type = match env::var_os("WAYLAND_DISPLAY") {
     Some(_) => "wayland",
     None => "x11"
@@ -28,7 +28,7 @@ fn GetSessionType(payload: io::Payload) -> Result<JsonValue, String> {
   })
 }
 
-fn GetNodes(payload: io::Payload) -> Result<JsonValue, String> {
+fn GetNodes(_: io::Payload) -> Result<JsonValue, String> {
   let nodes = pipewire::get_output_nodes();
   Ok(JsonValue::from(nodes))
 }
@@ -44,7 +44,7 @@ fn SetSharingNode(payload: io::Payload) -> Result<JsonValue, String> {
 fn IsPipewireScreenAudioRunning(payload: io::Payload) -> Result<JsonValue, String> {
   let is_running = pipewire::node_exists(
     payload.arguments["id"].as_i32().unwrap(),
-    String::from("pipewire-screenaudio"),
+    "pipewire-screenaudio".to_string(),
   );
 
   Ok(object! {
