@@ -19,7 +19,7 @@ pub fn read() -> Result<Payload, String> {
   let mut stdin = io::stdin();
   stdin.read_exact(&mut length_buffer).unwrap();
 
-  let length = u32::from_le_bytes(length_buffer.to_owned());
+  let length = u32::from_le_bytes(length_buffer);
   debug!("Length: {}", length);
 
   let mut payload_buffer = vec![0u8; usize::try_from(length).unwrap()];
@@ -29,15 +29,15 @@ pub fn read() -> Result<Payload, String> {
   debug!("Payload: {}", payload_string);
 
   let payload = json::parse(payload_string).unwrap();
-  let cmd = payload["cmd"].as_str().unwrap();
+  let cmd = payload["cmd"].to_string();
   let args = &payload["args"][0];
 
   debug!("Cmd: {}", cmd);
   debug!("Args: {}", args);
 
   Ok(Payload {
-    command: String::from(cmd),
-    arguments: args.to_owned(),
+    command: cmd.to_string(),
+    arguments: args.clone(),
   })
 }
 
