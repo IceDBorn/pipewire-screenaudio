@@ -73,8 +73,8 @@ pub fn get_output_nodes() -> Vec<JsonValue> {
   return dump_converted;
 }
 
-pub fn find_node_by_id(id: i32) -> Option<JsonValue> {
-  let dump = get_pw_dump(false);
+pub fn find_node_by_id(id: i32, invalidate_cache: bool) -> Option<JsonValue> {
+  let dump = get_pw_dump(invalidate_cache);
 
   let found_node = dump.iter().find(|&node| node["id"].as_i32().unwrap() == id);
 
@@ -85,8 +85,8 @@ pub fn find_node_by_id(id: i32) -> Option<JsonValue> {
   Some((*found_node.unwrap()).clone())
 }
 
-pub fn find_node_by_name(name: &String) -> Option<JsonValue> {
-  let dump = get_pw_dump(false);
+pub fn find_node_by_name(name: &String, invalidate_cache: bool) -> Option<JsonValue> {
+  let dump = get_pw_dump(invalidate_cache);
 
   let found_node = dump.iter().find(|&node| {
     match get_node_name(node) {
@@ -103,7 +103,7 @@ pub fn find_node_by_name(name: &String) -> Option<JsonValue> {
 }
 
 pub fn node_exists(id: i32, node_name: &String) -> bool { // TODO Result<bool,String>
-  let some_node = find_node_by_id(id);
+  let some_node = find_node_by_id(id, false);
 
   if some_node.is_none() {
     return false;
@@ -126,15 +126,31 @@ pub fn create_virtual_source(node_name: &String) -> i32 { // TODO Result<i32,Str
     return -1;
   }
 
-  match find_node_by_name(node_name) {
+  match find_node_by_name(node_name, true) {
     Some(v) => v["id"].as_i32().unwrap(),
     None => -1,
   }
 }
 
+pub fn destroy_node(node_id: i32) -> bool {
+  let result = Command::new("pw-cli")
+    .arg("destroy")
+    .arg(node_id.to_string())
+    .output();
+
+  result.is_ok()
+}
+
 pub fn create_virtual_source_if_not_exists(node_name: &String) -> i32 {
-  match find_node_by_name(node_name) {
+  match find_node_by_name(node_name, true) {
     Some(v) => v["id"].as_i32().unwrap(),
     None => create_virtual_source(node_name),
+  }
+}
+
+pub fn destroy_node_if_exists(node_id: i32) -> bool {
+  match find_node_by_id(node_id, false) {
+    None => false,
+    Some(_) => destroy_node(node_id),
   }
 }
