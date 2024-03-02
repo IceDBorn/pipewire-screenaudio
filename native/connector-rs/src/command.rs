@@ -58,7 +58,12 @@ fn IsPipewireScreenAudioRunning(payload: io::Payload) -> Result<JsonValue, Strin
 }
 
 fn StopPipewireScreenAudio(payload: io::Payload) -> Result<JsonValue, String> {
-  Ok(JsonValue::new_object())
+  let node_id = payload.arguments["micId"].as_i32().unwrap();
+  let result = pipewire::destroy_node_if_exists(node_id);
+
+  Ok(object! {
+    "success": result
+  })
 }
 
 pub fn run(payload: io::Payload) -> Result<JsonValue, String> {
