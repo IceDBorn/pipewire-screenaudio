@@ -1,5 +1,4 @@
-use std::process::Command;
-use std::str;
+use std::{process::Command, rc::Rc, str};
 
 extern crate json;
 use json::{object,JsonValue};
@@ -9,7 +8,21 @@ use log::debug;
 
 use crate::helpers::JsonGetters;
 
-fn get_pw_dump() -> Vec<JsonValue> {
+static mut DUMP_CACHE: Option<Rc<Vec<JsonValue>>> = None;
+fn get_dump_cache() -> Option<&'static Vec<JsonValue>> {
+  unsafe {
+    match &DUMP_CACHE {
+      None => None,
+      Some(v) => Some(v),
+    }
+  }
+}
+
+fn get_pw_dump(invalidate_cache: bool) -> &'static [JsonValue] {
+  if !invalidate_cache && unsafe { DUMP_CACHE.is_some() } {
+    return get_dump_cache().unwrap();
+  }
+
   let dump_buffer = Command::new("pw-dump")
     .output()
     .expect("failed to execute process")
@@ -18,7 +31,12 @@ fn get_pw_dump() -> Vec<JsonValue> {
   let dump_string = str::from_utf8(&dump_buffer).unwrap();
   let dump = json::parse(dump_string).unwrap();
 
-  dump.members().map(|node| node.clone()).collect::<Vec<_>>()
+  let result = dump.members().map(|node| node.clone()).collect::<Vec<_>>();
+
+  let ptr = Rc::new(result);
+  unsafe { DUMP_CACHE = Some(ptr); };
+
+  get_dump_cache().unwrap()
 }
 
 fn get_node_media_class(node: &JsonValue) -> Result<String,String> {
@@ -38,7 +56,7 @@ fn get_node_name(node: &JsonValue) -> Result<String,String> {
 }
 
 pub fn get_output_nodes() -> Vec<JsonValue> {
-  let dump = get_pw_dump();
+  let dump = get_pw_dump(false);
 
   let dump_filtered = dump.iter().filter(|&node| {
     match get_node_media_class(&node) {
@@ -56,7 +74,7 @@ pub fn get_output_nodes() -> Vec<JsonValue> {
 }
 
 pub fn find_node_by_id(id: i32) -> Option<JsonValue> {
-  let dump = get_pw_dump();
+  let dump = get_pw_dump(false);
 
   let found_node = dump.iter().find(|&node| node["id"].as_i32().unwrap() == id);
 
@@ -68,7 +86,7 @@ pub fn find_node_by_id(id: i32) -> Option<JsonValue> {
 }
 
 pub fn find_node_by_name(name: &String) -> Option<JsonValue> {
-  let dump = get_pw_dump();
+  let dump = get_pw_dump(false);
 
   let found_node = dump.iter().find(|&node| {
     match get_node_name(node) {
