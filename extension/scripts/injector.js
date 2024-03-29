@@ -11,7 +11,7 @@ function injectCode (src) {
   script.onload = function () {
     console.log('pipewire-screenaudio script injected')
 
-    browser.runtime
+    chrome.runtime
       .sendMessage({ messageName: MESSAGE_NAME, message: 'get-session-type' })
       .then(({ type }) => {
         window.postMessage({ message: "set-session-type", type })

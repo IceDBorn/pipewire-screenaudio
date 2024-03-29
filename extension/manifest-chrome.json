@@ -1,0 +1,44 @@
+{
+
+  "manifest_version": 3,
+  "name": "Pipewire Screenaudio",
+  "version": "0.3.4",
+
+  "description": "Passthrough pipewire audio to WebRTC screenshare",
+
+  "action": {
+    "default_popup": "assets/web/html/popup.html"
+  },
+
+  "icons": {
+    "16": "assets/icons/icon.svg",
+    "32": "assets/icons/icon.svg",
+    "48": "assets/icons/icon.svg",
+    "64": "assets/icons/icon.svg"
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "run_at": "document_start",
+      "js": ["scripts/injector.js"],
+      "all_frames": true
+    }
+  ],
+
+  "background": {
+    "service_worker": "scripts/background.js"
+  },
+
+  "permissions": [
+    "nativeMessaging"
+  ],
+
+  "web_accessible_resources": [
+    {
+      "matches": ["<all_urls>"],
+      "resources": [ "scripts/index.js" ]
+    }
+  ]
+
+}

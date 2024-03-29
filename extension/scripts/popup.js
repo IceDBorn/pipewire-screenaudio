@@ -1,5 +1,5 @@
 const MESSAGE_NAME = 'com.icedborn.pipewirescreenaudioconnector'
-const EXT_VERSION = browser.runtime.getManifest().version
+const EXT_VERSION = chrome.runtime.getManifest().version
 
 const dropdown = document.getElementById('dropdown')
 const message = document.getElementById('message')
@@ -224,7 +224,7 @@ function onReload (response) {
   updateGui()
 }
 
-function onResponse (response) {
+async function onResponse (response) {
   if (!checkVersionMatch(response.version)) {
     message.innerText = `Version mismatch\nExtension: ${EXT_VERSION}\nNative: ${response.version}`
     dropdown.hidden = true
@@ -234,7 +234,12 @@ function onResponse (response) {
   settings.addEventListener('click', async () => {
     window.open('settings.html')
   })
-  chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: 'GetNodes', args: [] }).then(onReload, onError)
+  if (typeof browser == 'undefined') {
+    // Due to chrome behavior (bug?) we need to await for this to not crash the extension
+    await chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: 'GetNodes', args: [] }).then(onReload, onError)
+  } else {
+    chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: 'GetNodes', args: [] }).then(onReload, onError)
+  }
   nodesLoop = setInterval(() => { chrome.runtime.sendNativeMessage(MESSAGE_NAME, { cmd: 'GetNodes', args: [] }).then(onReload, onError) }, 1000)
   window.localStorage.setItem('nodesList', null)
   updateGui()
@@ -246,7 +251,7 @@ function onError (error) {
   dropdown.hidden = true
 }
 
-function handleMessage (message) {
+function handleMessage (message, sender, sendResponse) {
   if (message === 'mic-id-updated') {
     setMicId(window.localStorage.getItem('micId'), true)
 
@@ -257,6 +262,15 @@ function handleMessage (message) {
 
   if (message === 'mic-id-removed') {
     updateGui()
+  }
+
+  if (message.messageName === 'set-storage') {
+    window.localStorage.setItem(message.storageKey, message.value)
+    sendResponse(true)
+  }
+
+  if (message.messageName === 'get-storage') {
+    sendResponse(window.localStorage.getItem(message.storageKey))
   }
 }
 

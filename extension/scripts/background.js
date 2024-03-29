@@ -17,9 +17,9 @@ async function runQueuedCommands () {
       const { inMap, outMap } = command.maps || {};
 
       if (inMap) {
-        inMap.forEach(([storageKey, argKey]) => {
-          args[argKey] = window.localStorage.getItem(storageKey);
-        });
+        for (const [storageKey, argKey] of inMap) {
+          args[argKey] = await chrome.runtime.sendMessage({ messageName: "get-storage", storageKey: storageKey })
+        }
       }
 
       console.log(args)
@@ -27,9 +27,10 @@ async function runQueuedCommands () {
       console.log(result)
 
       if (outMap) {
-        outMap.forEach(([storageKey, resultKey]) => {
-          window.localStorage.setItem(storageKey, (resultKey ? result[resultKey] : null));
-        });
+        for (const [storageKey, resultKey] of outMap) {
+          const value = resultKey ? result[resultKey] : null
+          await chrome.runtime.sendMessage({ messageName: 'set-storage', storageKey: storageKey, value: value })
+        }
       }
 
       if (command.event) {
