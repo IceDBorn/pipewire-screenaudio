@@ -38,7 +38,7 @@ You can find us on [Matrix](https://matrix.to/#/#pipewire-screenaudio:matrix.org
 
 {inputs, pkgs, ...}: {
   environment.systemPackages = with pkgs; [
-    (firefox.override { extraNativeMessagingHosts = [ inputs.pipewire-screenaudio.packages.${pkgs.system}.default ]; })
+    (firefox.override { nativeMessagingHosts = [ inputs.pipewire-screenaudio.packages.${pkgs.system}.default ]; })
     # ...
   ];
 }
