@@ -61,10 +61,27 @@ bash install.sh
 
 ## Usage
 
-- Install the [extension](https://addons.mozilla.org/firefox/addon/pipewire-screenaudio)
-- Optional: Grant extension with access permissions to all sites
-- Join a WebRTC call, click the extension icon, select an audio node and share
-- Stream, your transmission should contain both audio and video
+- #### Via the extension
+
+  - Install the [extension](https://addons.mozilla.org/firefox/addon/pipewire-screenaudio)
+  - Optional: Grant extension with access permissions to all sites
+  - Join a WebRTC call, click the extension icon, select an audio node and share
+  - Stream, your transmission should contain both audio and video
+
+- #### Via the CLI
+
+  - **Description:** It's used to manually call the commands that are normally called by the extension. It is meant for troubleshooting, but it could be used for integrating the connector with other apps.
+  - **Usage:**
+    ```bash
+    bash native/connector/cli.sh COMMAND ARGUMENTS
+    ```
+  - **Example:**
+    ```bash
+    bash native/connector/cli.sh GetNodes
+    ```
+    ```bash
+    bash native/connector/cli.sh SetSharingNode '{ "micId": 100, "node": 200 }'
+  ```
 
 ## Known Problems
 
