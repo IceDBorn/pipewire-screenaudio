@@ -2,15 +2,15 @@ use std::str;
 use std::io;
 use std::io::prelude::{Read,Write};
 
-extern crate json;
-use json::JsonValue;
+extern crate serde_json;
+use serde_json::{from_str, Value};
 
 extern crate log;
 use log::debug;
 
 pub struct Payload {
   pub command: String,
-  pub arguments: JsonValue,
+  pub arguments: Value,
 }
 
 pub fn read() -> Result<Payload, String> {
@@ -28,7 +28,7 @@ pub fn read() -> Result<Payload, String> {
   let payload_string = str::from_utf8(&payload_buffer).unwrap();
   debug!("Payload: {}", payload_string);
 
-  let payload = json::parse(payload_string).unwrap();
+  let payload: Value = from_str(payload_string).unwrap();
   let cmd = payload["cmd"].to_string();
   let args = &payload["args"][0];
 
@@ -41,8 +41,8 @@ pub fn read() -> Result<Payload, String> {
   })
 }
 
-pub fn write(payload: JsonValue) -> Result<(), String> {
-  let payload_string = payload.dump();
+pub fn write(payload: Value) -> Result<(), String> {
+  let payload_string = payload.to_string();
   debug! ("Response: {}", payload_string);
 
   let payload_buffer = payload_string.as_bytes();
