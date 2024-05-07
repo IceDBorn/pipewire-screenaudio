@@ -1,7 +1,7 @@
 use std::{process::Command, rc::Rc, str};
 
 extern crate serde_json;
-use serde_json::{from_str, json, Map, Value};
+use serde_json::{json, Deserializer, Map, Value};
 
 extern crate log;
 use log::debug;
@@ -29,7 +29,10 @@ fn get_pw_dump(invalidate_cache: bool) -> &'static [Value] {
     .stdout;
 
   let dump_string = str::from_utf8(&dump_buffer).unwrap();
-  let dump: Value = from_str(dump_string).unwrap();
+
+  // In case `pw-dump` returns multiple arrays (#15), only keep the first one
+  let mut stream = Deserializer::from_str(dump_string).into_iter::<Value>();
+  let dump: Value = stream.filter(|batch| ! batch.as_ref().unwrap()[0]["info"].is_null()).next().unwrap().unwrap();
 
   let result = dump.as_array().unwrap().iter().map(|node| node.clone()).collect::<Vec<_>>();
 
@@ -42,7 +45,7 @@ fn get_pw_dump(invalidate_cache: bool) -> &'static [Value] {
 fn get_node_media_class(node: &Value) -> Result<String,String> {
   let result = node.get_fields_chain(vec!["info","props","media.class"]);
   match result {
-    Ok(v) => Ok(v.to_string()),
+    Ok(v) => Ok(v.as_str().unwrap().to_string()),
     Err(e) => Err(e),
   }
 }

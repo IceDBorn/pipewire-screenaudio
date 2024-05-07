@@ -29,7 +29,7 @@ pub fn read() -> Result<Payload, String> {
   debug!("Payload: {}", payload_string);
 
   let payload: Value = from_str(payload_string).unwrap();
-  let cmd = payload["cmd"].to_string();
+  let cmd = payload["cmd"].as_str().unwrap();
   let args = &payload["args"][0];
 
   debug!("Cmd: {}", cmd);
