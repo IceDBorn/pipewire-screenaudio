@@ -81,7 +81,7 @@ bash install.sh
     ```
     ```bash
     bash native/connector/cli.sh SetSharingNode '{ "micId": 100, "node": 200 }'
-  ```
+    ```
 
 ## Known Problems
 
