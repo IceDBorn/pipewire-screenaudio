@@ -35,10 +35,10 @@ fn GetNodes(_: io::Payload) -> Result<Value, String> {
 }
 
 fn StartPipewireScreenAudio(payload: io::Payload) -> Result<Value, String> {
-  let node_id = pipewire::create_virtual_source_if_not_exists(&VIRTMIC_NODE_NAME.to_string());
+  let micId = pipewire::create_virtual_source_if_not_exists(&VIRTMIC_NODE_NAME.to_string());
 
   Ok(json!({
-    "micId": node_id
+    "micId": micId
   }))
 }
 
@@ -58,8 +58,8 @@ fn IsPipewireScreenAudioRunning(payload: io::Payload) -> Result<Value, String> {
 }
 
 fn StopPipewireScreenAudio(payload: io::Payload) -> Result<Value, String> {
-  let node_id = payload.arguments["micId"].as_number().unwrap().as_i64().unwrap();
-  let result = pipewire::destroy_node_if_exists(node_id);
+  let micId = payload.arguments["micId"].as_number().unwrap().as_i64().unwrap();
+  let result = pipewire::destroy_node_if_exists(micId);
 
   Ok(json!({
     "success": result
