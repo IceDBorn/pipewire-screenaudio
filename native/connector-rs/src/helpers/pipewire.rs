@@ -71,9 +71,81 @@ pub fn get_output_nodes() -> Vec<Value> {
     }
   }).collect::<Vec<_>>();
 
-  let dump_converted = dump_filtered.iter().map(|&node| json!({ "properties": node["info"]["props"].clone() })).collect::<Vec<_>>();
+  let dump_converted = dump_filtered.iter().map(|&node| json!({ "id": node["id"].clone(), "properties": node["info"]["props"].clone() })).collect::<Vec<_>>();
 
   return dump_converted;
+}
+
+pub fn get_node_id_from_serial(serial: i64) -> Option<i64> {
+  let dump = get_output_nodes();
+  let result = dump.into_iter()
+    .find(|node| match node.get_fields_chain(vec!["properties", "object.serial"]) {
+      Err(_) => false,
+      Ok(v) => v == serial,
+    });
+
+  if (result.is_some()) {
+    eprintln!("Found Target: {}", result.to_owned().unwrap());
+  }
+
+  match result {
+    Some(v) => Some(v["id"].as_i64().unwrap()),
+    None => None,
+  }
+}
+
+pub fn get_ports_of_node(node_id: i64, port_type: String, invalidate_cache: bool) -> Value {
+  let ports = get_pw_dump(invalidate_cache).iter()
+    .filter(|&node| node["type"] == "PipeWire:Interface:Port")
+    .filter(|&node| {
+      let is_node_id = match node.get_fields_chain(vec!["info","props","node.id"]) {
+        Err(_) => false,
+        Ok(v) => {
+          eprintln!("{} {}", v, node_id);
+          v == node_id
+        },
+      };
+
+      let is_input = match node.get_fields_chain(vec!["info","direction"]) {
+        Err(_) => false,
+        Ok(v) => {
+          eprintln!("{} {}", v.as_str().unwrap(), port_type);
+          v.as_str().unwrap() == port_type
+        },
+      };
+
+      return is_input && is_node_id;
+    })
+    .map(|node| json!({
+      "id": node["id"].as_i64().unwrap(),
+      "channel": node.get_fields_chain(vec!["info","props","audio.channel"]).unwrap(),
+    }))
+    .collect::<Vec<_>>();
+
+  eprintln!("Ports: {:?}", ports);
+
+  let result = &mut Map::new();
+  for port in ports {
+    let channel = port["channel"].as_str().unwrap().to_string();
+    result.insert(channel, port["id"].clone());
+  }
+
+  return Value::Object(result.to_owned());
+}
+
+pub fn get_links_to_node(node_id: i64, invalidate_cache: bool) -> Value {
+  let links = get_pw_dump(invalidate_cache).iter()
+    .filter(|&node| node["type"] == "PipeWire:Interface:Link")
+    .filter(|&node| {
+      match node.get_fields_chain(vec!["info","input-node-id"]) {
+        Err(_) => false,
+        Ok(v) => v == node_id,
+      }
+    })
+    .map(|link| link.to_owned())
+    .collect::<Vec<_>>();
+
+  return Value::Array(links);
 }
 
 pub fn find_node_by_id(id: i64, invalidate_cache: bool) -> Option<Value> {
@@ -144,6 +216,58 @@ pub fn destroy_node(node_id: i64) -> bool {
     .output();
 
   result.is_ok()
+}
+
+pub fn destroy_nodes(port_ids: Vec<i64>) -> bool {
+  port_ids.iter()
+    .map(|port_id| destroy_node(port_id.clone()))
+    .all(|success| success)
+}
+
+pub fn connect_ports(port_id_a: i64, port_id_b: i64) -> bool {
+  let result = Command::new("pw-link")
+    .arg(port_id_a.to_string())
+    .arg(port_id_b.to_string())
+    .output();
+
+  return result.is_ok();
+}
+
+pub fn connect_nodes(in_node_id: i64, out_node_id: i64) -> bool {
+  let in_node_ports = get_ports_of_node(in_node_id, "output".to_string(), false);
+  eprintln!("Searching in_node ports...");
+  if !in_node_ports.as_object().unwrap().contains_key("FL") { return false; }
+  if !in_node_ports.as_object().unwrap().contains_key("FR") { return false; }
+
+  let out_node_ports = get_ports_of_node(out_node_id, "input".to_string(), false);
+  eprintln!("Searching out_node ports...");
+  if !out_node_ports.as_object().unwrap().contains_key("FL") { return false; }
+  if !out_node_ports.as_object().unwrap().contains_key("FR") { return false; }
+
+  let result_fl = connect_ports(
+    in_node_ports["FL"].as_i64().unwrap(),
+    out_node_ports["FL"].as_i64().unwrap(),
+  );
+  if !result_fl {
+    eprintln!("Failed on FL");
+    return false;
+  }
+
+  let result_fr = connect_ports(
+    in_node_ports["FR"].as_i64().unwrap(),
+    out_node_ports["FR"].as_i64().unwrap(),
+  );
+  if !result_fr {
+    eprintln!("Failed on FR");
+    return false;
+  }
+
+  return true;
+}
+
+pub fn disconnect_node(node_id: i64) -> bool {
+  let links_to_disconnect = get_links_to_node(node_id, false);
+  destroy_nodes(links_to_disconnect.as_array().unwrap().iter().map(|link| link["id"].as_i64().unwrap()).collect())
 }
 
 pub fn create_virtual_source_if_not_exists(node_name: &String) -> i64 {

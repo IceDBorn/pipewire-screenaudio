@@ -43,7 +43,21 @@ fn StartPipewireScreenAudio(payload: io::Payload) -> Result<Value, String> {
 }
 
 fn SetSharingNode(payload: io::Payload) -> Result<Value, String> {
-  Ok(json!({}))
+  let micId = payload.arguments["micId"].as_number().unwrap().as_i64().unwrap();
+  let node = payload.arguments["node"].as_number().unwrap().as_i64().unwrap();
+  pipewire::disconnect_node(micId);
+
+  match pipewire::get_node_id_from_serial(node) {
+    None => Ok(json!({
+      "success": false
+    })),
+    Some(v) => {
+      let result = pipewire::connect_nodes(v, micId);
+      Ok(json!({
+        "success": result
+      }))
+    }
+  }
 }
 
 fn IsPipewireScreenAudioRunning(payload: io::Payload) -> Result<Value, String> {
