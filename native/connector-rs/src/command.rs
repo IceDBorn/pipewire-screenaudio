@@ -7,6 +7,7 @@ extern crate serde_json;
 use serde_json::{json, Value};
 
 use crate::helpers::io;
+use crate::helpers::parse_numeric_argument;
 use crate::helpers::pipewire;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -43,8 +44,8 @@ fn StartPipewireScreenAudio(payload: io::Payload) -> Result<Value, String> {
 }
 
 fn SetSharingNode(payload: io::Payload) -> Result<Value, String> {
-  let micId = payload.arguments["micId"].as_number().unwrap().as_i64().unwrap();
-  let node = payload.arguments["node"].as_number().unwrap().as_i64().unwrap();
+  let micId = parse_numeric_argument(payload.arguments["micId"].clone());
+  let node = parse_numeric_argument(payload.arguments["node"].clone());
   pipewire::disconnect_node(micId);
 
   match pipewire::get_node_id_from_serial(node) {
@@ -62,7 +63,7 @@ fn SetSharingNode(payload: io::Payload) -> Result<Value, String> {
 
 fn IsPipewireScreenAudioRunning(payload: io::Payload) -> Result<Value, String> {
   let is_running = pipewire::node_exists(
-    payload.arguments["micId"].as_number().unwrap().as_i64().unwrap(),
+    parse_numeric_argument(payload.arguments["micId"].clone()),
     &VIRTMIC_NODE_NAME.to_string(),
   );
 
@@ -72,7 +73,7 @@ fn IsPipewireScreenAudioRunning(payload: io::Payload) -> Result<Value, String> {
 }
 
 fn StopPipewireScreenAudio(payload: io::Payload) -> Result<Value, String> {
-  let micId = payload.arguments["micId"].as_number().unwrap().as_i64().unwrap();
+  let micId = parse_numeric_argument(payload.arguments["micId"].clone());
   let result = pipewire::destroy_node_if_exists(micId);
 
   Ok(json!({
