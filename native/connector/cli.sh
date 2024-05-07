@@ -12,5 +12,5 @@ json="{ \"cmd\": \"$cmd\", \"args\": [$args] }"
 echo $cmd $args $json >/dev/stderr
 
 UtilTextToMessage "$json" \
-  | ( cd $PROJECT_ROOT/connector-rs ; RUST_LOG=debug cargo run ) \
+  | ( cd $PROJECT_ROOT/connector-rs ; RUST_BACKTRACE=1 RUST_LOG=debug cargo run ) \
   | ( head -c 4 >/dev/null ; jq )
