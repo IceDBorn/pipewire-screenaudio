@@ -1,4 +1,4 @@
-use std::{process::Command, rc::Rc, str};
+use std::{process::Command, rc::Rc, str, thread, time::Duration};
 
 extern crate serde_json;
 use serde_json::{json, Deserializer, Map, Value};
@@ -53,7 +53,7 @@ fn get_node_media_class(node: &Value) -> Result<String,String> {
 fn get_node_name(node: &Value) -> Result<String,String> {
   let result = node.get_fields_chain(vec!["info","props","node.name"]);
   match result {
-    Ok(v) => Ok(v.to_string()),
+    Ok(v) => Ok(v.as_str().unwrap().to_string()),
     Err(e) => Err(e),
   }
 }
@@ -128,6 +128,8 @@ pub fn create_virtual_source(node_name: &String) -> i64 { // TODO Result<i64,Str
   if result.is_err() {
     return -1;
   }
+
+  thread::sleep(Duration::from_secs(1));
 
   match find_node_by_name(node_name, true) {
     Some(v) => v["id"].as_i64().unwrap(),
