@@ -4,9 +4,12 @@
 
   outputs = { self, nixpkgs, }:
     let
-      pkgsFor = nixpkgs.legacyPackages;
-      systems = [ "aarch64-linux" "i686-linux" "x86_64-linux" ];
       forAllSystems = nixpkgs.lib.genAttrs systems;
+      pkgsFor = nixpkgs.legacyPackages;
+      read = builtins.readFile;
+      systems = [ "aarch64-linux" "i686-linux" "x86_64-linux" ];
+      write = builtins.toFile;
+
       mkDate = longDate:
         with builtins;
         (concatStringsSep "-" [
@@ -14,39 +17,25 @@
           (substring 4 2 longDate)
           (substring 6 2 longDate)
         ]);
+
+      firefoxJSON = write "firefox.json" (read native/native-messaging-hosts/firefox.json);
+      connectorPath = "lib/mozilla/native-messaging-hosts/com.icedborn.pipewirescreenaudioconnector.json";
     in {
       packages = forAllSystems (system: {
         default = with pkgsFor.${system};
-          stdenv.mkDerivation {
+          rustPlatform.buildRustPackage {
             name = "pipewire-screenaudio";
             version = mkDate (self.lastModifiedDate or "19700101") + "_"
               + (self.shortRev or "dirty");
 
-            src = self;
+            src = ./native/connector-rs;
+            buildInputs = [ pipewire ];
+            cargoHash = "sha256-+mLsrKt7WRyO++B0rFoRb/JodBPxhZCdg2qZguKzqUI=";
 
-            buildInputs = [ gawk hexdump jq pipewire ];
-
-            installPhase = ''
-              runHook preInstall
-
-              # Replace jq with its absolute path
-              substituteInPlace native/connector/virtmic.sh --replace jq ${pkgs.jq}/bin/jq
-              substituteInPlace native/connector/pipewire-screen-audio-connector.sh --replace jq ${pkgs.jq}/bin/jq
-              substituteInPlace native/connector/connect-and-monitor.sh --replace jq ${pkgs.jq}/bin/jq
-              substituteInPlace native/connector/util.sh --replace jq ${pkgs.jq}/bin/jq
-
-              # Install files
-              mkdir -p $out/lib/out
-              install -Dm755 native/connector/pipewire-screen-audio-connector.sh $out/lib/connector/pipewire-screen-audio-connector.sh
-              install -Dm755 native/connector/virtmic.sh $out/lib/connector/virtmic.sh
-              install -Dm755 native/connector/connect-and-monitor.sh $out/lib/connector/connect-and-monitor.sh
-              install -Dm755 native/connector/util.sh $out/lib/connector/util.sh
-
+            postInstall = ''
               # Firefox manifest
-              substituteInPlace native/native-messaging-hosts/firefox.json --replace /usr/lib/pipewire-screenaudio $out/lib
-              install -Dm644 native/native-messaging-hosts/firefox.json $out/lib/mozilla/native-messaging-hosts/com.icedborn.pipewirescreenaudioconnector.json
-
-              runHook postInstall
+              install -Dm644 ${firefoxJSON} "$out/${connectorPath}"
+              substituteInPlace "$out/${connectorPath}" --replace "/usr/lib/pipewire-screenaudio/connector-rs/target/debug" "$out/bin"
             '';
           };
       });
