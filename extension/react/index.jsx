@@ -5,8 +5,22 @@ import {
   RouterProvider,
 } from "react-router-dom";
 
+import "@fontsource/roboto/300.css";
+import "@fontsource/roboto/400.css";
+import "@fontsource/roboto/500.css";
+import "@fontsource/roboto/700.css";
+
+import { ThemeProvider, createTheme } from "@mui/material/styles";
+import CssBaseline from "@mui/material/CssBaseline";
+
 import Popup from "./routes/popup";
 import Settings from "./routes/settings";
+
+const darkTheme = createTheme({
+  palette: {
+    mode: "dark",
+  },
+});
 
 const router = createBrowserRouter([
   {
@@ -29,7 +43,12 @@ function PageWrapper() {
 }
 
 function App() {
-  return <RouterProvider router={router} basename="/react/dist/index.html" />;
+  return (
+    <ThemeProvider theme={darkTheme}>
+      <CssBaseline />
+      <RouterProvider router={router} basename="/react/dist/index.html" />
+    </ThemeProvider>
+  );
 }
 
 const rootEl = document.getElementById("root");
