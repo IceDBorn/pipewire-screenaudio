@@ -6,3 +6,4 @@ mkdir -p ~/.mozilla/native-messaging-hosts
 
 sed "s|/usr/lib/pipewire-screenaudio|$projectRoot/native|g" $projectRoot/native/native-messaging-hosts/firefox.json > ~/.mozilla/native-messaging-hosts/com.icedborn.pipewirescreenaudioconnector.json
 
+( cd $projectRoot/native/connector-rs ; cargo build )
