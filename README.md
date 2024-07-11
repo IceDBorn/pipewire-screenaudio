@@ -48,9 +48,7 @@ You can find us on [Matrix](https://matrix.to/#/#pipewire-screenaudio:matrix.org
 
 #### Requirements
 
-- gawk
-- hexdump
-- jq
+- cargo
 - pipewire
 
 ```bash
@@ -81,6 +79,10 @@ bash install.sh
     ```
     ```bash
     bash native/connector/cli.sh SetSharingNode '{ "micId": 100, "node": 200 }'
+    ```
+  - **Environment:**
+    ```bash
+    DEBUG=1 # Set to enable verbose logging
     ```
 
 ## Known Problems

@@ -12,5 +12,12 @@ json="{ \"cmd\": \"$cmd\", \"args\": [$args] }"
 echo $cmd $args $json >/dev/stderr
 
 UtilTextToMessage "$json" \
-  | bash $PROJECT_ROOT/connector/pipewire-screen-audio-connector.sh \
+  | (
+    cd $PROJECT_ROOT/connector-rs
+    if [[ "$DEBUG" -eq 1 ]]; then
+      export RUST_BACKTRACE=1
+      export RUST_LOG=debug
+    fi
+    cargo run
+  ) \
   | ( head -c 4 >/dev/null ; jq )
