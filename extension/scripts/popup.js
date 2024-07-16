@@ -201,7 +201,7 @@ async function populateNodesList (response) {
       message.className = 'mt-5'
       message.hidden = false
       dropdown.hidden = true
-      document.getElementById('share-btn').hidden = true
+      document.getElementById('share-stop-btn').hidden = true
       document.getElementById('blacklist-btn').hidden = true
     }
 
