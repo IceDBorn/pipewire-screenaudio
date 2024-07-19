@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use pipewire::{Context, Core, MainLoop, Signal};
+use pipewire::{context::Context, core::Core, main_loop::MainLoop, loop_::Signal};
 
 use pipewire_utils::{
     self, await_find_fl_fr_ports, await_node_creation, create_node, do_roundtrip, link_ports, Ports,
@@ -53,10 +53,10 @@ fn connect_node(
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mainloop = MainLoop::new()?;
+    let mainloop = MainLoop::new(None)?;
 
     // Make SIGINT stop mainloop
-    let _sig_int = mainloop.add_signal_local(Signal::SIGINT, {
+    let _sig_int = mainloop.loop_().add_signal_local(Signal::SIGINT, {
         let mainloop = mainloop.downgrade();
         move || {
             if let Some(mainloop) = mainloop.upgrade() {
@@ -76,7 +76,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     pipewire_utils::monitor_nodes(
         {
             let virtmic_ports = virtmic.ports;
-            let mainloop = MainLoop::new()?;
+            let mainloop = MainLoop::new(None)?;
             let context = Context::new(&mainloop)?;
             move |node| {
                 // Moving this line outside of the closure causes a SIGSEGV

@@ -6,4 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-pipewire = "0.7.2"
+libspa = "0.8.0"
+libspa-sys = "0.8.0"
+pipewire = "0.8.0"
+pipewire-sys = "0.8.0"

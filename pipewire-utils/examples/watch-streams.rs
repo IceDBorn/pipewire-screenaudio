@@ -4,12 +4,12 @@ use std::{
     thread,
 };
 
-use pipewire::{Context, MainLoop};
+use pipewire::{context::Context, main_loop::MainLoop};
 
 use pipewire_utils::{self, await_find_fl_fr_ports};
 
 fn monitor_nodes(node_channel: Sender<u32>) -> Result<(), Box<dyn Error>> {
-    let mainloop = MainLoop::new()?;
+    let mainloop = MainLoop::new(None)?;
     let context = Context::new(&mainloop)?;
     let core = context.connect(None)?;
     let registry = core.get_registry()?;
@@ -29,7 +29,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         monitor_nodes(nodes_tx).unwrap();
     });
 
-    let mainloop = MainLoop::new()?;
+    let mainloop = MainLoop::new(None)?;
     let context = Context::new(&mainloop)?;
     let core = context.connect(None)?;
     for node in nodes_rx {

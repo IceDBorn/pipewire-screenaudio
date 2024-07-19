@@ -7,12 +7,13 @@ use pipewire::{
     keys,
     link::Link,
     node::Node,
-    properties,
+    properties::properties,
     proxy::ProxyT,
     registry::{GlobalObject, Registry},
-    spa::{ForeignDict, ReadableDict},
+    spa::utils::dict::DictRef,
     types::ObjectType,
-    Core, MainLoop, PW_ID_CORE,
+    core::{Core, PW_ID_CORE},
+    main_loop::MainLoop,
 };
 
 pub fn iterate_existing_objects<F>(
@@ -21,7 +22,7 @@ pub fn iterate_existing_objects<F>(
     registry: &Registry,
     object_callback: F,
 ) where
-    F: Fn(&GlobalObject<ForeignDict>) -> bool + 'static,
+    F: Fn(&GlobalObject<&DictRef>) -> bool + 'static,
 {
     let reg_listener = registry
         .add_listener_local()
@@ -42,7 +43,7 @@ pub fn iterate_existing_objects<F>(
 
 pub fn iterate_objects<F>(mainloop: &MainLoop, registry: &Registry, object_callback: F)
 where
-    F: Fn(&GlobalObject<ForeignDict>) -> bool + 'static,
+    F: Fn(&GlobalObject<&DictRef>) -> bool + 'static,
 {
     let reg_listener = registry
         .add_listener_local()
@@ -93,7 +94,7 @@ pub fn do_roundtrip(mainloop: &MainLoop, core: &Core) {
 }
 
 pub fn create_node(node_name: &str, core: &Core) -> Result<Node, pipewire::Error> {
-    core.create_object::<Node, _>(
+    core.create_object::<Node>(
         "adapter",
         &properties! {
             *keys::FACTORY_NAME => "support.null-audio-sink",
@@ -117,7 +118,7 @@ pub fn link_ports(
         (input.fr_port, output.fr_port),
     ]
     .map(|(input, output)| {
-        core.create_object::<Link, _>(
+        core.create_object::<Link>(
             "link-factory",
             &properties! {
                 *keys::FACTORY_NAME => "support.null-audio-sink",
