@@ -4,6 +4,7 @@ Extension to passthrough Pipewire audio to WebRTC Screenshare
 
 Based on [virtual-mic](https://github.com/Curve/rohrkabel/tree/master/examples/virtual-mic) and [Screenshare-with-audio-on-Discord-with-Linux](https://github.com/edisionnano/Screenshare-with-audio-on-Discord-with-Linux)
 
+This fork aims to provide flatpak support for Firefox, including a CLI tool for managing both Flatpak and system-package-manager-managed installations, it relies on the current rust implementation of the native part.
 ## Communication
 
 You can find us on [Matrix](https://matrix.to/#/#pipewire-screenaudio:matrix.org)
