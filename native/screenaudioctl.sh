@@ -152,7 +152,7 @@ reset_mozilla_dir(){
   if [ -d "$mozilla_dir" ]; then
     if [ "$dest_type" = "user-flatpak" ]; then
       echo -e "\nresetting pipewire permissions org.mozilla.firefox\n"
-      flatpak override --reset org.mozilla.firefox
+      flatpak override --user --reset org.mozilla.firefox
 	fi
 
   echo -e "\ndeleting native-messaging-hosts directory in $mozilla_dir\n"
