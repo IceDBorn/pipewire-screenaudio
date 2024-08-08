@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 LOCAL_INSTALL_SHARE="$HOME/.local/share/pipewire-screenaudio"
 LOCAL_INSTALL_LIB="$HOME/.local/lib/pipewire-screenaudio"
 
@@ -14,21 +13,13 @@ USER_MOZILLA_DIR_FLATPAK="$HOME/.var/app/org.mozilla.firefox/.mozilla"
 if [ -d "$LOCAL_INSTALL_SHARE" ] && [ -d "$LOCAL_INSTALL_LIB" ]; then # Check for local install
   CONNECTOR_BIN_SOURCE_PATH="$LOCAL_INSTALL_LIB/connector-rs"
   NATIVE_MSG_HOST_SOURCE_DIR="$LOCAL_INSTALL_SHARE/native-messaging-hosts"
-elif [ -d "$SYSTEM_INSTALL_SHARE" ] && [ -d "$SYSTEM_INSTALL_LIB"]; then # If no local install fallback to system install
+elif [ -d "$SYSTEM_INSTALL_SHARE" ] && [ -d "$SYSTEM_INSTALL_LIB" ]; then # If no local install fallback to system install
   CONNECTOR_BIN_SOURCE_PATH="$SYSTEM_INSTALL_LIB/connector-rs"
   NATIVE_MSG_HOST_SOURCE_DIR="$SYSTEM_INSTALL_SHARE/native-messaging-hosts"
 else
 	echo "Error: failed to find valid pw-screenaudio install paths"
 	exit 1
 fi
-
-#TODO parse TOML config and validate everything. if valid override default PATHS
-
-
-#CONNECTOR_BIN_SOURCE_PATH="$HOME/pipewire-screenaudio/native/connector-rs/target/debug/connector-rs"
-#NATIVE_MSG_HOST_SOURCE_DIR="$HOME/pipewire-screenaudio/native/native-messaging-hosts"
-#USER_MOZILLA_DIR="$HOME/.mozilla"
-#USER_MOZILLA_DIR_FLATPAK="$HOME/.var/app/org.mozilla.firefox/.mozilla"
 
 show_help() {
   echo "Usage: script.sh [action] [options]"
@@ -79,8 +70,6 @@ detect_applied_mozilla_dirs() {
   fi
 }
 
-
-
 list_mozilla_dirs() {
   if [ ${#destinations[@]} -eq 0 ]; then
     echo "No .mozilla directories found."
@@ -106,7 +95,7 @@ select_mozilla_dir() {
     exit 0
     # Check for 'a' to apply to all or a valid number
   elif [[ "$selection" == 'a' || ( "$selection" =~ ^[0-9]+$ && "$selection" -ge 1 && "$selection" -le ${#destinations[@]} ) ]]; then
-    echo "$selection"
+		return 0
   else
     echo "Invalid selection."
     exit 1
@@ -120,14 +109,14 @@ apply_to_mozilla_dir(){
 
   if [ -d "$mozilla_dir" ]; then
 
-    echo -e "\ncreating native-messaging-hosts directory in $mozilla_dir"
-    mkdir -p $mozilla_dir/native-messaging-hosts
+    echo -e "\n- creating native-messaging-hosts directory in $mozilla_dir"
+    mkdir -p "$mozilla_dir/native-messaging-hosts"
 
 		if [ "$dest_type" = "user-flatpak" ]; then
-  		echo -e "\ncopying connector-rs binary to $CONNECTOR_BIN_SOURCE_PATH in $mozilla_dir/native-messaging-hosts/connecter-rs"
-  		cp $CONNECTOR_BIN_SOURCE_PATH $mozilla_dir/native-messaging-hosts/
+  		echo -e "\n- copying connector-rs binary to $CONNECTOR_BIN_SOURCE_PATH in $mozilla_dir/native-messaging-hosts/connecter-rs"
+  		cp "$CONNECTOR_BIN_SOURCE_PATH" "$mozilla_dir/native-messaging-hosts/"
 
-      echo -e "\ngiving org.mozilla.firefox userwide pipewire permissions"
+      echo -e "\n- giving org.mozilla.firefox userwide pipewire permissions"
 	    flatpak override --user --filesystem=xdg-run/pipewire-0 org.mozilla.firefox
 
 			json_connector_path="/home/$(whoami)/.mozilla/native-messaging-hosts/connector-rs"
@@ -135,7 +124,7 @@ apply_to_mozilla_dir(){
 			json_connector_path=$CONNECTOR_BIN_SOURCE_PATH
 		fi
 
-		echo "copying firefox.json into ${mozilla_dir}/native-messaging-hosts"
+		echo -e "\n- copying firefox.json into ${mozilla_dir}/native-messaging-hosts"
 	  jq --arg newpath "$json_connector_path" '.path = $newpath' "$NATIVE_MSG_HOST_SOURCE_DIR/firefox.json" \
     > "$mozilla_dir/native-messaging-hosts/com.icedborn.pipewirescreenaudioconnector.json"
 
@@ -165,7 +154,7 @@ reset_mozilla_dir(){
 }
 
 list_action(){
-  if [ $installed -eq 1 ]; then
+  if [ "$installed" -eq 1 ]; then
     detect_applied_mozilla_dirs
   else
     detect_mozilla_dirs
