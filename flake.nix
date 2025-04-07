@@ -30,7 +30,7 @@
 
             src = ./native/connector-rs;
             buildInputs = [ pipewire ];
-            cargoHash = "sha256-+mLsrKt7WRyO++B0rFoRb/JodBPxhZCdg2qZguKzqUI=";
+            cargoHash = "sha256-H/Uf6Yo8z6tZduXh1zKxiOqFP8hW7Vtqc7p5GM8QDws=";
 
             postInstall = ''
               # Firefox manifest
