@@ -49,12 +49,6 @@ function overrideGdm () {
       }
     })
     const [track] = captureSystemAudioStream.getAudioTracks()
-    let fakegdm;
-    if (new RegExp('^(.+\.)?discord.com$').test(window.location.host) && sessionType === "wayland") {
-      fakegdm = navigator.mediaDevices.chromiumGetDisplayMedia({
-        video: true
-      })
-    }
     const gdm = await navigator.mediaDevices.chromiumGetDisplayMedia({
       video: true,
       audio: true
