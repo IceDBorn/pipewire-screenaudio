@@ -49,5 +49,24 @@
           '';
         };
     });
+    devShells = forAllSystems (
+      system: with pkgsFor.${system}; {
+        default = mkShell {
+          buildInputs = [
+            cargo
+            rustc
+            rust-analyzer
+            pkg-config
+            pipewire
+          ];
+          LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [
+            libclang
+          ];
+          BINDGEN_EXTRA_CLANG_ARGS = ''
+            -I${glibc.dev}/include
+          '';
+        };
+      }
+    );
   };
 }
