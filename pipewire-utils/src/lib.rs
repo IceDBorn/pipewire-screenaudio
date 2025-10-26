@@ -4,20 +4,20 @@ use std::{
 };
 
 use pipewire::{
+    core::{Core, PW_ID_CORE},
     keys,
     link::Link,
+    main_loop::MainLoopRc,
     node::Node,
     properties::properties,
     proxy::ProxyT,
     registry::{GlobalObject, Registry},
     spa::utils::dict::DictRef,
     types::ObjectType,
-    core::{Core, PW_ID_CORE},
-    main_loop::MainLoop,
 };
 
 pub fn iterate_existing_objects<F>(
-    mainloop: &MainLoop,
+    mainloop: &MainLoopRc,
     core: &Core,
     registry: &Registry,
     object_callback: F,
@@ -41,7 +41,7 @@ pub fn iterate_existing_objects<F>(
     drop(reg_listener);
 }
 
-pub fn iterate_objects<F>(mainloop: &MainLoop, registry: &Registry, object_callback: F)
+pub fn iterate_objects<F>(mainloop: &MainLoopRc, registry: &Registry, object_callback: F)
 where
     F: Fn(&GlobalObject<&DictRef>) -> bool + 'static,
 {
@@ -64,7 +64,7 @@ where
 
 /// Do a single roundtrip to process all events.
 /// See the example in roundtrip.rs for more details on this.
-pub fn do_roundtrip(mainloop: &MainLoop, core: &Core) {
+pub fn do_roundtrip(mainloop: &MainLoopRc, core: &Core) {
     let done = Rc::new(Cell::new(false));
     let done_clone = done.clone();
     let loop_clone = mainloop.clone();
@@ -136,7 +136,7 @@ pub fn link_ports(
         .unwrap())
 }
 
-pub fn await_node_creation(node: Node, mainloop: &MainLoop, core: &Core) -> u32 {
+pub fn await_node_creation(node: Node, mainloop: &MainLoopRc, core: &Core) -> u32 {
     let node_id = Rc::new(OnceCell::new());
 
     let listener = node
@@ -171,7 +171,7 @@ pub enum PortDirection {
 pub fn await_find_fl_fr_ports(
     node_id: u32,
     direction: PortDirection,
-    mainloop: &MainLoop,
+    mainloop: &MainLoopRc,
     registry: &Registry,
 ) -> Ports {
     let fl_port = Rc::new(OnceCell::new());
@@ -226,7 +226,7 @@ pub fn await_find_fl_fr_ports(
     Ports { fl_port, fr_port }
 }
 
-pub fn monitor_nodes<F>(on_node_added: F, mainloop: &MainLoop, registry: &Registry)
+pub fn monitor_nodes<F>(on_node_added: F, mainloop: &MainLoopRc, registry: &Registry)
 where
     F: Fn(u32) + 'static,
 {

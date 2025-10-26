@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use pipewire::{context::Context, core::Core, main_loop::MainLoop, loop_::Signal};
+use pipewire::{context::ContextRc, core::Core, loop_::Signal, main_loop::MainLoopRc};
 
 use pipewire_utils::{
     self, await_find_fl_fr_ports, await_node_creation, create_node, do_roundtrip, link_ports, Ports,
@@ -12,7 +12,7 @@ struct NodeWithPorts {
 }
 
 fn create_virtmic_node(
-    mainloop: &MainLoop,
+    mainloop: &MainLoopRc,
     core: &Core,
 ) -> Result<NodeWithPorts, Box<dyn std::error::Error>> {
     let node = create_node("pipewire-screenaudio", core).expect("Failed to create node");
@@ -34,7 +34,7 @@ fn create_virtmic_node(
 fn connect_node(
     node: u32,
     virtmic_ports: &Ports,
-    mainloop: &MainLoop,
+    mainloop: &MainLoopRc,
     core: &Core,
 ) -> Result<(), Box<dyn Error>> {
     let registry = core.get_registry()?;
@@ -53,7 +53,7 @@ fn connect_node(
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mainloop = MainLoop::new(None)?;
+    let mainloop = MainLoopRc::new(None)?;
 
     // Make SIGINT stop mainloop
     let _sig_int = mainloop.loop_().add_signal_local(Signal::SIGINT, {
@@ -66,7 +66,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     // Connect with Pipewire
-    let context = Context::new(&mainloop)?;
+    let context = ContextRc::new(&mainloop, None)?;
     let core = context.connect(None)?;
 
     let virtmic = create_virtmic_node(&mainloop, &core)?;
@@ -76,8 +76,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     pipewire_utils::monitor_nodes(
         {
             let virtmic_ports = virtmic.ports;
-            let mainloop = MainLoop::new(None)?;
-            let context = Context::new(&mainloop)?;
+            let mainloop = MainLoopRc::new(None)?;
+            let context = ContextRc::new(&mainloop, None)?;
             move |node| {
                 // Moving this line outside of the closure causes a SIGSEGV
                 let core = context.connect(None).unwrap();

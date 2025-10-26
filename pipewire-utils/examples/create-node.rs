@@ -1,10 +1,10 @@
-use pipewire::{context::Context, main_loop::MainLoop};
+use pipewire::{context::ContextRc, main_loop::MainLoopRc};
 
 use pipewire_utils::{self, await_find_fl_fr_ports, await_node_creation, create_node, Ports};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mainloop = MainLoop::new(None)?;
-    let context = Context::new(&mainloop)?;
+    let mainloop = MainLoopRc::new(None)?;
+    let context = ContextRc::new(&mainloop, None)?;
     let core = context.connect(None)?;
 
     let node = create_node("pipewire-screenaudio", &core).expect("Failed to create node");
