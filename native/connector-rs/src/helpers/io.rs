@@ -1,6 +1,6 @@
-use std::str;
 use std::io;
-use std::io::prelude::{Read,Write};
+use std::io::prelude::{Read, Write};
+use std::str;
 
 extern crate serde_json;
 use serde_json::{from_str, Value};
@@ -14,7 +14,7 @@ pub struct Payload {
 }
 
 pub fn read() -> Result<Payload, String> {
-  let mut length_buffer = [0u8;4];
+  let mut length_buffer = [0u8; 4];
 
   let mut stdin = io::stdin();
   stdin.read_exact(&mut length_buffer).unwrap();
@@ -43,7 +43,7 @@ pub fn read() -> Result<Payload, String> {
 
 pub fn write(payload: Value) -> Result<(), String> {
   let payload_string = payload.to_string();
-  debug! ("Response: {}", payload_string);
+  debug!("Response: {}", payload_string);
 
   let payload_buffer = payload_string.as_bytes();
   let length = payload_buffer.len();

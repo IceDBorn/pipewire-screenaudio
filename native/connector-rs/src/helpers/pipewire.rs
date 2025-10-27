@@ -1,4 +1,4 @@
-use std::{process::Command, cell::RefCell, thread, time::Duration};
+use std::{cell::RefCell, process::Command, thread, time::Duration};
 
 extern crate serde_json;
 use serde_json::{json, Deserializer, Map, Value};
@@ -27,24 +27,33 @@ fn get_pw_dump(invalidate_cache: bool) -> Vec<Value> {
 
   // In case `pw-dump` returns multiple arrays (#15), only keep the first one
   let stream = Deserializer::from_str(dump_string).into_iter::<Value>();
-  let dump: Value = stream.filter(|batch| ! batch.as_ref().unwrap()[0]["info"].is_null()).next().unwrap().unwrap();
+  let dump: Value = stream
+    .filter(|batch| !batch.as_ref().unwrap()[0]["info"].is_null())
+    .next()
+    .unwrap()
+    .unwrap();
 
-  let result = dump.as_array().unwrap().iter().map(|node| node.clone()).collect::<Vec<_>>();
+  let result = dump
+    .as_array()
+    .unwrap()
+    .iter()
+    .map(|node| node.clone())
+    .collect::<Vec<_>>();
 
   DUMP_CACHE.with_borrow_mut(|cache| *cache = Some(result.clone()));
   result
 }
 
-fn get_node_media_class(node: &Value) -> Result<String,String> {
-  let result = node.get_fields_chain(vec!["info","props","media.class"]);
+fn get_node_media_class(node: &Value) -> Result<String, String> {
+  let result = node.get_fields_chain(vec!["info", "props", "media.class"]);
   match result {
     Ok(v) => Ok(v.as_str().unwrap().to_string()),
     Err(e) => Err(e),
   }
 }
 
-fn get_node_name(node: &Value) -> Result<String,String> {
-  let result = node.get_fields_chain(vec!["info","props","node.name"]);
+fn get_node_name(node: &Value) -> Result<String, String> {
+  let result = node.get_fields_chain(vec!["info", "props", "node.name"]);
   match result {
     Ok(v) => Ok(v.as_str().unwrap().to_string()),
     Err(e) => Err(e),
@@ -54,28 +63,33 @@ fn get_node_name(node: &Value) -> Result<String,String> {
 pub fn get_output_nodes() -> Vec<Value> {
   let dump = get_pw_dump(false);
 
-  let dump_filtered = dump.iter().filter(|&node| {
-    match get_node_media_class(&node) {
+  let dump_filtered = dump
+    .iter()
+    .filter(|&node| match get_node_media_class(&node) {
       Ok(v) => v == "Stream/Output/Audio",
       Err(e) => {
-        debug! ("Error: {}", e);
+        debug!("Error: {}", e);
         return false;
-      },
-    }
-  }).collect::<Vec<_>>();
+      }
+    })
+    .collect::<Vec<_>>();
 
-  let dump_converted = dump_filtered.iter().map(|&node| json!({ "id": node["id"].clone(), "properties": node["info"]["props"].clone() })).collect::<Vec<_>>();
+  let dump_converted = dump_filtered
+    .iter()
+    .map(|&node| json!({ "id": node["id"].clone(), "properties": node["info"]["props"].clone() }))
+    .collect::<Vec<_>>();
 
   return dump_converted;
 }
 
 pub fn get_node_id_from_serial(serial: i64) -> Option<i64> {
   let dump = get_output_nodes();
-  let result = dump.into_iter()
-    .find(|node| match node.get_fields_chain(vec!["properties", "object.serial"]) {
+  let result = dump.into_iter().find(|node| {
+    match node.get_fields_chain(vec!["properties", "object.serial"]) {
       Err(_) => false,
       Ok(v) => v == serial,
-    });
+    }
+  });
 
   if result.is_some() {
     eprintln!("Found Target: {}", result.to_owned().unwrap());
@@ -88,31 +102,34 @@ pub fn get_node_id_from_serial(serial: i64) -> Option<i64> {
 }
 
 pub fn get_ports_of_node(node_id: i64, port_type: String, invalidate_cache: bool) -> Value {
-  let ports = get_pw_dump(invalidate_cache).iter()
+  let ports = get_pw_dump(invalidate_cache)
+    .iter()
     .filter(|&node| node["type"] == "PipeWire:Interface:Port")
     .filter(|&node| {
-      let is_node_id = match node.get_fields_chain(vec!["info","props","node.id"]) {
+      let is_node_id = match node.get_fields_chain(vec!["info", "props", "node.id"]) {
         Err(_) => false,
         Ok(v) => {
           eprintln!("{} {}", v, node_id);
           v == node_id
-        },
+        }
       };
 
-      let is_input = match node.get_fields_chain(vec!["info","direction"]) {
+      let is_input = match node.get_fields_chain(vec!["info", "direction"]) {
         Err(_) => false,
         Ok(v) => {
           eprintln!("{} {}", v.as_str().unwrap(), port_type);
           v.as_str().unwrap() == port_type
-        },
+        }
       };
 
       return is_input && is_node_id;
     })
-    .map(|node| json!({
-      "id": node["id"].as_i64().unwrap(),
-      "channel": node.get_fields_chain(vec!["info","props","audio.channel"]).unwrap(),
-    }))
+    .map(|node| {
+      json!({
+        "id": node["id"].as_i64().unwrap(),
+        "channel": node.get_fields_chain(vec!["info","props","audio.channel"]).unwrap(),
+      })
+    })
     .collect::<Vec<_>>();
 
   eprintln!("Ports: {:?}", ports);
@@ -127,14 +144,15 @@ pub fn get_ports_of_node(node_id: i64, port_type: String, invalidate_cache: bool
 }
 
 pub fn get_links_to_node(node_id: i64, invalidate_cache: bool) -> Value {
-  let links = get_pw_dump(invalidate_cache).iter()
+  let links = get_pw_dump(invalidate_cache)
+    .iter()
     .filter(|&node| node["type"] == "PipeWire:Interface:Link")
-    .filter(|&node| {
-      match node.get_fields_chain(vec!["info","input-node-id"]) {
+    .filter(
+      |&node| match node.get_fields_chain(vec!["info", "input-node-id"]) {
         Err(_) => false,
         Ok(v) => v == node_id,
-      }
-    })
+      },
+    )
     .map(|link| link.to_owned())
     .collect::<Vec<_>>();
 
@@ -156,11 +174,9 @@ pub fn find_node_by_id(id: i64, invalidate_cache: bool) -> Option<Value> {
 pub fn find_node_by_name(name: &String, invalidate_cache: bool) -> Option<Value> {
   let dump = get_pw_dump(invalidate_cache);
 
-  let found_node = dump.iter().find(|&node| {
-    match get_node_name(node) {
-      Ok(v) => v == *name,
-      Err(_) => false,
-    }
+  let found_node = dump.iter().find(|&node| match get_node_name(node) {
+    Ok(v) => v == *name,
+    Err(_) => false,
   });
 
   if found_node.is_none() {
@@ -170,7 +186,8 @@ pub fn find_node_by_name(name: &String, invalidate_cache: bool) -> Option<Value>
   Some((*found_node.unwrap()).clone())
 }
 
-pub fn node_exists(id: i64, node_name: &String) -> bool { // TODO Result<bool,String>
+pub fn node_exists(id: i64, node_name: &String) -> bool {
+  // TODO Result<bool,String>
   let some_node = find_node_by_id(id, false);
 
   if some_node.is_none() {
@@ -183,7 +200,8 @@ pub fn node_exists(id: i64, node_name: &String) -> bool { // TODO Result<bool,St
   }
 }
 
-pub fn create_virtual_source(node_name: &String) -> i64 { // TODO Result<i64,String>
+pub fn create_virtual_source(node_name: &String) -> i64 {
+  // TODO Result<i64,String>
   let result = Command::new("pw-cli")
     .arg("create-node")
     .arg("adapter")
@@ -212,7 +230,8 @@ pub fn destroy_node(node_id: i64) -> bool {
 }
 
 pub fn destroy_nodes(port_ids: Vec<i64>) -> bool {
-  port_ids.iter()
+  port_ids
+    .iter()
     .map(|port_id| destroy_node(port_id.clone()))
     .all(|success| success)
 }
@@ -229,13 +248,21 @@ pub fn connect_ports(port_id_a: i64, port_id_b: i64) -> bool {
 pub fn connect_nodes(in_node_id: i64, out_node_id: i64) -> bool {
   let in_node_ports = get_ports_of_node(in_node_id, "output".to_string(), false);
   eprintln!("Searching in_node ports...");
-  if !in_node_ports.as_object().unwrap().contains_key("FL") { return false; }
-  if !in_node_ports.as_object().unwrap().contains_key("FR") { return false; }
+  if !in_node_ports.as_object().unwrap().contains_key("FL") {
+    return false;
+  }
+  if !in_node_ports.as_object().unwrap().contains_key("FR") {
+    return false;
+  }
 
   let out_node_ports = get_ports_of_node(out_node_id, "input".to_string(), false);
   eprintln!("Searching out_node ports...");
-  if !out_node_ports.as_object().unwrap().contains_key("FL") { return false; }
-  if !out_node_ports.as_object().unwrap().contains_key("FR") { return false; }
+  if !out_node_ports.as_object().unwrap().contains_key("FL") {
+    return false;
+  }
+  if !out_node_ports.as_object().unwrap().contains_key("FR") {
+    return false;
+  }
 
   let result_fl = connect_ports(
     in_node_ports["FL"].as_i64().unwrap(),
@@ -260,7 +287,14 @@ pub fn connect_nodes(in_node_id: i64, out_node_id: i64) -> bool {
 
 pub fn disconnect_node(node_id: i64) -> bool {
   let links_to_disconnect = get_links_to_node(node_id, false);
-  destroy_nodes(links_to_disconnect.as_array().unwrap().iter().map(|link| link["id"].as_i64().unwrap()).collect())
+  destroy_nodes(
+    links_to_disconnect
+      .as_array()
+      .unwrap()
+      .iter()
+      .map(|link| link["id"].as_i64().unwrap())
+      .collect(),
+  )
 }
 
 pub fn create_virtual_source_if_not_exists(node_name: &String) -> i64 {

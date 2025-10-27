@@ -22,7 +22,7 @@ fn GetVersion(_: io::Payload) -> Result<Value, String> {
 fn GetSessionType(_: io::Payload) -> Result<Value, String> {
   let session_type = match env::var_os("WAYLAND_DISPLAY") {
     Some(_) => "wayland",
-    None => "x11"
+    None => "x11",
   };
 
   Ok(json!({
