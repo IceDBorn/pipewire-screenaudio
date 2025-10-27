@@ -1,12 +1,36 @@
-use std::{cell::RefCell, process::Command, thread, time::Duration};
+use std::{
+  cell::RefCell,
+  process::{Command, Output},
+  rc::Rc,
+  thread,
+  time::Duration,
+};
 
 extern crate serde_json;
+use pipewire::{
+  context::ContextRc, main_loop::MainLoopRc, properties::PropertiesBox, registry::GlobalObject,
+  spa::utils::dict::DictRef,
+};
+use serde::Serialize;
 use serde_json::{json, Deserializer, Map, Value};
 
 extern crate log;
 use log::debug;
 
 use crate::helpers::JsonGetters;
+
+#[derive(Debug)]
+pub enum Error {
+  PipewireError(pipewire::Error),
+}
+
+impl From<pipewire::Error> for Error {
+  fn from(value: pipewire::Error) -> Self {
+    Self::PipewireError(value)
+  }
+}
+
+pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 thread_local! {
   static DUMP_CACHE: RefCell<Option<Vec<Value>>> = RefCell::new(None);
@@ -60,43 +84,100 @@ fn get_node_name(node: &Value) -> Result<String, String> {
   }
 }
 
-pub fn get_output_nodes() -> Vec<Value> {
-  let dump = get_pw_dump(false);
+#[derive(Debug, Serialize)]
+pub struct NodeProperties {
+  #[serde(rename = "application.name")]
+  application_name: Option<String>,
+  #[serde(rename = "media.name")]
+  media_name: String,
+  #[serde(rename = "object.serial")]
+  object_serial: i64,
 
-  let dump_filtered = dump
-    .iter()
-    .filter(|&node| match get_node_media_class(&node) {
-      Ok(v) => v == "Stream/Output/Audio",
-      Err(e) => {
-        debug!("Error: {}", e);
-        return false;
-      }
-    })
-    .collect::<Vec<_>>();
-
-  let dump_converted = dump_filtered
-    .iter()
-    .map(|&node| json!({ "id": node["id"].clone(), "properties": node["info"]["props"].clone() }))
-    .collect::<Vec<_>>();
-
-  return dump_converted;
+  #[serde(skip_serializing)]
+  media_class: String,
 }
 
-pub fn get_node_id_from_serial(serial: i64) -> Option<i64> {
-  let dump = get_output_nodes();
-  let result = dump.into_iter().find(|node| {
-    match node.get_fields_chain(vec!["properties", "object.serial"]) {
-      Err(_) => false,
-      Ok(v) => v == serial,
+#[derive(Debug, Serialize)]
+pub struct OutputNode {
+  id: u32,
+  properties: NodeProperties,
+}
+
+impl OutputNode {
+  fn from_global_object(node: &GlobalObject<&DictRef>) -> Result<Self, String> {
+    let Some(props) = node.props else {
+      return Err("missing props".to_owned());
+    };
+    let application_name = props.get("application.name");
+    debug!("application name: {:?}", &application_name);
+    let Some(object_serial) = props.get("object.serial") else {
+      return Err("missing object.serial".to_owned());
+    };
+    let Some(media_class) = props.get("media.class") else {
+      return Err("missing media.class".to_owned());
+    };
+    debug!("props: {:?}", node);
+    let Some(media_name) = props.get("media.name") else {
+      return Err("missing media.name".to_owned());
+    };
+    Ok(OutputNode {
+      id: node.id,
+      properties: {
+        NodeProperties {
+          application_name: application_name.map(|s| s.to_owned()),
+          media_name: media_name.to_owned(),
+          object_serial: object_serial.parse().unwrap(),
+          media_class: media_class.to_owned(),
+        }
+      },
+    })
+  }
+}
+
+pub fn get_output_nodes() -> Result<Vec<OutputNode>> {
+  let mainloop = MainLoopRc::new(None).map_err(Error::from)?;
+  let context = ContextRc::new(&mainloop, None).map_err(Error::from)?;
+  let mut connect_props = PropertiesBox::new();
+  connect_props.insert(pipewire::keys::REMOTE_INTENTION.to_owned(), "manager");
+  let core = context.connect(Some(connect_props)).map_err(Error::from)?;
+  let registry = core.get_registry().map_err(Error::from)?;
+
+  let output_nodes = Rc::new(RefCell::new(vec![]));
+  pipewire_utils::iterate_existing_objects(&mainloop, &core, &registry, {
+    let output_nodes = output_nodes.clone();
+    move |node| {
+      match OutputNode::from_global_object(node) {
+        Ok(node) => {
+          if node.properties.media_class == "Stream/Output/Audio" {
+            output_nodes.borrow_mut().push(node);
+          } else {
+            debug!("node {} is not an output", node.id);
+          }
+        }
+        Err(err) => debug!(
+          "node {} does not contain all required properties: {}",
+          node.id, err
+        ),
+      }
+      false
     }
   });
 
+  return Ok(output_nodes.take());
+}
+
+pub fn get_node_id_from_serial(serial: i64) -> Option<i64> {
+  let dump = get_output_nodes().unwrap();
+  let result = dump
+    .into_iter()
+    .find(|node| node.properties.object_serial == serial);
+
   if result.is_some() {
-    eprintln!("Found Target: {}", result.to_owned().unwrap());
+    eprintln!("Found Target: {:?}", result.as_ref().unwrap());
   }
 
   match result {
-    Some(v) => Some(v["id"].as_i64().unwrap()),
+    Some(v) => Some(v.id as i64),
     None => None,
   }
 }

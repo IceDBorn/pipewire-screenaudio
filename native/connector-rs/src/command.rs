@@ -31,8 +31,8 @@ fn GetSessionType(_: io::Payload) -> Result<Value, String> {
 }
 
 fn GetNodes(_: io::Payload) -> Result<Value, String> {
-  let nodes = pipewire::get_output_nodes();
-  Ok(Value::from(nodes))
+  let nodes = pipewire::get_output_nodes().unwrap();
+  Ok(serde_json::to_value(nodes).unwrap())
 }
 
 fn StartPipewireScreenAudio(payload: io::Payload) -> Result<Value, String> {
