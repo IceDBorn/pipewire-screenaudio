@@ -1,44 +1,83 @@
 use std::{
-    cell::{Cell, OnceCell},
+    any::Any,
+    cell::{Cell, OnceCell, RefCell},
     rc::Rc,
 };
 
+mod proxies;
+mod roundtrip;
+
+use libspa::{pod::Pod, utils::result::AsyncSeq};
 use pipewire::{
-    core::{Core, PW_ID_CORE},
+    core::{Core, CoreRc, PW_ID_CORE},
     keys,
     link::Link,
     main_loop::MainLoopRc,
-    node::Node,
+    node::{Node, NodeInfoRef, NodeListener},
     properties::properties,
-    proxy::ProxyT,
-    registry::{GlobalObject, Registry},
+    proxy::{Listener, ProxyT},
+    registry::{GlobalObject, Registry, RegistryRc},
     spa::utils::dict::DictRef,
     types::ObjectType,
 };
 
-pub fn iterate_existing_objects<F>(
+use crate::{proxies::ProxyRefs, roundtrip::Scheduler};
+
+pub fn iterate_existing_nodes<F>(
     mainloop: &MainLoopRc,
-    core: &Core,
-    registry: &Registry,
+    core: &CoreRc,
+    registry: &RegistryRc,
     object_callback: F,
 ) where
-    F: Fn(&GlobalObject<&DictRef>) -> bool + 'static,
+    F: Fn(&NodeInfoRef) -> bool + Clone + 'static,
 {
+    let scheduler = Scheduler::new(mainloop.clone(), core.clone());
+    let mut proxies: Rc<RefCell<ProxyRefs>> = Rc::new(RefCell::new(Default::default()));
+
     let reg_listener = registry
         .add_listener_local()
         .global({
             let mainloop = mainloop.clone();
+            let core = core.clone();
+            let registry = registry.clone();
+            let scheduler = scheduler.clone();
+            let proxies = proxies.clone();
             move |global| {
-                if object_callback(global) {
-                    mainloop.quit();
+                if !matches!(global.type_, ObjectType::Node) {
+                    return;
                 }
+                let Ok(proxy) = registry.bind::<Node, _>(global) else {
+                    log::debug!("global {} is not assignable to node", global.id);
+                    return;
+                };
+                let listener = proxy
+                    .add_listener_local()
+                    .info({
+                        let mainloop = mainloop.clone();
+                        let registry = registry.clone();
+                        let object_callback = object_callback.clone();
+                        move |node| {
+                            if object_callback(node) {
+                                mainloop.quit();
+                            }
+                        }
+                    })
+                    .register();
+                proxies
+                    .borrow_mut()
+                    .add_proxy(Box::new(proxy), vec![Box::new(listener)]);
+                scheduler.schedule_roundtrip();
+                //sync_seq.replace(Some(core.sync(0).unwrap()));
             }
         })
         .register();
+    //sync_seq.replace(Some(core.sync(0).unwrap()));
+    scheduler.schedule_roundtrip();
 
-    do_roundtrip(mainloop, core);
+    scheduler.run_until_sync();
 
     drop(reg_listener);
+    drop(proxies);
 }
 
 pub fn iterate_objects<F>(mainloop: &MainLoopRc, registry: &Registry, object_callback: F)
@@ -61,7 +100,6 @@ where
 
     drop(reg_listener);
 }
-
 /// Do a single roundtrip to process all events.
 /// See the example in roundtrip.rs for more details on this.
 pub fn do_roundtrip(mainloop: &MainLoopRc, core: &Core) {
@@ -253,12 +291,7 @@ pub fn connect_node(
     core: &Core,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let registry = core.get_registry()?;
-    let ports = await_find_fl_fr_ports(
-        node,
-        PortDirection::OUTPUT,
-        &mainloop,
-        &registry,
-    );
+    let ports = await_find_fl_fr_ports(node, PortDirection::OUTPUT, &mainloop, &registry);
 
     link_ports(&ports, target_ports, core)?;
     do_roundtrip(mainloop, core);

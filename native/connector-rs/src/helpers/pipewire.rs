@@ -1,26 +1,21 @@
-use std::{
-  cell::RefCell,
-  process::{Command, Output},
-  rc::Rc,
-  thread,
-  time::Duration,
-};
+use std::{cell::RefCell, process::Command, rc::Rc, thread, time::Duration};
 
 extern crate serde_json;
 use pipewire::{
-  context::ContextRc, main_loop::MainLoopRc, properties::PropertiesBox, registry::GlobalObject,
-  spa::utils::dict::DictRef,
+  context::ContextRc, main_loop::MainLoopRc, node::NodeInfoRef, properties::PropertiesBox,
 };
 use serde::Serialize;
 use serde_json::{json, Deserializer, Map, Value};
+use thiserror::Error;
 
 extern crate log;
 use log::debug;
 
 use crate::helpers::JsonGetters;
 
-#[derive(Debug)]
+#[derive(Error, Debug)]
 pub enum Error {
+  #[error("internal pipewire error: {0}")]
   PipewireError(pipewire::Error),
 }
 
@@ -68,14 +63,6 @@ fn get_pw_dump(invalidate_cache: bool) -> Vec<Value> {
   result
 }
 
-fn get_node_media_class(node: &Value) -> Result<String, String> {
-  let result = node.get_fields_chain(vec!["info", "props", "media.class"]);
-  match result {
-    Ok(v) => Ok(v.as_str().unwrap().to_string()),
-    Err(e) => Err(e),
-  }
-}
-
 fn get_node_name(node: &Value) -> Result<String, String> {
   let result = node.get_fields_chain(vec!["info", "props", "node.name"]);
   match result {
@@ -104,24 +91,22 @@ pub struct OutputNode {
 }
 
 impl OutputNode {
-  fn from_global_object(node: &GlobalObject<&DictRef>) -> Result<Self, String> {
-    let Some(props) = node.props else {
+  fn from_node_ref(node: &NodeInfoRef) -> Result<Self, String> {
+    let Some(props) = node.props() else {
       return Err("missing props".to_owned());
     };
     let application_name = props.get("application.name");
-    debug!("application name: {:?}", &application_name);
     let Some(object_serial) = props.get("object.serial") else {
       return Err("missing object.serial".to_owned());
     };
     let Some(media_class) = props.get("media.class") else {
       return Err("missing media.class".to_owned());
     };
-    debug!("props: {:?}", node);
     let Some(media_name) = props.get("media.name") else {
       return Err("missing media.name".to_owned());
     };
     Ok(OutputNode {
-      id: node.id,
+      id: node.id(),
       properties: {
         NodeProperties {
           application_name: application_name.map(|s| s.to_owned()),
@@ -139,14 +124,16 @@ pub fn get_output_nodes() -> Result<Vec<OutputNode>> {
   let context = ContextRc::new(&mainloop, None).map_err(Error::from)?;
   let mut connect_props = PropertiesBox::new();
   connect_props.insert(pipewire::keys::REMOTE_INTENTION.to_owned(), "manager");
-  let core = context.connect(Some(connect_props)).map_err(Error::from)?;
-  let registry = core.get_registry().map_err(Error::from)?;
+  let core = context
+    .connect_rc(Some(connect_props))
+    .map_err(Error::from)?;
+  let registry = core.get_registry_rc().map_err(Error::from)?;
 
   let output_nodes = Rc::new(RefCell::new(vec![]));
-  pipewire_utils::iterate_existing_objects(&mainloop, &core, &registry, {
+  pipewire_utils::iterate_existing_nodes(&mainloop, &core, &registry, {
     let output_nodes = output_nodes.clone();
     move |node| {
-      match OutputNode::from_global_object(node) {
+      match OutputNode::from_node_ref(node) {
         Ok(node) => {
           if node.properties.media_class == "Stream/Output/Audio" {
             output_nodes.borrow_mut().push(node);
@@ -154,16 +141,19 @@ pub fn get_output_nodes() -> Result<Vec<OutputNode>> {
             debug!("node {} is not an output", node.id);
           }
         }
-        Err(err) => debug!(
-          "node {} does not contain all required properties: {}",
-          node.id, err
-        ),
+        Err(err) => {
+          log::trace!(
+            "node {} does not contain all required properties: {}",
+            node.id(),
+            err
+          )
+        }
       }
       false
     }
   });
 
-  return Ok(output_nodes.take());
+  return Ok(Rc::into_inner(output_nodes).unwrap().into_inner());
 }
 
 pub fn get_node_id_from_serial(serial: i64) -> Option<i64> {

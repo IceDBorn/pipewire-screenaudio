@@ -11,3 +11,4 @@ serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 pipewire-utils = { path = "../../pipewire-utils" }
 pipewire = "0.9.2"
+thiserror = "2.0.17"
