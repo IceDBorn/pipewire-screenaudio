@@ -245,3 +245,23 @@ where
         false
     });
 }
+
+pub fn connect_node(
+    node: u32,
+    target_ports: &Ports,
+    mainloop: &MainLoopRc,
+    core: &Core,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let registry = core.get_registry()?;
+    let ports = await_find_fl_fr_ports(
+        node,
+        PortDirection::OUTPUT,
+        &mainloop,
+        &registry,
+    );
+
+    link_ports(&ports, target_ports, core)?;
+    do_roundtrip(mainloop, core);
+
+    Ok(())
+}

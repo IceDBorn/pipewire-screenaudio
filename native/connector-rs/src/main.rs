@@ -1,4 +1,3 @@
-extern crate env_logger;
 use env_logger::{Builder, Target};
 
 mod command;

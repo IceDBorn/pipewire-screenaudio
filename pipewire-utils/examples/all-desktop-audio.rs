@@ -31,27 +31,6 @@ fn create_virtmic_node(
     return Ok(NodeWithPorts { id: node_id, ports });
 }
 
-fn connect_node(
-    node: u32,
-    virtmic_ports: &Ports,
-    mainloop: &MainLoopRc,
-    core: &Core,
-) -> Result<(), Box<dyn Error>> {
-    let registry = core.get_registry()?;
-    let ports = await_find_fl_fr_ports(
-        node,
-        pipewire_utils::PortDirection::OUTPUT,
-        &mainloop,
-        &registry,
-    );
-
-    dbg!(ports);
-    link_ports(&ports, &virtmic_ports, core)?;
-    do_roundtrip(mainloop, core);
-
-    Ok(())
-}
-
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mainloop = MainLoopRc::new(None)?;
 
@@ -82,7 +61,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 // Moving this line outside of the closure causes a SIGSEGV
                 let core = context.connect(None).unwrap();
                 dbg!(node);
-                connect_node(node, &virtmic_ports, &mainloop, &core).unwrap();
+                pipewire_utils::connect_node(node, &virtmic_ports, &mainloop, &core).unwrap();
             }
         },
         &mainloop,
