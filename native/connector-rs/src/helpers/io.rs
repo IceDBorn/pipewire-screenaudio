@@ -4,7 +4,7 @@ use std::io::prelude::{Read, Write};
 use std::str;
 
 use serde::{Deserialize, Serialize};
-use serde_json::{from_str, Value};
+use serde_json::{from_str, json, Value};
 
 use thiserror::Error;
 
@@ -13,16 +13,16 @@ pub struct RawPayload {
   #[serde(rename = "cmd")]
   pub command: String,
   #[serde(rename = "args")]
-  pub arguments: [Value; 1],
+  pub arguments: Vec<Value>,
 }
 
 impl From<RawPayload> for Payload {
   fn from(value: RawPayload) -> Self {
-    let RawPayload {
+    let RawPayload { command, arguments } = value;
+    Self {
       command,
-      arguments: [arguments],
-    } = value;
-    Self { command, arguments }
+      arguments: arguments.into_iter().next().unwrap_or_else(|| json!({})),
+    }
   }
 }
 
@@ -30,7 +30,7 @@ impl From<Payload> for RawPayload {
   fn from(value: Payload) -> Self {
     Self {
       command: value.command,
-      arguments: [value.arguments],
+      arguments: vec![value.arguments],
     }
   }
 }
