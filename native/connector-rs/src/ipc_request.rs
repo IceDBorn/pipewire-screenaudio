@@ -6,9 +6,22 @@ pub fn is_daemon_running() -> Result<bool, String> {
   let res: daemon::Response = io::read(&pipe).map_err(|err| err.to_string())?;
 
   let daemon::Response::PingResult = res else {
-    log::error!("invalid response for SetSharingNode, {res:?}");
-    return Err(format!("invalid response for SetSharingNode, {res:?}"));
+    log::error!("invalid response for Ping, {res:?}");
+    return Err(format!("invalid response for Ping, {res:?}"));
   };
 
   Ok(true)
+}
+
+pub fn stop_daemon() -> Result<(), String> {
+  let pipe = ipc::connect().map_err(|err| err.to_string())?;
+  io::write(daemon::Command::Stop, &pipe).map_err(|err| err.to_string())?;
+  let res: daemon::Response = io::read(&pipe).map_err(|err| err.to_string())?;
+
+  let daemon::Response::StopResult = res else {
+    log::error!("invalid response for Stop, {res:?}");
+    return Err(format!("invalid response for Stop, {res:?}"));
+  };
+
+  Ok(())
 }

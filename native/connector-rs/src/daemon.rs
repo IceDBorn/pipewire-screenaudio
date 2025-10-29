@@ -1,14 +1,20 @@
-use ::pipewire::{context::ContextRc, main_loop::MainLoopRc};
+use ::pipewire::{context::ContextRc, core::CoreRc, main_loop::MainLoopRc};
 use pipewire_utils::Ports;
 use serde::{Deserialize, Serialize};
-use std::{env::Args, num::ParseIntError};
+use std::{
+  cell::{Cell, RefCell},
+  env::Args,
+  num::ParseIntError,
+  os::unix::net::UnixStream,
+  sync::atomic::{AtomicBool, Ordering},
+};
 use thiserror::Error;
 
 use crate::{
   command::VIRTMIC_NODE_NAME,
   helpers::{
     io::{self, Payload},
-    pipewire,
+    pipewire::{self, NodeWithPorts},
   },
   ipc,
   monitor::MonitorThreadHandle,
@@ -32,6 +38,7 @@ pub enum Command {
   SetSharingNode { node: Option<u32> },
   SetExcludedTitle { title: String },
   Ping,
+  Stop,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -45,20 +52,70 @@ pub enum Response {
     success: bool,
   },
   PingResult,
+  StopResult,
 }
 
 struct MonitorArgs {
   excluded_nodes: Vec<u32>,
 }
 
-fn parse_args(mut args: Args) -> Result<MonitorArgs, ArgParseError> {
-  let excluded_nodes: Vec<u32> = args
-    .next()
-    .iter()
-    .map(|arg| arg.parse())
-    .collect::<Result<Vec<_>, _>>()
-    .map_err(ArgParseError::ParseIntError)?;
-  Ok(MonitorArgs { excluded_nodes })
+static KEEP_RUNNING: AtomicBool = AtomicBool::new(true);
+
+fn handle_client(
+  running_thread: &mut Option<MonitorThreadHandle>,
+  mainloop: &MainLoopRc,
+  context: &ContextRc,
+  core: &CoreRc,
+  virtual_node: &NodeWithPorts,
+  stream: UnixStream,
+) {
+  let command = match io::read::<_, Command>(&stream) {
+    Ok(command) => command,
+    Err(err) => {
+      log::error!("invalid input from ipc channel: {err:?}");
+      return;
+    }
+  };
+  log::info!("input: {:?}", command);
+
+  match command {
+    Command::SetSharingNode { node } => {
+      if let Some(mut running_thread) = running_thread.take() {
+        running_thread.stop();
+      }
+      pipewire::disconnect_node(&mainloop, &core, &virtual_node.ports);
+      let success = match node {
+        Some(node_id) => pipewire::connect_nodes(&mainloop, &core, node_id, &virtual_node.ports),
+        None => match MonitorThreadHandle::launch_monitor_thread(virtual_node.ports) {
+          Ok(handle) => {
+            running_thread.replace(handle);
+            true
+          }
+          Err(err) => {
+            log::error!("error while launching monitor thread: {err}");
+            false
+          }
+        },
+      };
+      io::write(Response::SetSharingNodeResult { success }, &stream).unwrap();
+    }
+    Command::SetExcludedTitle { title } => {
+      todo!()
+    }
+    Command::Ping => {
+      io::write(Response::PingResult, &stream).unwrap();
+    }
+    Command::Stop => {
+      io::write(Response::StopResult, &stream).unwrap();
+      stop_daemon();
+    }
+  }
+}
+
+fn stop_daemon() {
+  log::info!("shutting down");
+  KEEP_RUNNING.store(false, Ordering::Relaxed);
+  ipc::fake_connect();
 }
 
 pub fn monitor_and_connect_nodes() -> Result<(), Error> {
@@ -67,62 +124,48 @@ pub fn monitor_and_connect_nodes() -> Result<(), Error> {
   let mainloop = MainLoopRc::new(None).unwrap();
   let context = ContextRc::new(&mainloop, None).unwrap();
   let core = context.connect_rc(None).unwrap();
-  let registry = core.get_registry_rc().unwrap();
 
   let pipe = ipc::listen().unwrap();
   let first = pipe.incoming().next().unwrap().unwrap();
-  let mic_id =
-    pipewire::create_virtual_source(&mainloop, &core, &registry, VIRTMIC_NODE_NAME).unwrap();
+  let managed_virtual_node = pipewire::ManagedNode::create(VIRTMIC_NODE_NAME).unwrap();
+  let virtual_node = *managed_virtual_node.get_node_with_ports();
 
-  io::write(Response::StartResult { mic_id: mic_id.id }, &first).unwrap();
+  io::write(
+    Response::StartResult {
+      mic_id: virtual_node.id,
+    },
+    &first,
+  )
+  .unwrap();
   drop(first);
+
+  ctrlc::set_handler(|| {
+    stop_daemon();
+  })
+  .unwrap();
 
   let mut running_thread: Option<MonitorThreadHandle> = None;
 
   for stream in pipe.incoming() {
+    if !KEEP_RUNNING.load(Ordering::Relaxed) {
+      break;
+    }
     let Ok(stream) = stream else {
       log::warn!("failed to accept incomming connection");
       continue;
     };
-    let command = match io::read::<_, Command>(&stream) {
-      Ok(command) => command,
-      Err(err) => {
-        log::error!("invalid input from ipc channel: {err:?}");
-        continue;
-      }
-    };
-    log::info!("input: {:?}", command);
+    handle_client(
+      &mut running_thread,
+      &mainloop,
+      &context,
+      &core,
+      &virtual_node,
+      stream,
+    );
+  }
 
-    match command {
-      Command::SetSharingNode { node } => {
-        if let Some(running_thread) = running_thread.take() {
-          running_thread.stop();
-        }
-        pipewire::disconnect_node(mic_id.id);
-        let success = match node {
-          Some(node_id) => {
-            pipewire::connect_nodes(&mainloop, &core, &registry, node_id, &mic_id.ports)
-          }
-          None => match MonitorThreadHandle::launch_monitor_thread(mic_id.ports) {
-            Ok(handle) => {
-              running_thread.replace(handle);
-              true
-            }
-            Err(err) => {
-              log::error!("error while launching monitor thread: {err}");
-              false
-            }
-          },
-        };
-        io::write(Response::SetSharingNodeResult { success }, &stream).unwrap();
-      }
-      Command::SetExcludedTitle { title } => {
-        todo!()
-      }
-      Command::Ping => {
-        io::write(Response::PingResult, &stream).unwrap();
-      }
-    }
+  if let Some(mut running_thread) = running_thread.take() {
+    running_thread.stop();
   }
 
   Ok(())

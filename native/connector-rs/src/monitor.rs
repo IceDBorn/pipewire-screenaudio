@@ -1,4 +1,5 @@
 use std::{
+  cell::{Cell, OnceCell},
   error, io,
   thread::{self, JoinHandle},
 };
@@ -21,7 +22,7 @@ pub enum Error {
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 pub struct MonitorThreadHandle {
-  join_handle: JoinHandle<Result<(), pipewire::Error>>,
+  join_handle: Option<JoinHandle<Result<(), pipewire::Error>>>,
   stop_signal_receiver: Sender<TerminateSignal>,
 }
 
@@ -36,14 +37,22 @@ impl MonitorThreadHandle {
       .map_err(Error::ThreadSpawnError)?;
 
     Ok(MonitorThreadHandle {
-      join_handle,
+      join_handle: Some(join_handle),
       stop_signal_receiver: sender,
     })
   }
 
-  pub fn stop(self) {
+  pub fn stop(&mut self) {
     log::info!("stopping monitor thread");
     self.stop_signal_receiver.send(TerminateSignal).unwrap();
-    self.join_handle.join().unwrap();
+    if let Some(mut handle) = self.join_handle.take() {
+      handle.join().unwrap();
+    }
+  }
+}
+
+impl Drop for MonitorThreadHandle {
+  fn drop(&mut self) {
+    self.stop();
   }
 }

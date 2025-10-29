@@ -28,6 +28,10 @@ pub fn listen() -> io::Result<UnixListener> {
   UnixListener::bind(path)
 }
 
+pub fn fake_connect() {
+  let _ = UnixStream::connect(get_ipc_socket_path());
+}
+
 pub fn connect() -> io::Result<UnixStream> {
   let mut retries = 50;
   let path = get_ipc_socket_path();

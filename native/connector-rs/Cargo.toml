@@ -12,3 +12,4 @@ serde = { version = "1.0", features = ["derive"] }
 pipewire-utils = { path = "../../pipewire-utils" }
 pipewire = "0.9.2"
 thiserror = "2.0.17"
+ctrlc = "3.5.1"

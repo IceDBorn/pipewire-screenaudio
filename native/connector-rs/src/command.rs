@@ -101,11 +101,10 @@ fn IsPipewireScreenAudioRunning(payload: io::Payload) -> Result<Value, String> {
 }
 
 fn StopPipewireScreenAudio(payload: io::Payload) -> Result<Value, String> {
-  let micId = parse_numeric_argument(payload.arguments["micId"].clone());
-  let result = pipewire::destroy_node_if_exists(micId);
+  let success = ipc_request::stop_daemon().is_ok();
 
   Ok(json!({
-    "success": result
+    "success": success
   }))
 }
 
