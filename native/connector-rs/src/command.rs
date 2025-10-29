@@ -9,7 +9,6 @@ use std::str;
 use std::thread;
 use std::time::Duration;
 
-extern crate serde_json;
 use serde_json::{json, Value};
 
 use crate::daemon;
@@ -66,7 +65,7 @@ fn StartPipewireScreenAudio(payload: io::Payload) -> Result<Value, String> {
 fn SetSharingNode(payload: io::Payload) -> Result<Value, String> {
   let node = parse_numeric_argument(payload.arguments["node"].clone());
 
-  log::debug!("node serial to connect: {node}");
+  tracing::debug!("node serial to connect: {node}");
   let node = if node == -1 {
     None
   } else {
@@ -75,7 +74,7 @@ fn SetSharingNode(payload: io::Payload) -> Result<Value, String> {
         "success": false
       }));
     };
-    log::debug!("node id to connect: {node}");
+    tracing::debug!("node id to connect: {node}");
     Some(node)
   };
 
@@ -84,7 +83,7 @@ fn SetSharingNode(payload: io::Payload) -> Result<Value, String> {
   let res: daemon::Response = io::read(&pipe).unwrap();
 
   let daemon::Response::SetSharingNodeResult { success } = res else {
-    log::error!("invalid response for SetSharingNode, {res:?}");
+    tracing::error!("invalid response for SetSharingNode, {res:?}");
     return Err(format!("invalid response for SetSharingNode, {res:?}"));
   };
 

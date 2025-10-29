@@ -1,6 +1,5 @@
 use std::{cell::RefCell, collections::HashSet, rc::Rc, thread, time::Duration};
 
-extern crate serde_json;
 use pipewire::{
   channel::Receiver,
   context::ContextRc,
@@ -17,9 +16,6 @@ use pipewire_utils::{iterate_objects, iterate_objects_scheduled, Ports};
 use serde::Serialize;
 use serde_json::{json, Deserializer, Map, Value};
 use thiserror::Error;
-
-extern crate log;
-use log::debug;
 
 use crate::helpers::JsonGetters;
 
@@ -114,11 +110,11 @@ pub fn get_output_nodes() -> Result<Vec<OutputNode>> {
             if node.properties.media_class == "Stream/Output/Audio" {
               output_nodes.borrow_mut().push(node);
             } else {
-              debug!("node {} is not an output", node.id);
+              tracing::debug!("node {} is not an output", node.id);
             }
           }
           Err(err) => {
-            log::trace!(
+            tracing::trace!(
               "node {} does not contain all required properties: {}",
               node.id(),
               err
@@ -136,13 +132,13 @@ pub fn get_output_nodes() -> Result<Vec<OutputNode>> {
 
 pub fn get_node_id_from_serial(serial: i64) -> Option<u32> {
   let dump = get_output_nodes().unwrap();
-  log::debug!("nodes: {dump:?}");
+  tracing::debug!("nodes: {dump:?}");
   let result = dump
     .into_iter()
     .find(|node| node.properties.object_serial == serial);
 
   if result.is_some() {
-    log::info!("Found Target: {:?}", result.as_ref().unwrap());
+    tracing::info!("Found Target: {:?}", result.as_ref().unwrap());
   }
 
   result.map(|v| v.id)
@@ -158,7 +154,7 @@ pub fn connect_nodes(
 }
 
 fn remove_links(mainloop: &MainLoopRc, core: &CoreRc, port_ids: HashSet<u32>) {
-  log::debug!("removing links to: {:?}", &port_ids);
+  tracing::debug!("removing links to: {:?}", &port_ids);
   let is_link_to_port = move |global: &GlobalObject<&DictRef>| {
     if global.type_ != ObjectType::Link {
       return false;
@@ -178,14 +174,14 @@ fn remove_links(mainloop: &MainLoopRc, core: &CoreRc, port_ids: HashSet<u32>) {
     let registry = core.get_registry_rc().unwrap();
     move |scheduler, global| {
       if is_link_to_port(global) {
-        log::debug!("removing link: {}", global.id);
+        tracing::debug!("removing link: {}", global.id);
         registry.destroy_global(global.id);
         scheduler.schedule_roundtrip();
       }
       false
     }
   });
-  log::debug!("links removed");
+  tracing::debug!("links removed");
 }
 
 pub fn disconnect_node(mainloop: &MainLoopRc, core: &CoreRc, mic_ports: &Ports) {
@@ -210,13 +206,13 @@ pub fn monitor_and_connect_nodes(
     let mainloop = mainloop.clone();
     move |_| mainloop.quit()
   });
-  log::info!("starting node monitoring loop");
+  tracing::info!("starting node monitoring loop");
   pipewire_utils::monitor_nodes(
     {
       let mainloop = MainLoopRc::new(None)?;
       let context = ContextRc::new(&mainloop, None)?;
       move |node| {
-        log::info!("connecting to node {node}");
+        tracing::info!("connecting to node {node}");
         let core = context.connect_rc(None).unwrap();
         pipewire_utils::connect_node(node, &mic_ports, &mainloop, &core);
       }
@@ -224,7 +220,7 @@ pub fn monitor_and_connect_nodes(
     &mainloop,
     &core,
   );
-  log::info!("exited node monitoring loop");
+  tracing::info!("exited node monitoring loop");
   Ok(())
 }
 

@@ -50,7 +50,7 @@ pub fn iterate_nodes<F>(
                     return;
                 }
                 let Ok(proxy) = registry.bind::<Node, _>(global) else {
-                    log::debug!("global {} is not assignable to node", global.id);
+                    tracing::debug!("global {} is not assignable to node", global.id);
                     return;
                 };
                 let listener = proxy
@@ -186,7 +186,7 @@ pub fn link_ports(
     input: &Ports,
     core: &Core,
 ) -> Result<[Link; 2], pipewire::Error> {
-    log::debug!("Linking {output:?} with {input:?}");
+    tracing::debug!("Linking {output:?} with {input:?}");
 
     let links = [
         (input.fl_port, output.fl_port),
@@ -323,7 +323,7 @@ fn find_fl_fr_ports_internal(
             let fr_port = fr_port.clone();
             move |global| {
                 if let Some(port) = is_global_a_port_for_node(global, &direction, node_id) {
-                    log::debug!("found port {} for node {}", port.id, node_id);
+                    tracing::debug!("found port {} for node {}", port.id, node_id);
                     // Save port id into channel cell
                     if let Some(channel_cell) = match port.channel {
                         "FL" => Some(&fl_port),
@@ -405,7 +405,7 @@ pub fn connect_node(
     mainloop: &MainLoopRc,
     core: &CoreRc,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    log::debug!("connecting ports from node {node} to {target_ports:?}");
+    tracing::debug!("connecting ports from node {node} to {target_ports:?}");
     let ports = await_find_fl_fr_ports(node, PortDirection::OUTPUT, &mainloop, &core);
 
     link_ports(&ports, target_ports, core)?;

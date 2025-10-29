@@ -30,7 +30,7 @@ impl MonitorThreadHandle {
   pub fn launch_monitor_thread(mic_ports: Ports) -> Result<Self> {
     let (sender, receiver) = pipewire::channel::channel();
 
-    log::info!("launching monitor thread");
+    tracing::info!("launching monitor thread");
     let join_handle = thread::Builder::new()
       .name("monitor and connector thread".to_owned())
       .spawn({ move || pipewire_helpers::monitor_and_connect_nodes(mic_ports, receiver) })
@@ -43,7 +43,7 @@ impl MonitorThreadHandle {
   }
 
   pub fn stop(&mut self) {
-    log::info!("stopping monitor thread");
+    tracing::info!("stopping monitor thread");
     self.stop_signal_receiver.send(TerminateSignal).unwrap();
     if let Some(mut handle) = self.join_handle.take() {
       handle.join().unwrap();

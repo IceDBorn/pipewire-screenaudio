@@ -10,15 +10,11 @@ use std::{
 
 use thiserror::Error;
 
-fn get_runtime_path() -> PathBuf {
-  env::var("XDG_RUNTIME_DIR")
-    .unwrap_or("/tmp".to_owned())
-    .into()
-}
+use crate::dirs::get_runtime_path;
 
 fn get_ipc_socket_path() -> PathBuf {
   let mut path = get_runtime_path();
-  path.push("pipewire-screenaudio/ipc.sock");
+  path.push("ipc.sock");
   path
 }
 
@@ -33,10 +29,11 @@ pub fn fake_connect() {
 }
 
 pub fn connect() -> io::Result<UnixStream> {
-  let mut retries = 50;
+  let mut retries = 5;
   let path = get_ipc_socket_path();
   let mut last_error = None;
   while retries > 0 {
+    tracing::debug!("connecting");
     match UnixStream::connect(path.clone()) {
       Ok(socket) => return Ok(socket),
       Err(err) => last_error = Some(err),

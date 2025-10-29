@@ -72,7 +72,7 @@ pub fn read<R: Read, P: for<'a> Deserialize<'a> + Debug>(mut reader: R) -> Resul
     .map_err(ReadError::ReadingLengthHeader)?;
 
   let length = u32::from_le_bytes(length_buffer);
-  log::trace!("Length: {}", length);
+  tracing::trace!("Length: {}", length);
 
   let mut payload_buffer = vec![0u8; length as usize];
   reader
@@ -82,14 +82,14 @@ pub fn read<R: Read, P: for<'a> Deserialize<'a> + Debug>(mut reader: R) -> Resul
   let payload_string = str::from_utf8(&payload_buffer).map_err(ReadError::PayloadUTFError)?;
 
   let payload = serde_json::from_str(payload_string).map_err(ReadError::ParsingPayload)?;
-  log::debug!("read payload: {:?}", &payload);
+  tracing::debug!("read payload: {:?}", &payload);
 
   Ok(payload)
 }
 
 pub fn write<W: Write, P: Serialize>(payload: P, mut writer: W) -> Result<(), WriteError> {
   let payload = serde_json::to_string(&payload).map_err(WriteError::SerializingPayload)?;
-  log::debug!("writing payload: {}", payload);
+  tracing::debug!("writing payload: {}", payload);
 
   let payload = payload.as_bytes();
   let length = payload.len();

@@ -1,10 +1,6 @@
 use std::vec::Vec;
 
-extern crate serde_json;
 use serde_json::Value;
-
-extern crate log;
-use log::debug;
 
 pub mod io;
 pub mod pipewire;
@@ -28,7 +24,7 @@ impl JsonGetters for Value {
       return Err("The 'fields' vector is empty.".to_string());
     }
 
-    debug!("Testing field: {}", fields[0]);
+    tracing::debug!("Testing field: {}", fields[0]);
 
     if fields.len() > 1 {
       let value = self.get_field_or_fail(fields[0])?;

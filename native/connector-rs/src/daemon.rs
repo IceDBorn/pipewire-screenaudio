@@ -1,17 +1,20 @@
 use ::pipewire::{context::ContextRc, core::CoreRc, main_loop::MainLoopRc};
 use pipewire_utils::Ports;
 use serde::{Deserialize, Serialize};
+use tracing::Level;
 use std::{
   cell::{Cell, RefCell},
   env::Args,
   num::ParseIntError,
   os::unix::net::UnixStream,
+  path::PathBuf,
   sync::atomic::{AtomicBool, Ordering},
 };
 use thiserror::Error;
 
 use crate::{
   command::VIRTMIC_NODE_NAME,
+  dirs::get_runtime_path,
   helpers::{
     io::{self, Payload},
     pipewire::{self, NodeWithPorts},
@@ -72,11 +75,11 @@ fn handle_client(
   let command = match io::read::<_, Command>(&stream) {
     Ok(command) => command,
     Err(err) => {
-      log::error!("invalid input from ipc channel: {err:?}");
+      tracing::error!("invalid input from ipc channel: {err:?}");
       return;
     }
   };
-  log::info!("input: {:?}", command);
+  tracing::info!("input: {:?}", command);
 
   match command {
     Command::SetSharingNode { node } => {
@@ -92,7 +95,7 @@ fn handle_client(
             true
           }
           Err(err) => {
-            log::error!("error while launching monitor thread: {err}");
+            tracing::error!("error while launching monitor thread: {err}");
             false
           }
         },
@@ -113,13 +116,13 @@ fn handle_client(
 }
 
 fn stop_daemon() {
-  log::info!("shutting down");
+  tracing::info!("shutting down");
   KEEP_RUNNING.store(false, Ordering::Relaxed);
   ipc::fake_connect();
 }
 
 pub fn monitor_and_connect_nodes() -> Result<(), Error> {
-  log::info!("starting daemon monitor");
+  tracing::info!("starting daemon monitor");
 
   let mainloop = MainLoopRc::new(None).unwrap();
   let context = ContextRc::new(&mainloop, None).unwrap();
@@ -151,7 +154,7 @@ pub fn monitor_and_connect_nodes() -> Result<(), Error> {
       break;
     }
     let Ok(stream) = stream else {
-      log::warn!("failed to accept incomming connection");
+      tracing::warn!("failed to accept incomming connection");
       continue;
     };
     handle_client(

@@ -6,7 +6,7 @@ pub fn is_daemon_running() -> Result<bool, String> {
   let res: daemon::Response = io::read(&pipe).map_err(|err| err.to_string())?;
 
   let daemon::Response::PingResult = res else {
-    log::error!("invalid response for Ping, {res:?}");
+    tracing::error!("invalid response for Ping, {res:?}");
     return Err(format!("invalid response for Ping, {res:?}"));
   };
 
@@ -19,7 +19,7 @@ pub fn stop_daemon() -> Result<(), String> {
   let res: daemon::Response = io::read(&pipe).map_err(|err| err.to_string())?;
 
   let daemon::Response::StopResult = res else {
-    log::error!("invalid response for Stop, {res:?}");
+    tracing::error!("invalid response for Stop, {res:?}");
     return Err(format!("invalid response for Stop, {res:?}"));
   };
 
