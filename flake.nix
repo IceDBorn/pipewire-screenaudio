@@ -29,8 +29,19 @@
               + (self.shortRev or "dirty");
 
             src = ./native/connector-rs;
-            buildInputs = [ pipewire ];
-            cargoHash = "sha256-xgLyDdjel3WjkQAJZR2jLSNmB73UWmuFSsakxA0xbc0=";
+            nativeBuildInputs = [
+              pkg-config
+            ];
+            buildInputs = [
+              pipewire
+            ];
+            LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [
+              libclang
+            ];
+            BINDGEN_EXTRA_CLANG_ARGS = ''
+              -I${glibc.dev}/include
+            '';
+            cargoLock.lockFile = ./native/connector-rs/Cargo.lock;
 
             postInstall = ''
               # Firefox manifest
