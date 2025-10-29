@@ -2,8 +2,11 @@ use std::{cell::RefCell, process::Command, rc::Rc, thread, time::Duration};
 
 extern crate serde_json;
 use pipewire::{
-  context::ContextRc, main_loop::MainLoopRc, node::NodeInfoRef, properties::PropertiesBox,
+  channel::Receiver, context::ContextRc, core::CoreRc, loop_::Signal, main_loop::MainLoopRc,
+  node::NodeInfoRef, properties::PropertiesBox, registry::RegistryRc,
+  spa::support::system::IoFlags,
 };
+use pipewire_utils::Ports;
 use serde::Serialize;
 use serde_json::{json, Deserializer, Map, Value};
 use thiserror::Error;
@@ -130,49 +133,53 @@ pub fn get_output_nodes() -> Result<Vec<OutputNode>> {
   let registry = core.get_registry_rc().map_err(Error::from)?;
 
   let output_nodes = Rc::new(RefCell::new(vec![]));
-  pipewire_utils::iterate_existing_nodes(&mainloop, &core, &registry, {
-    let output_nodes = output_nodes.clone();
-    move |node| {
-      match OutputNode::from_node_ref(node) {
-        Ok(node) => {
-          if node.properties.media_class == "Stream/Output/Audio" {
-            output_nodes.borrow_mut().push(node);
-          } else {
-            debug!("node {} is not an output", node.id);
+  pipewire_utils::iterate_nodes(
+    &mainloop,
+    &core,
+    &registry,
+    {
+      let output_nodes = output_nodes.clone();
+      move |node| {
+        match OutputNode::from_node_ref(node) {
+          Ok(node) => {
+            if node.properties.media_class == "Stream/Output/Audio" {
+              output_nodes.borrow_mut().push(node);
+            } else {
+              debug!("node {} is not an output", node.id);
+            }
+          }
+          Err(err) => {
+            log::trace!(
+              "node {} does not contain all required properties: {}",
+              node.id(),
+              err
+            )
           }
         }
-        Err(err) => {
-          log::trace!(
-            "node {} does not contain all required properties: {}",
-            node.id(),
-            err
-          )
-        }
+        false
       }
-      false
-    }
-  });
+    },
+    true,
+  );
 
   return Ok(Rc::into_inner(output_nodes).unwrap().into_inner());
 }
 
-pub fn get_node_id_from_serial(serial: i64) -> Option<i64> {
+pub fn get_node_id_from_serial(serial: i64) -> Option<u32> {
   let dump = get_output_nodes().unwrap();
+  log::debug!("nodes: {dump:?}");
   let result = dump
     .into_iter()
     .find(|node| node.properties.object_serial == serial);
 
   if result.is_some() {
-    eprintln!("Found Target: {:?}", result.as_ref().unwrap());
+    log::info!("Found Target: {:?}", result.as_ref().unwrap());
   }
 
-  match result {
-    Some(v) => Some(v.id as i64),
-    None => None,
-  }
+  result.map(|v| v.id)
 }
 
-pub fn get_ports_of_node(node_id: i64, port_type: String, invalidate_cache: bool) -> Value {
+pub fn get_ports_of_node(node_id: u32, port_type: String, invalidate_cache: bool) -> Value {
   let ports = get_pw_dump(invalidate_cache)
     .iter()
     .filter(|&node| node["type"] == "PipeWire:Interface:Port")
@@ -214,14 +221,14 @@ pub fn get_ports_of_node(node_id: i64, port_type: String, invalidate_cache: bool
   return Value::Object(result.to_owned());
 }
 
-pub fn get_links_to_node(node_id: i64, invalidate_cache: bool) -> Value {
+pub fn get_links_to_node(node_id: u32, invalidate_cache: bool) -> Value {
   let links = get_pw_dump(invalidate_cache)
     .iter()
     .filter(|&node| node["type"] == "PipeWire:Interface:Link")
     .filter(
       |&node| match node.get_fields_chain(vec!["info", "input-node-id"]) {
         Err(_) => false,
-        Ok(v) => v == node_id,
+        Ok(v) => v.as_u64().unwrap() as u32 == node_id,
       },
     )
     .map(|link| link.to_owned())
@@ -242,11 +249,11 @@ pub fn find_node_by_id(id: i64, invalidate_cache: bool) -> Option<Value> {
   Some((*found_node.unwrap()).clone())
 }
 
-pub fn find_node_by_name(name: &String, invalidate_cache: bool) -> Option<Value> {
+pub fn find_node_by_name(name: impl AsRef<str>, invalidate_cache: bool) -> Option<Value> {
   let dump = get_pw_dump(invalidate_cache);
 
   let found_node = dump.iter().find(|&node| match get_node_name(node) {
-    Ok(v) => v == *name,
+    Ok(v) => &v == name.as_ref(),
     Err(_) => false,
   });
 
@@ -257,7 +264,7 @@ pub fn find_node_by_name(name: &String, invalidate_cache: bool) -> Option<Value>
   Some((*found_node.unwrap()).clone())
 }
 
-pub fn node_exists(id: i64, node_name: &String) -> bool {
+pub fn node_exists(id: i64, node_name: impl AsRef<str>) -> bool {
   // TODO Result<bool,String>
   let some_node = find_node_by_id(id, false);
 
@@ -266,28 +273,8 @@ pub fn node_exists(id: i64, node_name: &String) -> bool {
   }
 
   match get_node_name(&some_node.unwrap()) {
-    Ok(v) => v == *node_name,
+    Ok(v) => &v == node_name.as_ref(),
     Err(_) => false,
-  }
-}
-
-pub fn create_virtual_source(node_name: &String) -> i64 {
-  // TODO Result<i64,String>
-  let result = Command::new("pw-cli")
-    .arg("create-node")
-    .arg("adapter")
-    .arg(format!("{{ factory.name=support.null-audio-sink node.name={} media.class=Audio/Source/Virtual object.linger=1 audio.position=[FL,FR] }}", node_name))
-    .output();
-
-  if result.is_err() {
-    return -1;
-  }
-
-  thread::sleep(Duration::from_secs(1));
-
-  match find_node_by_name(node_name, true) {
-    Some(v) => v["id"].as_i64().unwrap(),
-    None => -1,
   }
 }
 
@@ -307,7 +294,7 @@ pub fn destroy_nodes(port_ids: Vec<i64>) -> bool {
     .all(|success| success)
 }
 
-pub fn connect_ports(port_id_a: i64, port_id_b: i64) -> bool {
+pub fn connect_ports(port_id_a: u32, port_id_b: u32) -> bool {
   let result = Command::new("pw-link")
     .arg(port_id_a.to_string())
     .arg(port_id_b.to_string())
@@ -316,47 +303,52 @@ pub fn connect_ports(port_id_a: i64, port_id_b: i64) -> bool {
   return result.is_ok();
 }
 
-pub fn connect_nodes(in_node_id: i64, out_node_id: i64) -> bool {
-  let in_node_ports = get_ports_of_node(in_node_id, "output".to_string(), false);
-  eprintln!("Searching in_node ports...");
-  if !in_node_ports.as_object().unwrap().contains_key("FL") {
-    return false;
-  }
-  if !in_node_ports.as_object().unwrap().contains_key("FR") {
-    return false;
-  }
-
-  let out_node_ports = get_ports_of_node(out_node_id, "input".to_string(), false);
-  eprintln!("Searching out_node ports...");
-  if !out_node_ports.as_object().unwrap().contains_key("FL") {
-    return false;
-  }
-  if !out_node_ports.as_object().unwrap().contains_key("FR") {
-    return false;
-  }
-
-  let result_fl = connect_ports(
-    in_node_ports["FL"].as_i64().unwrap(),
-    out_node_ports["FL"].as_i64().unwrap(),
-  );
-  if !result_fl {
-    eprintln!("Failed on FL");
-    return false;
-  }
-
-  let result_fr = connect_ports(
-    in_node_ports["FR"].as_i64().unwrap(),
-    out_node_ports["FR"].as_i64().unwrap(),
-  );
-  if !result_fr {
-    eprintln!("Failed on FR");
-    return false;
-  }
-
-  return true;
+pub fn connect_nodes(
+  mainloop: &MainLoopRc,
+  core: &CoreRc,
+  registry: &RegistryRc,
+  in_node_id: u32,
+  mic_ports: &Ports,
+) -> bool {
+  pipewire_utils::connect_node(in_node_id, mic_ports, mainloop, core, registry).is_ok()
 }
 
-pub fn disconnect_node(node_id: i64) -> bool {
+#[derive(Debug)]
+pub struct TerminateSignal;
+
+pub fn monitor_and_connect_nodes(
+  mic_ports: Ports,
+  stop_signal_receiver: Receiver<TerminateSignal>,
+) -> Result<(), pipewire::Error> {
+  let mainloop = MainLoopRc::new(None)?;
+  let context = ContextRc::new(&mainloop, None)?;
+  let core = context.connect_rc(None)?;
+  let registry = core.get_registry_rc()?;
+  let _receiver = stop_signal_receiver.attach(mainloop.loop_(), {
+    let mainloop = mainloop.clone();
+    move |_| mainloop.quit()
+  });
+  log::info!("starting node monitoring loop");
+  pipewire_utils::monitor_nodes(
+    {
+      let mainloop = MainLoopRc::new(None)?;
+      let context = ContextRc::new(&mainloop, None)?;
+      move |node| {
+        log::info!("connecting to node {node}");
+        let core = context.connect_rc(None).unwrap();
+        let registry = core.get_registry_rc().unwrap();
+        pipewire_utils::connect_node(node, &mic_ports, &mainloop, &core, &registry);
+      }
+    },
+    &mainloop,
+    &core,
+    &registry,
+  );
+  log::info!("exited node monitoring loop");
+  Ok(())
+}
+
+pub fn disconnect_node(node_id: u32) -> bool {
   let links_to_disconnect = get_links_to_node(node_id, false);
   destroy_nodes(
     links_to_disconnect
@@ -368,10 +360,52 @@ pub fn disconnect_node(node_id: i64) -> bool {
   )
 }
 
-pub fn create_virtual_source_if_not_exists(node_name: &String) -> i64 {
-  match find_node_by_name(node_name, true) {
-    Some(v) => v["id"].as_i64().unwrap(),
-    None => create_virtual_source(node_name),
+pub struct NodeWithPorts {
+  pub id: u32,
+  pub ports: Ports,
+}
+
+pub fn create_virtual_source(
+  mainloop: &MainLoopRc,
+  core: &CoreRc,
+  registry: &RegistryRc,
+  node_name: impl AsRef<str>,
+) -> Result<NodeWithPorts, Box<dyn std::error::Error>> {
+  let node = pipewire_utils::create_node(&node_name, core).expect("Failed to create node");
+
+  let node_id = pipewire_utils::await_node_creation(node, mainloop, core);
+  dbg!(node_id);
+
+  let ports = pipewire_utils::await_find_fl_fr_ports(
+    node_id,
+    pipewire_utils::PortDirection::INPUT,
+    mainloop,
+    core,
+    registry,
+  );
+
+  return Ok(NodeWithPorts { id: node_id, ports });
+}
+
+pub fn create_virtual_source_if_not_exists(
+  mainloop: &MainLoopRc,
+  core: &CoreRc,
+  registry: &RegistryRc,
+  node_name: impl AsRef<str> + Copy + 'static,
+) -> Option<NodeWithPorts> {
+  match pipewire_utils::find_node_by_name(mainloop, core, registry, node_name) {
+    Some(node_id) => {
+      let ports = pipewire_utils::find_fl_fr_ports(
+        node_id,
+        pipewire_utils::PortDirection::INPUT,
+        mainloop,
+        core,
+        registry,
+      )
+      .expect("node exists but ports don't");
+      Some(NodeWithPorts { id: node_id, ports })
+    }
+    None => create_virtual_source(mainloop, core, registry, &node_name).ok(),
   }
 }
 

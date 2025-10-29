@@ -1,6 +1,7 @@
 use std::{
     any::Any,
     cell::{Cell, OnceCell, RefCell},
+    ops::Deref,
     rc::Rc,
 };
 
@@ -23,11 +24,12 @@ use pipewire::{
 
 use crate::{proxies::ProxyRefs, roundtrip::Scheduler};
 
-pub fn iterate_existing_nodes<F>(
+pub fn iterate_nodes<F>(
     mainloop: &MainLoopRc,
     core: &CoreRc,
     registry: &RegistryRc,
     object_callback: F,
+    only_existent: bool,
 ) where
     F: Fn(&NodeInfoRef) -> bool + Clone + 'static,
 {
@@ -66,22 +68,31 @@ pub fn iterate_existing_nodes<F>(
                 proxies
                     .borrow_mut()
                     .add_proxy(Box::new(proxy), vec![Box::new(listener)]);
-                scheduler.schedule_roundtrip();
-                //sync_seq.replace(Some(core.sync(0).unwrap()));
+                if only_existent {
+                    scheduler.schedule_roundtrip();
+                }
             }
         })
         .register();
-    //sync_seq.replace(Some(core.sync(0).unwrap()));
-    scheduler.schedule_roundtrip();
 
-    scheduler.run_until_sync();
+    if only_existent {
+        scheduler.schedule_roundtrip();
+        scheduler.run_until_sync();
+    } else {
+        scheduler.run();
+    }
 
     drop(reg_listener);
     drop(proxies);
 }
 
-pub fn iterate_objects<F>(mainloop: &MainLoopRc, registry: &Registry, object_callback: F)
-where
+pub fn iterate_objects<F>(
+    mainloop: &MainLoopRc,
+    core: &CoreRc,
+    registry: &RegistryRc,
+    object_callback: F,
+    only_existent: bool,
+) where
     F: Fn(&GlobalObject<&DictRef>) -> bool + 'static,
 {
     let reg_listener = registry
@@ -96,7 +107,11 @@ where
         })
         .register();
 
-    mainloop.run();
+    if only_existent {
+        do_roundtrip(mainloop, core);
+    } else {
+        mainloop.run();
+    }
 
     drop(reg_listener);
 }
@@ -114,12 +129,7 @@ pub fn do_roundtrip(mainloop: &MainLoopRc, core: &Core) {
     let _listener_core = core
         .add_listener_local()
         .done(move |id, seq| {
-            //if id == PW_ID_CORE {
-            //println!("{seq:?}");
-            //println!("{pending:?}");
-            //}
             if id == PW_ID_CORE && seq == pending {
-                //println!("AAAAAAAAAAAAAAAA");
                 done_clone.set(true);
                 loop_clone.quit();
             }
@@ -131,12 +141,12 @@ pub fn do_roundtrip(mainloop: &MainLoopRc, core: &Core) {
     }
 }
 
-pub fn create_node(node_name: &str, core: &Core) -> Result<Node, pipewire::Error> {
+pub fn create_node(node_name: impl AsRef<str>, core: &Core) -> Result<Node, pipewire::Error> {
     core.create_object::<Node>(
         "adapter",
         &properties! {
             *keys::FACTORY_NAME => "support.null-audio-sink",
-            *keys::NODE_NAME => node_name,
+            *keys::NODE_NAME => node_name.as_ref(),
             *keys::MEDIA_CLASS => "Audio/Source/Virtual",
             "audio.position" => "[FL, FR]",
             *keys::OBJECT_LINGER => "1",
@@ -201,100 +211,218 @@ pub struct Ports {
     pub fr_port: u32,
 }
 
+#[derive(Debug, Clone, Copy)]
+pub struct MaybePorts {
+    pub fl_port: Option<u32>,
+    pub fr_port: Option<u32>,
+}
+
+impl MaybePorts {
+    pub fn both(self) -> Option<Ports> {
+        let MaybePorts { fl_port, fr_port } = self;
+        let Some(fl_port) = fl_port else {
+            return None;
+        };
+        let Some(fr_port) = fr_port else {
+            return None;
+        };
+        Some(Ports { fl_port, fr_port })
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
 pub enum PortDirection {
     INPUT,
     OUTPUT,
+}
+
+impl PortDirection {
+    fn to_pipewire_string(&self) -> &'static str {
+        match self {
+            PortDirection::INPUT => "in",
+            PortDirection::OUTPUT => "out",
+        }
+    }
+}
+
+struct PortInfo<'a> {
+    channel: &'a str,
+    id: u32,
+}
+
+fn is_global_a_port_for_node<'a>(
+    global: &'a GlobalObject<&'a DictRef>,
+    direction: &PortDirection,
+    node_id: u32,
+) -> Option<PortInfo<'a>> {
+    let direction_name = direction.to_pipewire_string();
+
+    let Some(ref props) = global.props else {
+        return None;
+    };
+    if global.type_ == ObjectType::Port
+        && props.get(*keys::NODE_ID) == Some(&node_id.to_string())
+        && props.get(*keys::PORT_DIRECTION) == Some(direction_name)
+    {
+        let port_id: u32 = global.id;
+        let Some(audio_channel) = props.get(*keys::AUDIO_CHANNEL) else {
+            return None;
+        };
+
+        Some(PortInfo {
+            channel: audio_channel,
+            id: port_id,
+        })
+    } else {
+        None
+    }
+}
+
+fn find_fl_fr_ports_internal(
+    node_id: u32,
+    direction: PortDirection,
+    mainloop: &MainLoopRc,
+    core: &CoreRc,
+    registry: &RegistryRc,
+    only_existent: bool,
+) -> MaybePorts {
+    let fl_port = Rc::new(OnceCell::new());
+    let fr_port = Rc::new(OnceCell::new());
+
+    iterate_objects(
+        &mainloop,
+        &core,
+        &registry,
+        {
+            let fl_port = fl_port.clone();
+            let fr_port = fr_port.clone();
+            move |global| {
+                if let Some(port) = is_global_a_port_for_node(global, &direction, node_id) {
+                    // Save port id into channel cell
+                    if let Some(channel_cell) = match port.channel {
+                        "FL" => Some(&fl_port),
+                        "FR" => Some(&fr_port),
+                        _ => None,
+                    } {
+                        channel_cell
+                            .set(port.id)
+                            .expect("Node has multiple ports for same channel");
+                    }
+
+                    // Stop searching if we found all ports
+                    let found_all_ports = [&fl_port, &fr_port]
+                        .iter()
+                        .all(|port_id| port_id.get().is_some());
+
+                    return found_all_ports;
+                } else {
+                    false
+                }
+            }
+        },
+        only_existent,
+    );
+
+    let fl_port = Rc::try_unwrap(fl_port).unwrap().into_inner();
+    let fr_port = Rc::try_unwrap(fr_port).unwrap().into_inner();
+
+    MaybePorts { fl_port, fr_port }
 }
 
 pub fn await_find_fl_fr_ports(
     node_id: u32,
     direction: PortDirection,
     mainloop: &MainLoopRc,
-    registry: &Registry,
+    core: &CoreRc,
+    registry: &RegistryRc,
 ) -> Ports {
-    let fl_port = Rc::new(OnceCell::new());
-    let fr_port = Rc::new(OnceCell::new());
-    let direction_name = match direction {
-        PortDirection::INPUT => "in",
-        PortDirection::OUTPUT => "out",
-    };
-
-    iterate_objects(&mainloop, &registry, {
-        let fl_port = fl_port.clone();
-        let fr_port = fr_port.clone();
-        move |global| {
-            let Some(ref props) = global.props else {
-                return false;
-            };
-            if global.type_ == ObjectType::Port
-                && props.get(*keys::NODE_ID) == Some(&node_id.to_string())
-                && props.get(*keys::PORT_DIRECTION) == Some(direction_name)
-            {
-                let port_id: u32 = global.id;
-                let Some(audio_channel) = props.get(*keys::AUDIO_CHANNEL) else {
-                    return false;
-                };
-
-                // Save port id into channel cell
-                if let Some(channel_cell) = match audio_channel {
-                    "FL" => Some(&fl_port),
-                    "FR" => Some(&fr_port),
-                    _ => None,
-                } {
-                    channel_cell
-                        .set(port_id)
-                        .expect("Node has multiple ports for same channel");
-                }
-
-                // Stop searching if we found all ports
-                let found_all_ports = [&fl_port, &fr_port]
-                    .iter()
-                    .all(|port_id| port_id.get().is_some());
-
-                return found_all_ports;
-            };
-            false
-        }
-    });
-
-    // We can unwrap because iterate_objects blocks until it finds both channels
-    let fl_port = *fl_port.get().unwrap();
-    let fr_port = *fr_port.get().unwrap();
-
-    Ports { fl_port, fr_port }
+    // We can unwrap, it blocks until it finds both channels
+    find_fl_fr_ports_internal(node_id, direction, mainloop, core, registry, false)
+        .both()
+        .unwrap()
 }
 
-pub fn monitor_nodes<F>(on_node_added: F, mainloop: &MainLoopRc, registry: &Registry)
-where
-    F: Fn(u32) + 'static,
-{
-    iterate_objects(&mainloop, &registry, move |global| {
-        let Some(ref props) = global.props else {
-            return false;
-        };
-        // TODO: Add exclusions
-        if global.type_ == ObjectType::Node
-            && props.get(*keys::MEDIA_CLASS) == Some("Stream/Output/Audio")
-        {
-            let node_id: u32 = global.id;
+pub fn find_fl_fr_ports(
+    node_id: u32,
+    direction: PortDirection,
+    mainloop: &MainLoopRc,
+    core: &CoreRc,
+    registry: &RegistryRc,
+) -> Option<Ports> {
+    find_fl_fr_ports_internal(node_id, direction, mainloop, core, registry, true).both()
+}
 
-            on_node_added(node_id);
-        };
-        false
-    });
+pub fn monitor_nodes<F>(
+    on_node_added: F,
+    mainloop: &MainLoopRc,
+    core: &CoreRc,
+    registry: &RegistryRc,
+) where
+    F: Fn(u32) + Clone + 'static,
+{
+    iterate_nodes(
+        &mainloop,
+        &core,
+        &registry,
+        move |node| {
+            let Some(ref props) = node.props() else {
+                return false;
+            };
+            // TODO: Add exclusions
+            if props.get(*keys::MEDIA_CLASS) == Some("Stream/Output/Audio") {
+                let node_id: u32 = node.id();
+
+                on_node_added(node_id);
+            };
+            false
+        },
+        false,
+    );
 }
 
 pub fn connect_node(
     node: u32,
     target_ports: &Ports,
     mainloop: &MainLoopRc,
-    core: &Core,
+    core: &CoreRc,
+    registry: &RegistryRc,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let registry = core.get_registry()?;
-    let ports = await_find_fl_fr_ports(node, PortDirection::OUTPUT, &mainloop, &registry);
+    let ports = await_find_fl_fr_ports(node, PortDirection::OUTPUT, &mainloop, &core, &registry);
 
     link_ports(&ports, target_ports, core)?;
     do_roundtrip(mainloop, core);
 
     Ok(())
+}
+
+pub fn find_node_by_name(
+    mainloop: &MainLoopRc,
+    core: &CoreRc,
+    registry: &RegistryRc,
+    node_name: impl AsRef<str> + 'static,
+) -> Option<u32> {
+    let result = Rc::new(OnceCell::new());
+    iterate_nodes(
+        mainloop,
+        core,
+        registry,
+        {
+            let result = result.clone();
+            let node_name = Rc::new(node_name);
+            move |node| {
+                if node
+                    .props()
+                    .and_then(|props| props.get(*pipewire::keys::NODE_NAME))
+                    .is_some_and(|name| node_name.deref().as_ref() == name)
+                {
+                    result.set(node.id());
+                    true
+                } else {
+                    false
+                }
+            }
+        },
+        true,
+    );
+    return Rc::try_unwrap(result).unwrap().into_inner();
 }

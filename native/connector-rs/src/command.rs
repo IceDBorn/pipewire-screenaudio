@@ -1,17 +1,27 @@
 #![allow(non_snake_case)]
 
 use std::env;
+use std::env::current_exe;
+use std::panic;
+use std::process;
+use std::process::Command;
 use std::str;
+use std::thread;
+use std::time::Duration;
 
 extern crate serde_json;
 use serde_json::{json, Value};
 
+use crate::daemon;
 use crate::helpers::io;
+use crate::helpers::io::Payload;
 use crate::helpers::parse_numeric_argument;
 use crate::helpers::pipewire;
+use crate::ipc;
+use crate::ipc_request;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
-const VIRTMIC_NODE_NAME: &str = "pipewire-screenaudio";
+pub const VIRTMIC_NODE_NAME: &str = "pipewire-screenaudio";
 
 fn GetVersion(_: io::Payload) -> Result<Value, String> {
   Ok(json!({
@@ -36,37 +46,55 @@ fn GetNodes(_: io::Payload) -> Result<Value, String> {
 }
 
 fn StartPipewireScreenAudio(payload: io::Payload) -> Result<Value, String> {
-  let micId = pipewire::create_virtual_source_if_not_exists(&VIRTMIC_NODE_NAME.to_string());
+  Command::new(current_exe().unwrap())
+    .arg("daemon")
+    .spawn()
+    .unwrap();
+
+  let pipe = ipc::connect().map_err(|err| err.to_string())?;
+  let status: daemon::Response =
+    io::read(pipe).map_err(|err| format!("error obtaining first response from daemon: {err}"))?;
+  let daemon::Response::StartResult { mic_id } = status else {
+    return Err("first response from daemon has unexpected format".into());
+  };
 
   Ok(json!({
-    "micId": micId
+    "micId": mic_id
   }))
 }
 
 fn SetSharingNode(payload: io::Payload) -> Result<Value, String> {
-  let micId = parse_numeric_argument(payload.arguments["micId"].clone());
   let node = parse_numeric_argument(payload.arguments["node"].clone());
-  pipewire::disconnect_node(micId);
 
-  match pipewire::get_node_id_from_serial(node) {
-    None => Ok(json!({
-      "success": false
-    })),
-    Some(v) => {
-      let result = pipewire::connect_nodes(v, micId);
-      Ok(json!({
-        "success": result
-      }))
-    }
-  }
+  log::debug!("node serial to connect: {node}");
+  let node = if node == -1 {
+    None
+  } else {
+    let Some(node) = pipewire::get_node_id_from_serial(node) else {
+      return Ok(json!({
+        "success": false
+      }));
+    };
+    log::debug!("node id to connect: {node}");
+    Some(node)
+  };
+
+  let pipe = ipc::connect().map_err(|err| err.to_string())?;
+  io::write(daemon::Command::SetSharingNode { node }, &pipe).unwrap();
+  let res: daemon::Response = io::read(&pipe).unwrap();
+
+  let daemon::Response::SetSharingNodeResult { success } = res else {
+    log::error!("invalid response for SetSharingNode, {res:?}");
+    return Err(format!("invalid response for SetSharingNode, {res:?}"));
+  };
+
+  Ok(json!({
+    "success": success
+  }))
 }
 
 fn IsPipewireScreenAudioRunning(payload: io::Payload) -> Result<Value, String> {
-  let is_running = pipewire::node_exists(
-    parse_numeric_argument(payload.arguments["micId"].clone()),
-    &VIRTMIC_NODE_NAME.to_string(),
-  );
-
+  let is_running = ipc_request::is_daemon_running().is_ok_and(|running| running);
   Ok(json!({
     "isRunning": is_running
   }))

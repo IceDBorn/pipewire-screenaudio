@@ -35,7 +35,7 @@ impl Scheduler {
             .done({
                 let done = done.clone();
                 let mainloop = self.mainloop.clone();
-				let sync_seq = self.sync_seq.clone();
+                let sync_seq = self.sync_seq.clone();
                 move |id, seq| {
                     if id == PW_ID_CORE && Some(seq) == sync_seq.get() {
                         done.set(true);
@@ -48,5 +48,9 @@ impl Scheduler {
         while !done.get() {
             self.mainloop.run();
         }
+    }
+
+    pub fn run(&self) {
+        self.mainloop.run();
     }
 }

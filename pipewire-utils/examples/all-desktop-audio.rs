@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use pipewire::{context::ContextRc, core::Core, loop_::Signal, main_loop::MainLoopRc};
+use pipewire::{context::ContextRc, core::{Core, CoreRc}, loop_::Signal, main_loop::MainLoopRc};
 
 use pipewire_utils::{
     self, await_find_fl_fr_ports, await_node_creation, create_node, do_roundtrip, link_ports, Ports,
@@ -13,18 +13,19 @@ struct NodeWithPorts {
 
 fn create_virtmic_node(
     mainloop: &MainLoopRc,
-    core: &Core,
+    core: &CoreRc,
 ) -> Result<NodeWithPorts, Box<dyn std::error::Error>> {
     let node = create_node("pipewire-screenaudio", core).expect("Failed to create node");
 
     let node_id = await_node_creation(node, mainloop, core);
     dbg!(node_id);
 
-    let registry = core.get_registry()?;
+    let registry = core.get_registry_rc()?;
     let ports = await_find_fl_fr_ports(
         node_id,
         pipewire_utils::PortDirection::INPUT,
         &mainloop,
+        &core,
         &registry,
     );
 
@@ -46,12 +47,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Connect with Pipewire
     let context = ContextRc::new(&mainloop, None)?;
-    let core = context.connect(None)?;
+    let core = context.connect_rc(None)?;
 
     let virtmic = create_virtmic_node(&mainloop, &core)?;
 
     // Start monitoring new nodes
-    let registry = core.get_registry()?;
+    let registry = core.get_registry_rc()?;
     pipewire_utils::monitor_nodes(
         {
             let virtmic_ports = virtmic.ports;
@@ -59,12 +60,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let context = ContextRc::new(&mainloop, None)?;
             move |node| {
                 // Moving this line outside of the closure causes a SIGSEGV
-                let core = context.connect(None).unwrap();
+				let core = context.connect_rc(None).unwrap();
+				let registry = core.get_registry_rc().unwrap();
                 dbg!(node);
-                pipewire_utils::connect_node(node, &virtmic_ports, &mainloop, &core).unwrap();
+                pipewire_utils::connect_node(node, &virtmic_ports, &mainloop, &core, &registry)
+                    .unwrap();
             }
         },
         &mainloop,
+        &core,
         &registry,
     );
 
