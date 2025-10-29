@@ -1,22 +1,16 @@
 use ::pipewire::{context::ContextRc, core::CoreRc, main_loop::MainLoopRc};
-use pipewire_utils::Ports;
 use serde::{Deserialize, Serialize};
-use tracing::Level;
 use std::{
-  cell::{Cell, RefCell},
-  env::Args,
   num::ParseIntError,
   os::unix::net::UnixStream,
-  path::PathBuf,
   sync::atomic::{AtomicBool, Ordering},
 };
 use thiserror::Error;
 
 use crate::{
   command::VIRTMIC_NODE_NAME,
-  dirs::get_runtime_path,
   helpers::{
-    io::{self, Payload},
+    io::{self},
     pipewire::{self, NodeWithPorts},
   },
   ipc,
@@ -44,6 +38,7 @@ pub enum Command {
   Stop,
 }
 
+#[allow(clippy::enum_variant_names)]
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum Response {
@@ -58,16 +53,11 @@ pub enum Response {
   StopResult,
 }
 
-struct MonitorArgs {
-  excluded_nodes: Vec<u32>,
-}
-
 static KEEP_RUNNING: AtomicBool = AtomicBool::new(true);
 
 fn handle_client(
   running_thread: &mut Option<MonitorThreadHandle>,
   mainloop: &MainLoopRc,
-  context: &ContextRc,
   core: &CoreRc,
   virtual_node: &NodeWithPorts,
   stream: UnixStream,
@@ -86,9 +76,9 @@ fn handle_client(
       if let Some(mut running_thread) = running_thread.take() {
         running_thread.stop();
       }
-      pipewire::disconnect_node(&mainloop, &core, &virtual_node.ports);
+      pipewire::disconnect_node(mainloop, core, &virtual_node.ports);
       let success = match node {
-        Some(node_id) => pipewire::connect_nodes(&mainloop, &core, node_id, &virtual_node.ports),
+        Some(node_id) => pipewire::connect_nodes(mainloop, core, node_id, &virtual_node.ports),
         None => match MonitorThreadHandle::launch_monitor_thread(virtual_node.ports) {
           Ok(handle) => {
             running_thread.replace(handle);
@@ -157,14 +147,7 @@ pub fn monitor_and_connect_nodes() -> Result<(), Error> {
       tracing::warn!("failed to accept incomming connection");
       continue;
     };
-    handle_client(
-      &mut running_thread,
-      &mainloop,
-      &context,
-      &core,
-      &virtual_node,
-      stream,
-    );
+    handle_client(&mut running_thread, &mainloop, &core, &virtual_node, stream);
   }
 
   if let Some(mut running_thread) = running_thread.take() {

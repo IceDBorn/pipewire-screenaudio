@@ -1,10 +1,8 @@
 use std::{
   env,
   error::Error,
-  fs::File,
   io::{stdin, stdout},
-  os,
-  path::{Path, PathBuf},
+  path::PathBuf,
 };
 
 mod command;
@@ -17,10 +15,7 @@ mod monitor;
 
 use helpers::io;
 use tracing::{level_filters::LevelFilter, Level};
-use tracing_appender::{
-  non_blocking,
-  rolling::{RollingFileAppender, Rotation},
-};
+use tracing_appender::rolling::{RollingFileAppender, Rotation};
 use tracing_subscriber::{fmt, layer::SubscriberExt, Layer, Registry};
 
 use crate::{daemon::monitor_and_connect_nodes, dirs::get_runtime_path};
@@ -32,14 +27,14 @@ fn get_logs_path() -> PathBuf {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-  let mut args = std::env::args();
+  let mut args = env::args();
   let _ = args.next().expect("binary path should be the first arg");
   let subcommand = args.next();
 
   let file_appender = RollingFileAppender::builder()
     .rotation(Rotation::HOURLY)
     .filename_prefix(
-      match subcommand.as_ref().map(|s| s.as_str()) {
+      match subcommand.as_deref() {
         Some("daemon") => "daemon",
         _ => "connector",
       }
@@ -47,7 +42,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     )
     .build(get_logs_path())
     .unwrap();
-  let (non_blocking, guard) = tracing_appender::non_blocking(file_appender);
+  let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
   let subscriber = Registry::default()
     .with(
       fmt::Layer::default()
@@ -63,7 +58,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
   tracing::subscriber::set_global_default(subscriber).expect("unable to set global subscriber");
 
-  match subcommand.as_ref().map(|s| s.as_str()) {
+  match subcommand.as_deref() {
     Some("daemon") => {
       if let Err(err) = monitor_and_connect_nodes() {
         tracing::error!("error: {}", err);

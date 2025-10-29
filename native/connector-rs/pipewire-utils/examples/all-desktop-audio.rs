@@ -1,6 +1,11 @@
 use std::error::Error;
 
-use pipewire::{context::ContextRc, core::{Core, CoreRc}, loop_::Signal, main_loop::MainLoopRc};
+use pipewire::{
+    context::ContextRc,
+    core::{Core, CoreRc},
+    loop_::Signal,
+    main_loop::MainLoopRc,
+};
 
 use pipewire_utils::{
     self, await_find_fl_fr_ports, await_node_creation, create_node, do_roundtrip, link_ports, Ports,
@@ -20,16 +25,14 @@ fn create_virtmic_node(
     let node_id = await_node_creation(node, mainloop, core);
     dbg!(node_id);
 
-    let registry = core.get_registry_rc()?;
     let ports = await_find_fl_fr_ports(
         node_id,
         pipewire_utils::PortDirection::INPUT,
-        &mainloop,
-        &core,
-        &registry,
+        mainloop,
+        core,
     );
 
-    return Ok(NodeWithPorts { id: node_id, ports });
+    Ok(NodeWithPorts { id: node_id, ports })
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -52,7 +55,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let virtmic = create_virtmic_node(&mainloop, &core)?;
 
     // Start monitoring new nodes
-    let registry = core.get_registry_rc()?;
     pipewire_utils::monitor_nodes(
         {
             let virtmic_ports = virtmic.ports;
@@ -60,16 +62,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let context = ContextRc::new(&mainloop, None)?;
             move |node| {
                 // Moving this line outside of the closure causes a SIGSEGV
-				let core = context.connect_rc(None).unwrap();
-				let registry = core.get_registry_rc().unwrap();
+                let core = context.connect_rc(None).unwrap();
                 dbg!(node);
-                pipewire_utils::connect_node(node, &virtmic_ports, &mainloop, &core, &registry)
-                    .unwrap();
+                pipewire_utils::connect_node(node, &virtmic_ports, &mainloop, &core).unwrap();
             }
         },
         &mainloop,
         &core,
-        &registry,
     );
 
     // Destroy virtmic node

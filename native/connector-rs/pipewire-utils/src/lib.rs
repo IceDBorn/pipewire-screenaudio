@@ -1,5 +1,4 @@
 use std::{
-    any::Any,
     cell::{Cell, OnceCell, RefCell},
     ops::Deref,
     rc::Rc,
@@ -8,17 +7,15 @@ use std::{
 mod proxies;
 mod roundtrip;
 
-use libspa::{pod::Pod, utils::result::AsyncSeq};
 use pipewire::{
-    context::ContextRc,
     core::{Core, CoreRc, PW_ID_CORE},
     keys,
     link::Link,
     main_loop::MainLoopRc,
-    node::{Node, NodeInfoRef, NodeListener},
+    node::{Node, NodeInfoRef},
     properties::properties,
-    proxy::{Listener, ProxyT},
-    registry::{GlobalObject, Registry, RegistryRc},
+    proxy::ProxyT,
+    registry::GlobalObject,
     spa::utils::dict::DictRef,
     types::ObjectType,
 };
@@ -34,14 +31,13 @@ pub fn iterate_nodes<F>(
     F: Fn(&NodeInfoRef) -> bool + Clone + 'static,
 {
     let scheduler = Scheduler::new(mainloop.clone(), core.clone());
-    let mut proxies: Rc<RefCell<ProxyRefs>> = Rc::new(RefCell::new(Default::default()));
+    let proxies: Rc<RefCell<ProxyRefs>> = Rc::new(RefCell::new(ProxyRefs::new()));
 
     let registry = core.get_registry_rc().unwrap();
     let reg_listener = registry
         .add_listener_local()
         .global({
             let mainloop = mainloop.clone();
-            let core = core.clone();
             let registry = registry.clone();
             let scheduler = scheduler.clone();
             let proxies = proxies.clone();
@@ -57,7 +53,6 @@ pub fn iterate_nodes<F>(
                     .add_listener_local()
                     .info({
                         let mainloop = mainloop.clone();
-                        let registry = registry.clone();
                         let object_callback = object_callback.clone();
                         move |node| {
                             if object_callback(node) {
@@ -229,7 +224,7 @@ pub fn await_node_creation(node: Node, mainloop: &MainLoopRc, core: &Core) -> u3
 
     let node_id = *node_id.get().unwrap();
 
-    return node_id;
+    node_id
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -247,12 +242,8 @@ pub struct MaybePorts {
 impl MaybePorts {
     pub fn both(self) -> Option<Ports> {
         let MaybePorts { fl_port, fr_port } = self;
-        let Some(fl_port) = fl_port else {
-            return None;
-        };
-        let Some(fr_port) = fr_port else {
-            return None;
-        };
+        let fl_port = fl_port?;
+        let fr_port = fr_port?;
         Some(Ports { fl_port, fr_port })
     }
 }
@@ -264,7 +255,7 @@ pub enum PortDirection {
 }
 
 impl PortDirection {
-    fn to_pipewire_string(&self) -> &'static str {
+    fn to_pipewire_string(self) -> &'static str {
         match self {
             PortDirection::INPUT => "in",
             PortDirection::OUTPUT => "out",
@@ -284,17 +275,13 @@ fn is_global_a_port_for_node<'a>(
 ) -> Option<PortInfo<'a>> {
     let direction_name = direction.to_pipewire_string();
 
-    let Some(ref props) = global.props else {
-        return None;
-    };
+    let props = global.props?;
     if global.type_ == ObjectType::Port
         && props.get(*keys::NODE_ID) == Some(&node_id.to_string())
         && props.get(*keys::PORT_DIRECTION) == Some(direction_name)
     {
         let port_id: u32 = global.id;
-        let Some(audio_channel) = props.get(*keys::AUDIO_CHANNEL) else {
-            return None;
-        };
+        let audio_channel = props.get(*keys::AUDIO_CHANNEL)?;
 
         Some(PortInfo {
             channel: audio_channel,
@@ -316,8 +303,8 @@ fn find_fl_fr_ports_internal(
     let fr_port = Rc::new(OnceCell::new());
 
     iterate_objects(
-        &mainloop,
-        &core,
+        mainloop,
+        core,
         {
             let fl_port = fl_port.clone();
             let fr_port = fr_port.clone();
@@ -340,7 +327,7 @@ fn find_fl_fr_ports_internal(
                         .iter()
                         .all(|port_id| port_id.get().is_some());
 
-                    return found_all_ports;
+                    found_all_ports
                 } else {
                     false
                 }
@@ -381,10 +368,10 @@ where
     F: Fn(u32) + Clone + 'static,
 {
     iterate_nodes(
-        &mainloop,
-        &core,
+        mainloop,
+        core,
         move |node| {
-            let Some(ref props) = node.props() else {
+            let Some(props) = node.props() else {
                 return false;
             };
             // TODO: Add exclusions
@@ -404,9 +391,9 @@ pub fn connect_node(
     target_ports: &Ports,
     mainloop: &MainLoopRc,
     core: &CoreRc,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<(), pipewire::Error> {
     tracing::debug!("connecting ports from node {node} to {target_ports:?}");
-    let ports = await_find_fl_fr_ports(node, PortDirection::OUTPUT, &mainloop, &core);
+    let ports = await_find_fl_fr_ports(node, PortDirection::OUTPUT, mainloop, core);
 
     link_ports(&ports, target_ports, core)?;
     do_roundtrip(mainloop, core);
@@ -432,7 +419,7 @@ pub fn find_node_by_name(
                     .and_then(|props| props.get(*pipewire::keys::NODE_NAME))
                     .is_some_and(|name| node_name.deref().as_ref() == name)
                 {
-                    result.set(node.id());
+                    result.set(node.id()).unwrap();
                     true
                 } else {
                     false
@@ -441,5 +428,5 @@ pub fn find_node_by_name(
         },
         true,
     );
-    return Rc::try_unwrap(result).unwrap().into_inner();
+    Rc::try_unwrap(result).unwrap().into_inner()
 }

@@ -1,23 +1,19 @@
-use std::{cell::RefCell, collections::HashSet, rc::Rc, thread, time::Duration};
+use std::{cell::RefCell, collections::HashSet, rc::Rc};
 
 use pipewire::{
   channel::Receiver,
   context::ContextRc,
   core::CoreRc,
-  loop_::Signal,
   main_loop::MainLoopRc,
   node::NodeInfoRef,
   properties::PropertiesBox,
-  registry::{GlobalObject, Registry, RegistryBox, RegistryRc},
-  spa::{support::system::IoFlags, utils::dict::DictRef},
+  registry::{GlobalObject, RegistryRc},
+  spa::utils::dict::DictRef,
   types::ObjectType,
 };
-use pipewire_utils::{iterate_objects, iterate_objects_scheduled, Ports};
+use pipewire_utils::{iterate_objects_scheduled, Ports};
 use serde::Serialize;
-use serde_json::{json, Deserializer, Map, Value};
 use thiserror::Error;
-
-use crate::helpers::JsonGetters;
 
 #[derive(Error, Debug)]
 pub enum Error {
@@ -32,14 +28,6 @@ impl From<pipewire::Error> for Error {
 }
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
-
-fn get_node_name(node: &Value) -> Result<String, String> {
-  let result = node.get_fields_chain(vec!["info", "props", "node.name"]);
-  match result {
-    Ok(v) => Ok(v.as_str().unwrap().to_string()),
-    Err(e) => Err(e),
-  }
-}
 
 #[derive(Debug, Serialize)]
 pub struct NodeProperties {
@@ -127,7 +115,7 @@ pub fn get_output_nodes() -> Result<Vec<OutputNode>> {
     true,
   );
 
-  return Ok(Rc::into_inner(output_nodes).unwrap().into_inner());
+  Ok(Rc::into_inner(output_nodes).unwrap().into_inner())
 }
 
 pub fn get_node_id_from_serial(serial: i64) -> Option<u32> {
@@ -214,7 +202,9 @@ pub fn monitor_and_connect_nodes(
       move |node| {
         tracing::info!("connecting to node {node}");
         let core = context.connect_rc(None).unwrap();
-        pipewire_utils::connect_node(node, &mic_ports, &mainloop, &core);
+        if let Err(err) = pipewire_utils::connect_node(node, &mic_ports, &mainloop, &core) {
+          tracing::error!("failed to connect to node {node}: {err}");
+        }
       }
     },
     &mainloop,
@@ -248,14 +238,14 @@ impl NodeWithPorts {
       core,
     );
 
-    return Ok(NodeWithPorts { id: node_id, ports });
+    Ok(NodeWithPorts { id: node_id, ports })
   }
 }
 
 pub struct ManagedNode {
   node_with_ports: NodeWithPorts,
   mainloop: MainLoopRc,
-  context: ContextRc,
+  _context: ContextRc,
   core: CoreRc,
   registry: RegistryRc,
 }
@@ -272,7 +262,7 @@ impl ManagedNode {
     Ok(Self {
       node_with_ports: node,
       mainloop,
-      context,
+      _context: context,
       core,
       registry,
     })
@@ -287,25 +277,5 @@ impl Drop for ManagedNode {
   fn drop(&mut self) {
     self.registry.destroy_global(self.node_with_ports.id);
     pipewire_utils::do_roundtrip(&self.mainloop, &self.core);
-  }
-}
-
-pub fn create_virtual_source_if_not_exists(
-  mainloop: &MainLoopRc,
-  core: &CoreRc,
-  node_name: impl AsRef<str> + Copy + 'static,
-) -> Option<NodeWithPorts> {
-  match pipewire_utils::find_node_by_name(mainloop, core, node_name) {
-    Some(node_id) => {
-      let ports = pipewire_utils::find_fl_fr_ports(
-        node_id,
-        pipewire_utils::PortDirection::INPUT,
-        mainloop,
-        core,
-      )
-      .expect("node exists but ports don't");
-      Some(NodeWithPorts { id: node_id, ports })
-    }
-    None => NodeWithPorts::create_virtual_source(mainloop, core, &node_name).ok(),
   }
 }

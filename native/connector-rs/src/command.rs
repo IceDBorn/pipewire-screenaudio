@@ -2,18 +2,13 @@
 
 use std::env;
 use std::env::current_exe;
-use std::panic;
-use std::process;
 use std::process::Command;
 use std::str;
-use std::thread;
-use std::time::Duration;
 
 use serde_json::{json, Value};
 
 use crate::daemon;
 use crate::helpers::io;
-use crate::helpers::io::Payload;
 use crate::helpers::parse_numeric_argument;
 use crate::helpers::pipewire;
 use crate::ipc;
@@ -45,10 +40,11 @@ fn GetNodes(_: io::Payload) -> Result<Value, String> {
 }
 
 fn StartPipewireScreenAudio(payload: io::Payload) -> Result<Value, String> {
-  Command::new(current_exe().unwrap())
+  let daemon_process = Command::new(current_exe().unwrap())
     .arg("daemon")
     .spawn()
     .unwrap();
+  drop(daemon_process);
 
   let pipe = ipc::connect().map_err(|err| err.to_string())?;
   let status: daemon::Response =

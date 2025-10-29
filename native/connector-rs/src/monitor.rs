@@ -1,15 +1,13 @@
 use std::{
-  cell::{Cell, OnceCell},
-  error, io,
+  io,
   thread::{self, JoinHandle},
 };
 
-use pipewire::{channel::Sender, context::ContextRc, main_loop::MainLoopRc};
+use pipewire::channel::Sender;
 use pipewire_utils::Ports;
 use thiserror::Error;
 
 use crate::helpers::pipewire::{self as pipewire_helpers, TerminateSignal};
-use pipewire::Error as PWError;
 
 #[derive(Error, Debug)]
 pub enum Error {
@@ -33,7 +31,7 @@ impl MonitorThreadHandle {
     tracing::info!("launching monitor thread");
     let join_handle = thread::Builder::new()
       .name("monitor and connector thread".to_owned())
-      .spawn({ move || pipewire_helpers::monitor_and_connect_nodes(mic_ports, receiver) })
+      .spawn(move || pipewire_helpers::monitor_and_connect_nodes(mic_ports, receiver))
       .map_err(Error::ThreadSpawnError)?;
 
     Ok(MonitorThreadHandle {
@@ -45,8 +43,10 @@ impl MonitorThreadHandle {
   pub fn stop(&mut self) {
     tracing::info!("stopping monitor thread");
     self.stop_signal_receiver.send(TerminateSignal).unwrap();
-    if let Some(mut handle) = self.join_handle.take() {
-      handle.join().unwrap();
+    if let Some(handle) = self.join_handle.take() {
+      if let Err(err) = handle.join().unwrap() {
+        tracing::error!("monitor thread returned error: {err}");
+      }
     }
   }
 }

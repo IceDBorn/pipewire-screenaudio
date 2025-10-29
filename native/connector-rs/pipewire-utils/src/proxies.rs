@@ -1,10 +1,10 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use pipewire::proxy::{Listener, ProxyT};
 
 pub struct ProxyRef {
-    proxy: Box<dyn ProxyT>,
-    listeners: Vec<Box<dyn Listener>>,
+    _proxy: Box<dyn ProxyT>,
+    _listeners: Vec<Box<dyn Listener>>,
 }
 
 #[derive(Default)]
@@ -13,7 +13,7 @@ pub struct ProxyRefs {
 }
 
 impl ProxyRefs {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self::default()
     }
 
@@ -23,7 +23,13 @@ impl ProxyRefs {
             proxy.id()
         };
 
-        self.refs.insert(proxy_id, ProxyRef { proxy, listeners });
+        self.refs.insert(
+            proxy_id,
+            ProxyRef {
+                _proxy: proxy,
+                _listeners: listeners,
+            },
+        );
     }
 
     pub fn remove_proxy(&mut self, proxy_id: &u32) {

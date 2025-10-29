@@ -1,14 +1,10 @@
 use std::{
-  env,
-  fs::{self, File},
-  io,
+  fs, io,
   os::unix::net::{UnixListener, UnixStream},
   path::PathBuf,
   thread,
   time::Duration,
 };
-
-use thiserror::Error;
 
 use crate::dirs::get_runtime_path;
 

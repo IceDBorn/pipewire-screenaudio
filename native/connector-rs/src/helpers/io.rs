@@ -1,10 +1,9 @@
 use std::fmt::Debug;
-use std::io;
 use std::io::prelude::{Read, Write};
 use std::str;
 
 use serde::{Deserialize, Serialize};
-use serde_json::{from_str, json, Value};
+use serde_json::{json, Value};
 
 use thiserror::Error;
 
@@ -99,7 +98,7 @@ pub fn write<W: Write, P: Serialize>(payload: P, mut writer: W) -> Result<(), Wr
     .write_all(&length_buffer)
     .map_err(WriteError::WritingLengthHeader)?;
   writer
-    .write_all(&payload)
+    .write_all(payload)
     .map_err(WriteError::WritingPayload)?;
 
   Ok(())
