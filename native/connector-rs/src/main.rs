@@ -16,12 +16,12 @@ mod ipc_request;
 mod monitor;
 
 use helpers::io;
-use tracing::Level;
+use tracing::{level_filters::LevelFilter, Level};
 use tracing_appender::{
   non_blocking,
   rolling::{RollingFileAppender, Rotation},
 };
-use tracing_subscriber::{fmt, layer::SubscriberExt, Registry};
+use tracing_subscriber::{fmt, layer::SubscriberExt, Layer, Registry};
 
 use crate::{daemon::monitor_and_connect_nodes, dirs::get_runtime_path};
 
@@ -38,7 +38,13 @@ fn main() -> Result<(), Box<dyn Error>> {
 
   let file_appender = RollingFileAppender::builder()
     .rotation(Rotation::HOURLY)
-    .filename_prefix(subcommand.clone().unwrap_or_else(|| "connector".to_owned()))
+    .filename_prefix(
+      match subcommand.as_ref().map(|s| s.as_str()) {
+        Some("daemon") => "daemon",
+        _ => "connector",
+      }
+      .to_owned(),
+    )
     .build(get_logs_path())
     .unwrap();
   let (non_blocking, guard) = tracing_appender::non_blocking(file_appender);
@@ -46,9 +52,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     .with(
       fmt::Layer::default()
         .with_writer(non_blocking)
-        .with_ansi(false),
+        .with_ansi(false)
+        .with_filter(LevelFilter::from_level(Level::DEBUG)),
     )
-    .with(fmt::Layer::default().with_writer(std::io::stderr));
+    .with(
+      fmt::Layer::default()
+        .with_writer(std::io::stderr)
+        .with_filter(LevelFilter::from_level(Level::INFO)),
+    );
 
   tracing::subscriber::set_global_default(subscriber).expect("unable to set global subscriber");
 
@@ -59,11 +70,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         Err(Box::new(err))?;
       }
     }
-    Some(subcommand) => {
-      tracing::error!("invalid subcommand {subcommand}");
-      Err("invalid subcommand")?;
-    }
-    None => {
+    Some(_) | None => {
       tracing::info!("started connector");
 
       let payload = io::read(stdin()).unwrap();
