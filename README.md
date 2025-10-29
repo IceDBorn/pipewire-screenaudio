@@ -93,10 +93,6 @@ bash install.sh
 
 - privacy.resistFingerprinting (enabled by default in LibreWolf, arkenfox user.js, etc.) breaks the extension. Either disable the preference or add any domains you wish to use Pipewire Screenaudio with to `privacy.resistFingerprinting.exemptedDomains` in `about:config`
 
-### Audio pitching
-
-- This bug exclusively impacts Firefox versions predating 120
-
 ## Planned Features
 
 - Multiple nodes selection
