@@ -39,6 +39,7 @@ pub fn connect() -> io::Result<UnixStream> {
       Err(err) => last_error = Some(err),
     }
     thread::sleep(Duration::from_millis(100));
+    retries -= 1;
   }
   Err(last_error.unwrap())
 }
