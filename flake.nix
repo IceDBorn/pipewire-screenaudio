@@ -57,6 +57,8 @@
 			  cargo
 			  rustc
 			  rust-analyzer
+			  rustfmt
+			  clippy
 			  pkg-config
 			  pipewire
 			];
