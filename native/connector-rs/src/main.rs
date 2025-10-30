@@ -32,7 +32,6 @@ fn main() -> Result<(), Box<dyn Error>> {
   let subcommand = args.next();
 
   let file_appender = RollingFileAppender::builder()
-    .rotation(Rotation::HOURLY)
     .filename_prefix(
       match subcommand.as_deref() {
         Some("daemon") => "daemon",
@@ -55,7 +54,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .with_writer(std::io::stderr)
         .with_filter(
           EnvFilter::builder()
-            .with_default_directive(LevelFilter::INFO.into())
+            .with_default_directive(LevelFilter::ERROR.into())
             .from_env_lossy(),
         ),
     );
