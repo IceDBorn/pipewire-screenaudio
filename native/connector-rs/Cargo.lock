@@ -124,7 +124,6 @@ name = "connector-rs"
 version = "0.3.5"
 dependencies = [
  "ctrlc",
- "fork",
  "pipewire-utils",
  "serde",
  "serde_json",
@@ -213,15 +212,6 @@ name = "find-msvc-tools"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "52051878f80a721bb68ebfbc930e07b65ba72f2da88968ea5c06fd6ca3d3a127"
-
-[[package]]
-name = "fork"
-version = "0.1.23"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "60e74d3423998a57e9d906e49252fb79eb4a04d5cdfe188fb1b7ff9fc076a8ed"
-dependencies = [
- "libc",
-]
 
 [[package]]
 name = "glob"
