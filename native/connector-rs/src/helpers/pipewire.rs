@@ -1,33 +1,4 @@
-use std::{cell::RefCell, collections::HashSet, rc::Rc};
-
-use pipewire::{
-  channel::Receiver,
-  context::ContextRc,
-  core::CoreRc,
-  main_loop::MainLoopRc,
-  node::NodeInfoRef,
-  properties::PropertiesBox,
-  registry::{GlobalObject, RegistryRc},
-  spa::utils::dict::DictRef,
-  types::ObjectType,
-};
-use pipewire_utils::{iterate_objects_scheduled, Ports};
 use serde::Serialize;
-use thiserror::Error;
-
-#[derive(Error, Debug)]
-pub enum Error {
-  #[error("internal pipewire error: {0}")]
-  PipewireError(pipewire::Error),
-}
-
-impl From<pipewire::Error> for Error {
-  fn from(value: pipewire::Error) -> Self {
-    Self::PipewireError(value)
-  }
-}
-
-pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 #[derive(Debug, Serialize)]
 pub struct NodeProperties {
@@ -48,234 +19,29 @@ pub struct OutputNode {
   properties: NodeProperties,
 }
 
-impl OutputNode {
-  fn from_node_ref(node: &NodeInfoRef) -> Result<Self, String> {
-    let Some(props) = node.props() else {
-      return Err("missing props".to_owned());
-    };
-    let application_name = props.get("application.name");
-    let Some(object_serial) = props.get("object.serial") else {
-      return Err("missing object.serial".to_owned());
-    };
-    let Some(media_class) = props.get("media.class") else {
-      return Err("missing media.class".to_owned());
-    };
-    let Some(media_name) = props.get("media.name") else {
-      return Err("missing media.name".to_owned());
-    };
-    Ok(OutputNode {
-      id: node.id(),
-      properties: {
-        NodeProperties {
-          application_name: application_name.map(|s| s.to_owned()),
-          media_name: media_name.to_owned(),
-          object_serial: object_serial.parse().unwrap(),
-          media_class: media_class.to_owned(),
-        }
-      },
-    })
-  }
-}
-
-pub fn get_output_nodes() -> Result<Vec<OutputNode>> {
-  let mainloop = MainLoopRc::new(None).map_err(Error::from)?;
-  let context = ContextRc::new(&mainloop, None).map_err(Error::from)?;
-  let mut connect_props = PropertiesBox::new();
-  connect_props.insert(pipewire::keys::REMOTE_INTENTION.to_owned(), "manager");
-  let core = context
-    .connect_rc(Some(connect_props))
-    .map_err(Error::from)?;
-
-  let output_nodes = Rc::new(RefCell::new(vec![]));
-  pipewire_utils::iterate_nodes(
-    &mainloop,
-    &core,
-    {
-      let output_nodes = output_nodes.clone();
-      move |node| {
-        match OutputNode::from_node_ref(node) {
-          Ok(node) => {
-            if node.properties.media_class == "Stream/Output/Audio" {
-              output_nodes.borrow_mut().push(node);
-            } else {
-              tracing::debug!("node {} is not an output", node.id);
-            }
-          }
-          Err(err) => {
-            tracing::trace!(
-              "node {} does not contain all required properties: {}",
-              node.id(),
-              err
-            )
-          }
-        }
-        false
-      }
-    },
-    true,
-  );
-
-  Ok(Rc::into_inner(output_nodes).unwrap().into_inner())
-}
-
-pub fn get_node_id_from_serial(serial: i64) -> Option<u32> {
-  let dump = get_output_nodes().unwrap();
-  tracing::debug!("nodes: {dump:?}");
-  let result = dump
-    .into_iter()
-    .find(|node| node.properties.object_serial == serial);
-
-  if result.is_some() {
-    tracing::info!("Found Target: {:?}", result.as_ref().unwrap());
-  }
-
-  result.map(|v| v.id)
-}
-
-pub fn connect_nodes(
-  mainloop: &MainLoopRc,
-  core: &CoreRc,
-  in_node_id: u32,
-  mic_ports: &Ports,
-) -> bool {
-  pipewire_utils::connect_node(in_node_id, mic_ports, mainloop, core).is_ok()
-}
-
-fn remove_links(mainloop: &MainLoopRc, core: &CoreRc, port_ids: HashSet<u32>) {
-  tracing::debug!("removing links to: {:?}", &port_ids);
-  let is_link_to_port = move |global: &GlobalObject<&DictRef>| {
-    if global.type_ != ObjectType::Link {
-      return false;
+impl From<pipewire_utils::NodeProperties> for NodeProperties {
+  fn from(
+    pipewire_utils::NodeProperties {
+      application_name,
+      media_name,
+      object_serial,
+      media_class,
+    }: pipewire_utils::NodeProperties,
+  ) -> Self {
+    Self {
+      application_name,
+      media_name,
+      object_serial,
+      media_class,
     }
-    let Some(props) = global.props else {
-      return false;
-    };
-    let Some(output_port) = props.get("link.input.port") else {
-      return false;
-    };
-    let Ok(output_port) = output_port.parse::<u32>() else {
-      return false;
-    };
-    port_ids.contains(&output_port)
-  };
-  iterate_objects_scheduled(mainloop, core, {
-    let registry = core.get_registry_rc().unwrap();
-    move |scheduler, global| {
-      if is_link_to_port(global) {
-        tracing::debug!("removing link: {}", global.id);
-        registry.destroy_global(global.id);
-        scheduler.schedule_roundtrip();
-      }
-      false
+  }
+}
+
+impl From<pipewire_utils::OutputNode> for OutputNode {
+  fn from(pipewire_utils::OutputNode { id, properties }: pipewire_utils::OutputNode) -> Self {
+    Self {
+      id,
+      properties: properties.into(),
     }
-  });
-  tracing::debug!("links removed");
-}
-
-pub fn disconnect_node(mainloop: &MainLoopRc, core: &CoreRc, mic_ports: &Ports) {
-  remove_links(
-    mainloop,
-    core,
-    HashSet::from_iter([mic_ports.fl_port, mic_ports.fr_port]),
-  );
-}
-
-#[derive(Debug)]
-pub struct TerminateSignal;
-
-pub fn monitor_and_connect_nodes(
-  mic_ports: Ports,
-  stop_signal_receiver: Receiver<TerminateSignal>,
-) -> Result<(), pipewire::Error> {
-  let mainloop = MainLoopRc::new(None)?;
-  let context = ContextRc::new(&mainloop, None)?;
-  let core = context.connect_rc(None)?;
-  let _receiver = stop_signal_receiver.attach(mainloop.loop_(), {
-    let mainloop = mainloop.clone();
-    move |_| mainloop.quit()
-  });
-  tracing::info!("starting node monitoring loop");
-  pipewire_utils::monitor_nodes(
-    {
-      let mainloop = MainLoopRc::new(None)?;
-      let context = ContextRc::new(&mainloop, None)?;
-      move |node| {
-        tracing::info!("connecting to node {node}");
-        let core = context.connect_rc(None).unwrap();
-        if let Err(err) = pipewire_utils::connect_node(node, &mic_ports, &mainloop, &core) {
-          tracing::error!("failed to connect to node {node}: {err}");
-        }
-      }
-    },
-    &mainloop,
-    &core,
-  );
-  tracing::info!("exited node monitoring loop");
-  Ok(())
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct NodeWithPorts {
-  pub id: u32,
-  pub ports: Ports,
-}
-
-impl NodeWithPorts {
-  pub fn create_virtual_source(
-    mainloop: &MainLoopRc,
-    core: &CoreRc,
-    node_name: impl AsRef<str>,
-  ) -> Result<Self, Box<dyn std::error::Error>> {
-    let node = pipewire_utils::create_node(&node_name, core).expect("Failed to create node");
-
-    let node_id = pipewire_utils::await_node_creation(node, mainloop, core);
-    dbg!(node_id);
-
-    let ports = pipewire_utils::await_find_fl_fr_ports(
-      node_id,
-      pipewire_utils::PortDirection::INPUT,
-      mainloop,
-      core,
-    );
-
-    Ok(NodeWithPorts { id: node_id, ports })
-  }
-}
-
-pub struct ManagedNode {
-  node_with_ports: NodeWithPorts,
-  mainloop: MainLoopRc,
-  _context: ContextRc,
-  core: CoreRc,
-  registry: RegistryRc,
-}
-
-impl ManagedNode {
-  pub fn create(node_name: impl AsRef<str>) -> Result<Self, Box<dyn std::error::Error>> {
-    let mainloop = MainLoopRc::new(None)?;
-    let context = ContextRc::new(&mainloop, None)?;
-    let core = context.connect_rc(None)?;
-    let registry = core.get_registry_rc()?;
-
-    let node = NodeWithPorts::create_virtual_source(&mainloop, &core, node_name)?;
-
-    Ok(Self {
-      node_with_ports: node,
-      mainloop,
-      _context: context,
-      core,
-      registry,
-    })
-  }
-
-  pub fn get_node_with_ports(&self) -> &NodeWithPorts {
-    &self.node_with_ports
-  }
-}
-
-impl Drop for ManagedNode {
-  fn drop(&mut self) {
-    self.registry.destroy_global(self.node_with_ports.id);
-    pipewire_utils::do_roundtrip(&self.mainloop, &self.core);
   }
 }

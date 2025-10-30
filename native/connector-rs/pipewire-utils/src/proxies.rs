@@ -32,7 +32,7 @@ impl ProxyRefs {
         );
     }
 
-    pub fn remove_proxy(&mut self, proxy_id: &u32) {
-        self.refs.remove(proxy_id);
+    pub fn remove_proxy(&mut self, proxy_id: &u32) -> bool {
+        self.refs.remove(proxy_id).is_some()
     }
 }

@@ -1,4 +1,3 @@
-use ::pipewire::{context::ContextRc, core::CoreRc, main_loop::MainLoopRc};
 use serde::{Deserialize, Serialize};
 use std::{
   num::ParseIntError,
@@ -9,13 +8,11 @@ use thiserror::Error;
 
 use crate::{
   command::VIRTMIC_NODE_NAME,
-  helpers::{
-    io::{self},
-    pipewire::{self, NodeWithPorts},
-  },
+  helpers::io::{self},
   ipc,
   monitor::MonitorThreadHandle,
 };
+use pipewire_utils::{utils::ManagedNode, NodeWithPorts, PipewireClient};
 
 #[derive(Error, Debug)]
 pub enum ArgParseError {
@@ -57,8 +54,7 @@ static KEEP_RUNNING: AtomicBool = AtomicBool::new(true);
 
 fn handle_client(
   running_thread: &mut Option<MonitorThreadHandle>,
-  mainloop: &MainLoopRc,
-  core: &CoreRc,
+  pipewire_client: &PipewireClient,
   virtual_node: &NodeWithPorts,
   stream: UnixStream,
 ) {
@@ -76,9 +72,12 @@ fn handle_client(
       if let Some(mut running_thread) = running_thread.take() {
         running_thread.stop();
       }
-      pipewire::disconnect_node(mainloop, core, &virtual_node.ports);
+      pipewire_client.unlink_node_ports(virtual_node.ports);
       let success = match node {
-        Some(node_id) => pipewire::connect_nodes(mainloop, core, node_id, &virtual_node.ports),
+        Some(node_id) => {
+          pipewire_client.link_nodes(node_id, virtual_node.ports);
+          true
+        }
         None => match MonitorThreadHandle::launch_monitor_thread(virtual_node.ports) {
           Ok(handle) => {
             running_thread.replace(handle);
@@ -114,13 +113,12 @@ fn stop_daemon() {
 pub fn monitor_and_connect_nodes() -> Result<(), Error> {
   tracing::info!("starting daemon monitor");
 
-  let mainloop = MainLoopRc::new(None).unwrap();
-  let context = ContextRc::new(&mainloop, None).unwrap();
-  let core = context.connect_rc(None).unwrap();
+  let pipewire_client = PipewireClient::new().unwrap();
 
   let pipe = ipc::listen().unwrap();
   let first = pipe.incoming().next().unwrap().unwrap();
-  let managed_virtual_node = pipewire::ManagedNode::create(VIRTMIC_NODE_NAME).unwrap();
+  let managed_virtual_node =
+    ManagedNode::create_managed_node(&pipewire_client, VIRTMIC_NODE_NAME).unwrap();
   let virtual_node = *managed_virtual_node.get_node_with_ports();
 
   io::write(
@@ -147,7 +145,7 @@ pub fn monitor_and_connect_nodes() -> Result<(), Error> {
       tracing::warn!("failed to accept incomming connection");
       continue;
     };
-    handle_client(&mut running_thread, &mainloop, &core, &virtual_node, stream);
+    handle_client(&mut running_thread, &pipewire_client, &virtual_node, stream);
   }
 
   if let Some(mut running_thread) = running_thread.take() {

@@ -5,12 +5,13 @@ use std::env::current_exe;
 use std::process::Command;
 use std::str;
 
+use pipewire_utils::PipewireClient;
 use serde_json::{json, Value};
 
 use crate::daemon;
 use crate::helpers::io;
 use crate::helpers::parse_numeric_argument;
-use crate::helpers::pipewire;
+use crate::helpers::pipewire::OutputNode;
 use crate::ipc;
 use crate::ipc_request;
 
@@ -35,11 +36,16 @@ fn GetSessionType(_: io::Payload) -> Result<Value, String> {
 }
 
 fn GetNodes(_: io::Payload) -> Result<Value, String> {
-  let nodes = pipewire::get_output_nodes().unwrap();
+  let client = PipewireClient::new().unwrap();
+  let nodes: Vec<_> = client
+    .list_output_nodes()
+    .into_iter()
+    .map(OutputNode::from)
+    .collect();
   Ok(serde_json::to_value(nodes).unwrap())
 }
 
-fn StartPipewireScreenAudio(payload: io::Payload) -> Result<Value, String> {
+fn StartPipewireScreenAudio(_: io::Payload) -> Result<Value, String> {
   let daemon_process = Command::new(current_exe().unwrap())
     .arg("daemon")
     .spawn()
@@ -61,11 +67,12 @@ fn StartPipewireScreenAudio(payload: io::Payload) -> Result<Value, String> {
 fn SetSharingNode(payload: io::Payload) -> Result<Value, String> {
   let node = parse_numeric_argument(payload.arguments["node"].clone());
 
+  let client = PipewireClient::new().unwrap();
   tracing::debug!("node serial to connect: {node}");
   let node = if node == -1 {
     None
   } else {
-    let Some(node) = pipewire::get_node_id_from_serial(node) else {
+    let Some(node) = client.get_node_id_from_object_serial(node) else {
       return Ok(json!({
         "success": false
       }));

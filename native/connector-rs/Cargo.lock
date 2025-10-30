@@ -125,7 +125,6 @@ version = "0.3.5"
 dependencies = [
  "ctrlc",
  "fork",
- "pipewire",
  "pipewire-utils",
  "serde",
  "serde_json",
@@ -324,6 +323,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "34080505efa8e45a4b816c349525ebe327ceaa8559756f0356cba97ef3bf7432"
 
 [[package]]
+name = "matchers"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d1525a2a28c7f4fa0fc98bb91ae755d1e2d1505079e05539e35bc876b5d65ae9"
+dependencies = [
+ "regex-automata",
+]
+
+[[package]]
 name = "memchr"
 version = "2.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -440,12 +448,14 @@ dependencies = [
 name = "pipewire-utils"
 version = "0.1.0"
 dependencies = [
+ "ctrlc",
  "libspa",
  "libspa-sys",
- "log",
  "pipewire",
  "pipewire-sys",
+ "thiserror 2.0.17",
  "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]
@@ -802,10 +812,14 @@ version = "0.3.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2054a14f5307d601f88daf0553e1cbf472acc4f2c51afab632431cdcd72124d5"
 dependencies = [
+ "matchers",
  "nu-ansi-term",
+ "once_cell",
+ "regex-automata",
  "sharded-slab",
  "smallvec",
  "thread_local",
+ "tracing",
  "tracing-core",
  "tracing-log",
 ]

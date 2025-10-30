@@ -16,7 +16,7 @@ mod monitor;
 use helpers::io;
 use tracing::{level_filters::LevelFilter, Level};
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
-use tracing_subscriber::{fmt, layer::SubscriberExt, Layer, Registry};
+use tracing_subscriber::{fmt, layer::SubscriberExt, EnvFilter, Layer, Registry};
 
 use crate::{daemon::monitor_and_connect_nodes, dirs::get_runtime_path};
 
@@ -53,7 +53,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     .with(
       fmt::Layer::default()
         .with_writer(std::io::stderr)
-        .with_filter(LevelFilter::from_level(Level::INFO)),
+        .with_filter(
+          EnvFilter::builder()
+            .with_default_directive(LevelFilter::INFO.into())
+            .from_env_lossy(),
+        ),
     );
 
   tracing::subscriber::set_global_default(subscriber).expect("unable to set global subscriber");
