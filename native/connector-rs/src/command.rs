@@ -110,6 +110,14 @@ fn StopPipewireScreenAudio(payload: io::Payload) -> Result<Value, String> {
   }))
 }
 
+fn SetInstanceIdentifier(payload: io::Payload) -> Result<Value, String> {
+  let instance_identifier = payload.arguments.get("id").unwrap().as_str().unwrap();
+  let success = ipc_request::set_instance_identifier(instance_identifier).is_ok();
+  Ok(json!({
+    "success": success
+  }))
+}
+
 pub fn run(payload: io::Payload) -> Result<Value, String> {
   let cmd = payload.command.as_str();
   match cmd {
@@ -120,6 +128,7 @@ pub fn run(payload: io::Payload) -> Result<Value, String> {
     "SetSharingNode" => SetSharingNode(payload),
     "IsPipewireScreenAudioRunning" => IsPipewireScreenAudioRunning(payload),
     "StopPipewireScreenAudio" => StopPipewireScreenAudio(payload),
+    "SetInstanceIdentifier" => SetInstanceIdentifier(payload),
     _ => Err(format!("Unknown command: {}", payload.command)),
   }
 }

@@ -621,6 +621,7 @@ impl PipewireClient {
         &self,
         target_ports: Ports,
         cancellation_signal: CancellationSignal,
+        media_name_filter: impl Fn(Option<&str>) -> bool + Clone + 'static,
     ) -> Result<()> {
         let scheduler = self.create_scheduler();
         let registry = self.core.get_registry_rc()?;
@@ -640,8 +641,10 @@ impl PipewireClient {
                     let Some(props) = node.props() else {
                         return;
                     };
-                    // TODO: Add exclusions
                     if props.get(*keys::MEDIA_CLASS) != Some("Stream/Output/Audio") {
+                        return;
+                    }
+                    if !media_name_filter(props.get(*keys::MEDIA_NAME)) {
                         return;
                     }
 

@@ -1,11 +1,11 @@
 use serde::{Deserialize, Serialize};
-use tracing::instrument;
 use std::{
   num::ParseIntError,
   os::unix::net::UnixStream,
   sync::atomic::{AtomicBool, Ordering},
 };
 use thiserror::Error;
+use tracing::instrument;
 
 use crate::{
   command::VIRTMIC_NODE_NAME,
@@ -31,7 +31,7 @@ pub enum Error {
 #[serde(tag = "cmd")]
 pub enum Command {
   SetSharingNode { node: Option<u32> },
-  SetExcludedTitle { title: String },
+  SetInstanceIdentifier { instance_identifier: String },
   Ping,
   Stop,
 }
@@ -49,12 +49,55 @@ pub enum Response {
   },
   PingResult,
   StopResult,
+  SetInstanceIdentifierResult,
 }
 
 static KEEP_RUNNING: AtomicBool = AtomicBool::new(true);
 
+enum SharingNodeState {
+  Id(u32),
+  AllDesktop,
+  NotSharing,
+}
+
+struct DaemonState {
+  running_thread: Option<MonitorThreadHandle>,
+  sharing_node_state: SharingNodeState,
+  instance_identifier: Option<String>,
+}
+
+impl DaemonState {
+  fn reshare(&mut self, virtual_node: &NodeWithPorts, pipewire_client: &PipewireClient) -> bool {
+    let _ = self.running_thread.take();
+    pipewire_client.unlink_node_ports(virtual_node.ports);
+    let success = match self.sharing_node_state {
+      SharingNodeState::Id(node_id) => {
+        pipewire_client.link_nodes(node_id, virtual_node.ports);
+        true
+      }
+      SharingNodeState::AllDesktop => {
+        match MonitorThreadHandle::launch_monitor_thread(
+          virtual_node.ports,
+          self.instance_identifier.clone(),
+        ) {
+          Ok(handle) => {
+            self.running_thread.replace(handle);
+            true
+          }
+          Err(err) => {
+            tracing::error!("error while launching monitor thread: {err}");
+            false
+          }
+        }
+      }
+      SharingNodeState::NotSharing => true,
+    };
+    success
+  }
+}
+
 fn handle_client(
-  running_thread: &mut Option<MonitorThreadHandle>,
+  state: &mut DaemonState,
   pipewire_client: &PipewireClient,
   virtual_node: &NodeWithPorts,
   stream: UnixStream,
@@ -70,30 +113,19 @@ fn handle_client(
 
   match command {
     Command::SetSharingNode { node } => {
-      if let Some(mut running_thread) = running_thread.take() {
-        running_thread.stop();
-      }
-      pipewire_client.unlink_node_ports(virtual_node.ports);
-      let success = match node {
-        Some(node_id) => {
-          pipewire_client.link_nodes(node_id, virtual_node.ports);
-          true
-        }
-        None => match MonitorThreadHandle::launch_monitor_thread(virtual_node.ports) {
-          Ok(handle) => {
-            running_thread.replace(handle);
-            true
-          }
-          Err(err) => {
-            tracing::error!("error while launching monitor thread: {err}");
-            false
-          }
-        },
+      state.sharing_node_state = match node {
+        Some(node_id) => SharingNodeState::Id(node_id),
+        None => SharingNodeState::AllDesktop,
       };
+      let success = state.reshare(virtual_node, pipewire_client);
       io::write(Response::SetSharingNodeResult { success }, &stream).unwrap();
     }
-    Command::SetExcludedTitle { title } => {
-      todo!()
+    Command::SetInstanceIdentifier {
+      instance_identifier,
+    } => {
+      state.instance_identifier = Some(instance_identifier);
+      state.reshare(virtual_node, pipewire_client);
+      io::write(Response::SetInstanceIdentifierResult, &stream).unwrap();
     }
     Command::Ping => {
       io::write(Response::PingResult, &stream).unwrap();
@@ -113,7 +145,7 @@ fn stop_daemon() {
 
 #[instrument]
 pub fn monitor_and_connect_nodes() -> Result<(), Error> {
-  tracing::debug!("starting daemon monitor");
+  tracing::info!("starting daemon monitor");
 
   let pipewire_client = PipewireClient::new().unwrap();
 
@@ -137,7 +169,11 @@ pub fn monitor_and_connect_nodes() -> Result<(), Error> {
   })
   .unwrap();
 
-  let mut running_thread: Option<MonitorThreadHandle> = None;
+  let mut state = DaemonState {
+    running_thread: None,
+    instance_identifier: None,
+    sharing_node_state: SharingNodeState::NotSharing,
+  };
 
   for stream in pipe.incoming() {
     if !KEEP_RUNNING.load(Ordering::Relaxed) {
@@ -147,10 +183,10 @@ pub fn monitor_and_connect_nodes() -> Result<(), Error> {
       tracing::warn!("failed to accept incomming connection");
       continue;
     };
-    handle_client(&mut running_thread, &pipewire_client, &virtual_node, stream);
+    handle_client(&mut state, &pipewire_client, &virtual_node, stream);
   }
 
-  drop(running_thread);
+  drop(state);
 
   Ok(())
 }

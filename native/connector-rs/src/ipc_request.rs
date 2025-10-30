@@ -25,3 +25,22 @@ pub fn stop_daemon() -> Result<(), String> {
 
   Ok(())
 }
+
+pub fn set_instance_identifier(instance_identifier: &str) -> Result<(), String> {
+  let pipe = ipc::connect().map_err(|err| err.to_string())?;
+  io::write(
+    daemon::Command::SetInstanceIdentifier {
+      instance_identifier: instance_identifier.to_owned(),
+    },
+    &pipe,
+  )
+  .map_err(|err| err.to_string())?;
+  let res: daemon::Response = io::read(&pipe).map_err(|err| err.to_string())?;
+
+  let daemon::Response::SetInstanceIdentifierResult = res else {
+    tracing::error!("invalid response for SetExcludedTitle, {res:?}");
+    return Err(format!("invalid response for SetExcludedTitle, {res:?}"));
+  };
+
+  Ok(())
+}

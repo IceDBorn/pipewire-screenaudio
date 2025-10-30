@@ -72,8 +72,7 @@ function handleMessage(request) {
 	}
 
 	if (request.message === "instance-identifier") {
-		// TODO: Add native logic here
-		return console.log(request.instanceIdentifier);
+		return sendNativeMessage(request.messageName, "SetInstanceIdentifier", { id: request.instanceIdentifier });
 	}
 }
 
