@@ -148,9 +148,7 @@ pub fn monitor_and_connect_nodes() -> Result<(), Error> {
     handle_client(&mut running_thread, &pipewire_client, &virtual_node, stream);
   }
 
-  if let Some(mut running_thread) = running_thread.take() {
-    running_thread.stop();
-  }
+  drop(running_thread);
 
   Ok(())
 }
