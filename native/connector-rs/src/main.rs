@@ -15,7 +15,7 @@ mod monitor;
 
 use helpers::io;
 use tracing::{level_filters::LevelFilter, Level};
-use tracing_appender::rolling::{RollingFileAppender, Rotation};
+use tracing_appender::rolling::RollingFileAppender;
 use tracing_subscriber::{fmt, layer::SubscriberExt, EnvFilter, Layer, Registry};
 
 use crate::{daemon::monitor_and_connect_nodes, dirs::get_runtime_path};

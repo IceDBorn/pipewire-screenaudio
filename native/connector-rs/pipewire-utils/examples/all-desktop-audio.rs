@@ -1,5 +1,3 @@
-use std::{thread, time::Duration};
-
 use pipewire_utils::{
     self, cancellation_signal::CancellationSignal, utils::ManagedNode, PipewireClient,
 };
@@ -21,7 +19,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     .unwrap();
 
     tracing::info!("started monitoring");
-	client.monitor_and_connect_nodes(node.get_node_with_ports().ports, signal)?;
+    client.monitor_and_connect_nodes(node.get_node_with_ports().ports, signal, |_| true)?;
 
     tracing::info!("finishing");
 
