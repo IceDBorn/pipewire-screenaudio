@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use tracing::instrument;
 use std::{
   num::ParseIntError,
   os::unix::net::UnixStream,
@@ -110,8 +111,9 @@ fn stop_daemon() {
   ipc::fake_connect();
 }
 
+#[instrument]
 pub fn monitor_and_connect_nodes() -> Result<(), Error> {
-  tracing::info!("starting daemon monitor");
+  tracing::debug!("starting daemon monitor");
 
   let pipewire_client = PipewireClient::new().unwrap();
 

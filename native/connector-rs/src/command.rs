@@ -77,7 +77,7 @@ fn SetSharingNode(payload: io::Payload) -> Result<Value, String> {
         "success": false
       }));
     };
-    tracing::debug!("node id to connect: {node}");
+    tracing::info!("node id to connect: {node}");
     Some(node)
   };
 

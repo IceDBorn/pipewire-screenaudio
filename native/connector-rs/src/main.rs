@@ -69,9 +69,8 @@ fn main() -> Result<(), Box<dyn Error>> {
       }
     }
     Some(_) | None => {
-      tracing::info!("started connector");
-
       let payload = io::read(stdin()).unwrap();
+      tracing::info!(payload = format!("{payload:?}"), "running connector");
       let result = command::run(payload).unwrap();
       let _ = io::write(result, stdout());
     }

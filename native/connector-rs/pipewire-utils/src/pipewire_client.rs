@@ -343,9 +343,8 @@ impl PipewireClient {
                     if !matches!(global.type_, ObjectType::Node) {
                         return;
                     }
-                    tracing::trace!(global_id = global.id, "global");
                     let Ok(proxy) = registry.bind::<Node, _>(global) else {
-                        tracing::debug!("global {} is not assignable to node", global.id);
+                        tracing::trace!("global {} is not assignable to node", global.id);
                         return;
                     };
                     let listener = proxy
@@ -455,7 +454,7 @@ impl PipewireClient {
                         return;
                     };
 
-                    tracing::debug!("found port {:?} for node {}", port, node_id);
+                    tracing::debug!(port_id = port.id, node_id, "found port for node");
                     // Save port id into channel cell
                     if let Some(channel_cell) = match port.channel {
                         AudioChannel::FrontLeft => Some(&fl_port),
@@ -516,7 +515,7 @@ impl PipewireClient {
     }
 
     fn unlink_ports(&self, ports: HashSet<u32>) {
-        tracing::debug!("removing links to: {:?}", &ports);
+        tracing::debug!(?ports, "removing links to ports");
         let is_link_to_port = move |global: &GlobalObject<&DictRef>| {
             if global.type_ != ObjectType::Link {
                 return false;
@@ -540,14 +539,14 @@ impl PipewireClient {
             {
                 move |iteration_context, global| {
                     if is_link_to_port(global) {
-                        tracing::debug!("removing link: {}", global.id);
+                        tracing::trace!(link_id = global.id, "removing link");
                         iteration_context.registry.destroy_global(global.id);
                         iteration_context.schedule_roundtrip();
                     }
                 }
             },
         );
-        tracing::debug!("links removed");
+        tracing::trace!("links removed");
     }
 
     pub fn unlink_node_ports(&self, ports: Ports) {
@@ -596,7 +595,7 @@ impl PipewireClient {
     fn try_link_ports(&self, from: u32, to: u32) {
         match self.link_ports(from, to) {
             Err(err) => tracing::warn!("failed to link ports: {err}"),
-            Ok(link) => tracing::debug!(link_id = link.upcast().id(), "linked ports"),
+            Ok(link) => tracing::trace!(link_id = link.upcast().id(), "linked ports"),
         };
     }
 
@@ -615,7 +614,7 @@ impl PipewireClient {
             };
             self.try_link_ports(from, to);
         }
-		self.do_roundtrip();
+        self.do_roundtrip();
     }
 
     pub fn monitor_and_connect_nodes(
@@ -648,7 +647,7 @@ impl PipewireClient {
 
                     let node_id: u32 = node.id();
 
-                    tracing::debug!("node {node_id} created");
+                    tracing::trace!(node_id, "node created");
                     tracked_nodes.borrow_mut().insert(node_id);
 
                     if let Some(port_ids) = nodes_to_ports.borrow().get(&node_id) {
@@ -669,7 +668,7 @@ impl PipewireClient {
             {
                 let tracked_nodes = tracked_nodes.clone();
                 move |node_id| {
-                    tracing::debug!("node {node_id} destroyed");
+                    tracing::trace!(node_id, "node destroyed");
                     tracked_nodes.borrow_mut().remove(&node_id);
                 }
             },
@@ -706,11 +705,15 @@ impl PipewireClient {
                         .borrow_mut()
                         .insert(port_info.id, OwnedPortInfo::from(port_info));
 
-                    tracing::trace!("port {} created", port_info.id);
+                    tracing::trace!(port_id = port_info.id, "port created");
                     if tracked_nodes.borrow().contains(&port_info.node_id) {
-                        tracing::debug!("port {} is from a tracked node", port_info.id);
+                        tracing::debug!(port_id = port_info.id, "port is from a tracked node");
                         let Some(target_port) = target_ports.get_channel(&port_info.channel) else {
-                            tracing::debug!("unmapped channel: {:?}", port_info.channel);
+                            tracing::debug!(
+                                port = port_info.id,
+                                channel = ?port_info.channel,
+                                "unmapped channel"
+                            );
                             return;
                         };
                         client.try_link_ports(port_info.id, *target_port);
@@ -776,7 +779,7 @@ impl PipewireClient {
 
     pub fn list_output_nodes(&self) -> Vec<OutputNode> {
         let output_nodes = Rc::new(RefCell::new(vec![]));
-        tracing::debug!("iterating over nodes");
+        tracing::trace!("iterating over nodes");
         self.iterate_nodes(
             StopSettingsBuilder::default()
                 .stop_on_last_roundtrip()
@@ -786,17 +789,17 @@ impl PipewireClient {
                 move |_iteration_context, node| match OutputNode::try_from(node) {
                     Ok(node) => {
                         if node.properties.media_class == "Stream/Output/Audio" {
-                            tracing::trace!(node = format_args!("{node:?}"), "adding node");
+                            tracing::trace!(?node, "adding node");
                             output_nodes.borrow_mut().push(node);
                         } else {
-                            tracing::debug!("node {} is not an output", node.id);
+                            tracing::trace!(node_id = node.id, "node is not an output");
                         }
                     }
                     Err(err) => {
                         tracing::trace!(
-                            "node {} does not contain all required properties: {}",
-                            node.id(),
-                            err
+                            node_id = node.id(),
+                            ?err,
+                            "node does not contain all required properties",
                         )
                     }
                 }

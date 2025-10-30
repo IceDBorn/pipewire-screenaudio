@@ -28,7 +28,6 @@ impl MonitorThreadHandle {
   pub fn launch_monitor_thread(mic_ports: Ports) -> Result<Self> {
     let (controller, signal) = CancellationSignal::pair();
 
-    tracing::info!("launching monitor thread");
     let join_handle = thread::Builder::new()
       .name("monitor and connector thread".to_owned())
       .spawn(move || {
@@ -44,7 +43,7 @@ impl MonitorThreadHandle {
   }
 
   pub fn stop(&mut self) {
-    tracing::info!("stopping monitor thread");
+    tracing::debug!("stopping monitor thread");
     self.cancellation_controller.cancel();
     if let Some(handle) = self.join_handle.take() {
       if let Err(err) = handle.join().unwrap() {
