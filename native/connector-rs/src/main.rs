@@ -50,7 +50,7 @@ fn main() -> Result<(), Box<dyn Error>> {
       fmt::Layer::default()
         .with_writer(non_blocking)
         .with_ansi(false)
-        .with_filter(LevelFilter::from_level(Level::TRACE)),
+        .with_filter(LevelFilter::from_level(Level::DEBUG)),
     )
     .with(
       fmt::Layer::default()
