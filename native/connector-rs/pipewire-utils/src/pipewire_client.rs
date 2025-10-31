@@ -23,6 +23,8 @@ use tracing::instrument;
 
 use crate::{
     cancellation_signal::CancellationSignal,
+    monitor::NodeAndPortsRegistry,
+    pipewire_objects::*,
     proxies::ProxyRefs,
     roundtrip::{Scheduler, StopSettings, StopSettingsBuilder},
 };
@@ -113,140 +115,6 @@ impl TryFrom<&NodeInfoRef> for OutputNode {
         })
     }
 }
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum PortDirection {
-    INPUT,
-    OUTPUT,
-}
-
-#[derive(Debug)]
-pub struct InvalidPortError;
-impl FromStr for PortDirection {
-    type Err = InvalidPortError;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "in" => Ok(PortDirection::INPUT),
-            "out" => Ok(PortDirection::OUTPUT),
-            _ => Err(InvalidPortError),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum AudioChannel<'a> {
-    FrontLeft,
-    FrontRight,
-    Other(&'a str),
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum StereoAudioChannel {
-    FrontLeft,
-    FrontRight,
-}
-
-impl<'a> From<&'a str> for AudioChannel<'a> {
-    fn from(value: &'a str) -> Self {
-        match value {
-            "FL" => AudioChannel::FrontLeft,
-            "FR" => AudioChannel::FrontRight,
-            s => AudioChannel::Other(s),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct Ports {
-    pub fl_port: u32,
-    pub fr_port: u32,
-}
-
-impl Ports {
-    fn get_stereo_channel<'a>(&self, channel: &StereoAudioChannel) -> u32 {
-        match channel {
-            &StereoAudioChannel::FrontLeft => self.fl_port,
-            &StereoAudioChannel::FrontRight => self.fr_port,
-        }
-    }
-    fn get_channel<'a>(&self, channel: &AudioChannel<'a>) -> Option<&u32> {
-        match channel {
-            &AudioChannel::FrontLeft => Some(&self.fl_port),
-            &AudioChannel::FrontRight => Some(&self.fr_port),
-            &AudioChannel::Other(_) => None,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct NodeWithPorts {
-    pub id: u32,
-    pub ports: Ports,
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct MaybePorts {
-    pub fl_port: Option<u32>,
-    pub fr_port: Option<u32>,
-}
-
-impl MaybePorts {
-    pub fn both(self) -> Option<Ports> {
-        let MaybePorts { fl_port, fr_port } = self;
-        let fl_port = fl_port?;
-        let fr_port = fr_port?;
-        Some(Ports { fl_port, fr_port })
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-struct PortInfo<'a> {
-    channel: AudioChannel<'a>,
-    node_id: u32,
-    id: u32,
-    direction: PortDirection,
-}
-
-#[derive(Debug)]
-struct OwnedPortInfo {
-    channel: Option<StereoAudioChannel>,
-    node_id: u32,
-    id: u32,
-    direction: PortDirection,
-}
-
-#[derive(Error, Debug)]
-#[error("port channel is not stereo")]
-pub struct ChannelIsNotStereoError;
-impl<'a> TryFrom<AudioChannel<'a>> for StereoAudioChannel {
-    type Error = ChannelIsNotStereoError;
-    fn try_from(value: AudioChannel<'a>) -> Result<Self, Self::Error> {
-        match value {
-            AudioChannel::FrontLeft => Ok(StereoAudioChannel::FrontLeft),
-            AudioChannel::FrontRight => Ok(StereoAudioChannel::FrontRight),
-            AudioChannel::Other(_) => Err(ChannelIsNotStereoError),
-        }
-    }
-}
-
-impl<'a> From<PortInfo<'a>> for OwnedPortInfo {
-    fn from(
-        PortInfo {
-            channel,
-            node_id,
-            id,
-            direction,
-        }: PortInfo<'a>,
-    ) -> Self {
-        OwnedPortInfo {
-            id,
-            node_id,
-            channel: channel.try_into().ok(),
-            direction,
-        }
-    }
-}
-
 impl IterationContext {
     #[instrument(skip_all)]
     fn stop(&self) {
@@ -626,17 +494,27 @@ impl PipewireClient {
         let scheduler = self.create_scheduler();
         let registry = self.core.get_registry_rc()?;
 
-        let tracked_nodes = Rc::new(RefCell::new(HashSet::new()));
-        let nodes_to_ports = Rc::new(RefCell::new(HashMap::<u32, HashSet<u32>>::new()));
-        let ports = Rc::new(RefCell::new(HashMap::<u32, OwnedPortInfo>::new()));
+        let mut node_and_ports_registry = NodeAndPortsRegistry::default();
+        node_and_ports_registry.set_relevant_port_callback({
+            let client = self.clone();
+            move |port_info| {
+                let Some(channel) = port_info.channel else {
+                    tracing::debug!(
+                        port = port_info.id,
+                        channel = ?port_info.channel,
+                        "unmapped channel"
+                    );
+                    return;
+                };
+                let target_port = target_ports.get_stereo_channel(&channel);
+                client.try_link_ports(port_info.id, target_port);
+            }
+        });
 
         let node_listener = self.add_node_listener(
             registry.clone(),
             {
-                let tracked_nodes = tracked_nodes.clone();
-                let nodes_to_ports = nodes_to_ports.clone();
-                let ports = ports.clone();
-                let client = self.clone();
+                let node_and_ports_registry = node_and_ports_registry.clone();
                 move |node| {
                     let Some(props) = node.props() else {
                         return;
@@ -651,28 +529,14 @@ impl PipewireClient {
                     let node_id: u32 = node.id();
 
                     tracing::trace!(node_id, "node created");
-                    tracked_nodes.borrow_mut().insert(node_id);
-
-                    if let Some(port_ids) = nodes_to_ports.borrow().get(&node_id) {
-                        tracing::trace!(port_ids = format!("{port_ids:?}"));
-                        let ports = ports.borrow();
-                        for port_id in port_ids {
-                            let port_info = ports.get(port_id).expect("there must be info");
-
-                            let Some(channel) = port_info.channel else {
-                                return;
-                            };
-                            let target_port = target_ports.get_stereo_channel(&channel);
-                            client.try_link_ports(*port_id, target_port);
-                        }
-                    }
+                    node_and_ports_registry.add_relevant_node(node_id);
                 }
             },
             {
-                let tracked_nodes = tracked_nodes.clone();
+                let node_and_ports_registry = node_and_ports_registry.clone();
                 move |node_id| {
-                    tracing::trace!(node_id, "node destroyed");
-                    tracked_nodes.borrow_mut().remove(&node_id);
+                    tracing::trace!(node_id, "node removed");
+                    node_and_ports_registry.remove_relevant_node(node_id);
                 }
             },
             None,
@@ -681,10 +545,7 @@ impl PipewireClient {
         let port_listener = registry
             .add_listener_local()
             .global({
-                let tracked_nodes = tracked_nodes.clone();
-                let nodes_to_ports = nodes_to_ports.clone();
-                let ports = ports.clone();
-                let client = self.clone();
+                let node_and_ports_registry = node_and_ports_registry.clone();
                 move |global_object| {
                     let Some(port_info) = Self::extract_port_info(global_object) else {
                         return;
@@ -694,56 +555,16 @@ impl PipewireClient {
                         return;
                     }
 
-                    match nodes_to_ports.borrow_mut().entry(port_info.node_id) {
-                        Entry::Vacant(entry) => {
-                            entry.insert(HashSet::from_iter([port_info.id]));
-                        }
-                        Entry::Occupied(mut entry) => {
-                            let node_ports = entry.get_mut();
-                            node_ports.insert(port_info.id);
-                        }
-                    }
-
-                    ports
-                        .borrow_mut()
-                        .insert(port_info.id, OwnedPortInfo::from(port_info));
-
                     tracing::trace!(port_id = port_info.id, "port created");
-                    if tracked_nodes.borrow().contains(&port_info.node_id) {
-                        tracing::debug!(port_id = port_info.id, "port is from a tracked node");
-                        let Some(target_port) = target_ports.get_channel(&port_info.channel) else {
-                            tracing::debug!(
-                                port = port_info.id,
-                                channel = ?port_info.channel,
-                                "unmapped channel"
-                            );
-                            return;
-                        };
-                        client.try_link_ports(port_info.id, *target_port);
-                    }
+                    node_and_ports_registry.add_port(port_info);
                 }
             })
             .global_remove({
-                let nodes_to_ports = nodes_to_ports.clone();
-                let ports = ports.clone();
+                let node_and_ports_registry = node_and_ports_registry.clone();
                 move |global_id| {
-                    // remove port from node
-                    {
-                        let ports = ports.borrow();
-                        let Some(port_info) = ports.get(&global_id) else {
-                            // global was not registered as a port
-                            return;
-                        };
-
-                        nodes_to_ports
-                            .borrow_mut()
-                            .get_mut(&port_info.node_id)
-                            .unwrap()
-                            .remove(&global_id);
-                        drop(ports);
+                    if node_and_ports_registry.try_remove_port(global_id).is_some() {
+                        tracing::trace!(port_id = global_id, "port removed");
                     }
-                    // remove port
-                    ports.borrow_mut().remove(&global_id);
                 }
             })
             .register();

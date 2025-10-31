@@ -1,4 +1,4 @@
-use crate::{pipewire_client::{NodeWithPorts, PipewireClient}, PipewireError};
+use crate::{pipewire_client::PipewireClient, pipewire_objects::NodeWithPorts, PipewireError};
 
 pub struct ManagedNode {
     pipewire_client: PipewireClient,

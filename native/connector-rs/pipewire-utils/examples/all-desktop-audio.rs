@@ -1,6 +1,4 @@
-use pipewire_utils::{
-    self, cancellation_signal::CancellationSignal, utils::ManagedNode, PipewireClient,
-};
+use pipewire_utils::{self, cancellation_signal::CancellationSignal, ManagedNode, PipewireClient};
 use tracing::Level;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {

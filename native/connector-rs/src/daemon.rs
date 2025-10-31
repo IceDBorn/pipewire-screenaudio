@@ -13,7 +13,7 @@ use crate::{
   ipc,
   monitor::MonitorThreadHandle,
 };
-use pipewire_utils::{utils::ManagedNode, NodeWithPorts, PipewireClient};
+use pipewire_utils::{ManagedNode, NodeWithPorts, PipewireClient};
 
 #[derive(Error, Debug)]
 pub enum ArgParseError {
