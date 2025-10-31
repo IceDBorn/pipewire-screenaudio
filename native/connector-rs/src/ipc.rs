@@ -1,12 +1,14 @@
 use std::{
+  error::Error,
   fs, io,
   os::unix::net::{UnixListener, UnixStream},
-  path::PathBuf,
+  path::{Path, PathBuf},
   thread,
   time::Duration,
 };
 
-use crate::dirs::get_runtime_path;
+use crate::io as ipc_io;
+use crate::{daemon, dirs::get_runtime_path};
 
 fn get_ipc_socket_path() -> PathBuf {
   let mut path = get_runtime_path();
@@ -14,8 +16,17 @@ fn get_ipc_socket_path() -> PathBuf {
   path
 }
 
+fn ensure_stopped(path: &Path) -> Result<(), Box<dyn Error>> {
+  if path.exists() {
+    let stream = connect_inner(1)?;
+    ipc_io::write(daemon::Command::Stop, &stream)?;
+  }
+  Ok(())
+}
+
 pub fn listen() -> io::Result<UnixListener> {
   let path = get_ipc_socket_path();
+  let _ = ensure_stopped(&path);
   let _ = fs::remove_file(&path);
   UnixListener::bind(path)
 }
