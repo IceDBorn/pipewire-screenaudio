@@ -12,7 +12,7 @@ pub struct RawPayload {
   #[serde(rename = "cmd")]
   pub command: String,
   #[serde(rename = "args")]
-  pub arguments: Vec<Value>,
+  pub arguments: Option<Vec<Value>>,
 }
 
 impl From<RawPayload> for Payload {
@@ -20,7 +20,7 @@ impl From<RawPayload> for Payload {
     let RawPayload { command, arguments } = value;
     Self {
       command,
-      arguments: arguments.into_iter().next().unwrap_or_else(|| json!({})),
+      arguments: arguments.into_iter().flatten().next().unwrap_or_else(|| json!({})),
     }
   }
 }
@@ -29,7 +29,7 @@ impl From<Payload> for RawPayload {
   fn from(value: Payload) -> Self {
     Self {
       command: value.command,
-      arguments: vec![value.arguments],
+      arguments: Some(vec![value.arguments]),
     }
   }
 }
