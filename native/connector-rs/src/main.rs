@@ -4,6 +4,7 @@ use std::{
   io::{stdin, stdout},
   panic,
   path::PathBuf,
+  process,
 };
 
 mod command;
@@ -15,7 +16,7 @@ mod ipc_request;
 mod monitor;
 
 use helpers::io;
-use tracing::{level_filters::LevelFilter, Level};
+use tracing::{instrument, level_filters::LevelFilter, Level};
 use tracing_appender::rolling::RollingFileAppender;
 use tracing_panic::panic_hook;
 use tracing_subscriber::{fmt, layer::SubscriberExt, EnvFilter, Layer, Registry};
@@ -49,7 +50,7 @@ fn main() -> Result<(), Box<dyn Error>> {
       fmt::Layer::default()
         .with_writer(non_blocking)
         .with_ansi(false)
-        .with_filter(LevelFilter::from_level(Level::DEBUG)),
+        .with_filter(LevelFilter::from_level(Level::TRACE)),
     )
     .with(
       fmt::Layer::default()
@@ -62,6 +63,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     );
 
   tracing::subscriber::set_global_default(subscriber).expect("unable to set global subscriber");
+  let span = tracing::info_span!("main", pid = process::id());
+  let _span_handle = span.enter();
 
   panic::set_hook(Box::new(panic_hook));
 
