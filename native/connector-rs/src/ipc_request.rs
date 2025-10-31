@@ -1,3 +1,5 @@
+use std::{io::Stdout, process::ChildStdout};
+
 use crate::{daemon, helpers::io, ipc};
 
 pub fn is_daemon_running() -> Result<bool, String> {
@@ -43,4 +45,16 @@ pub fn set_instance_identifier(instance_identifier: &str) -> Result<(), String> 
   };
 
   Ok(())
+}
+
+pub fn read_start_result(daemon_stdout: ChildStdout) -> Result<u32, String> {
+  let status: daemon::Response = io::read(daemon_stdout)
+    .map_err(|err| format!("error obtaining first response from daemon: {err}"))?;
+
+  let daemon::Response::StartResult { mic_id } = status else {
+    return Err(format!(
+      "first response from daemon has unexpected format: {status:?}"
+    ));
+  };
+  Ok(mic_id)
 }

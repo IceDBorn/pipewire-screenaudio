@@ -3,6 +3,7 @@
 use std::env;
 use std::env::current_exe;
 use std::process::Command;
+use std::process::Stdio;
 use std::str;
 
 use pipewire_utils::PipewireClient;
@@ -46,21 +47,21 @@ fn GetNodes(_: io::Payload) -> Result<Value, String> {
 }
 
 fn StartPipewireScreenAudio(_: io::Payload) -> Result<Value, String> {
-  let daemon_process = Command::new(current_exe().unwrap())
+  let mut daemon_process = Command::new(current_exe().unwrap())
     .arg("daemon")
+    .stdout(Stdio::piped())
+    .stderr(Stdio::null())
+    .stdin(Stdio::null())
     .spawn()
     .unwrap();
+
+  let daemon_stdout = daemon_process.stdout.take().unwrap();
+
+  let mic_id = ipc_request::read_start_result(daemon_stdout);
   drop(daemon_process);
 
-  let pipe = ipc::connect().map_err(|err| err.to_string())?;
-  let status: daemon::Response =
-    io::read(pipe).map_err(|err| format!("error obtaining first response from daemon: {err}"))?;
-  let daemon::Response::StartResult { mic_id } = status else {
-    return Err("first response from daemon has unexpected format".into());
-  };
-
   Ok(json!({
-    "micId": mic_id
+    "micId": mic_id?
   }))
 }
 

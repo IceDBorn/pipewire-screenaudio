@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::{
+  io::stdout,
   num::ParseIntError,
   os::unix::net::UnixStream,
   sync::atomic::{AtomicBool, Ordering},
@@ -150,19 +151,10 @@ pub fn monitor_and_connect_nodes() -> Result<(), Error> {
   let pipewire_client = PipewireClient::new().unwrap();
 
   let pipe = ipc::listen().unwrap();
-  let first = pipe.incoming().next().unwrap().unwrap();
+
   let managed_virtual_node =
     ManagedNode::create_managed_node(&pipewire_client, VIRTMIC_NODE_NAME).unwrap();
   let virtual_node = *managed_virtual_node.get_node_with_ports();
-
-  io::write(
-    Response::StartResult {
-      mic_id: virtual_node.id,
-    },
-    &first,
-  )
-  .unwrap();
-  drop(first);
 
   ctrlc::set_handler(|| {
     stop_daemon();
@@ -174,6 +166,14 @@ pub fn monitor_and_connect_nodes() -> Result<(), Error> {
     instance_identifier: None,
     sharing_node_state: SharingNodeState::NotSharing,
   };
+
+  io::write(
+    Response::StartResult {
+      mic_id: virtual_node.id,
+    },
+    stdout(),
+  )
+  .unwrap();
 
   for stream in pipe.incoming() {
     if !KEEP_RUNNING.load(Ordering::Relaxed) {

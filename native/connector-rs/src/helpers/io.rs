@@ -61,6 +61,8 @@ pub enum WriteError {
   WritingPayload(std::io::Error),
   #[error("error while serializing payload")]
   SerializingPayload(serde_json::Error),
+  #[error("error while flushing")]
+  Flushing(std::io::Error),
 }
 
 pub fn read<R: Read, P: for<'a> Deserialize<'a> + Debug>(mut reader: R) -> Result<P, ReadError> {
@@ -100,6 +102,7 @@ pub fn write<W: Write, P: Serialize>(payload: P, mut writer: W) -> Result<(), Wr
   writer
     .write_all(payload)
     .map_err(WriteError::WritingPayload)?;
+  writer.flush().map_err(WriteError::Flushing)?;
 
   Ok(())
 }
