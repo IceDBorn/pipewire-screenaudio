@@ -24,8 +24,8 @@ pub fn fake_connect() {
   let _ = UnixStream::connect(get_ipc_socket_path());
 }
 
-pub fn connect() -> io::Result<UnixStream> {
-  let mut retries = 5;
+pub fn connect_inner(tries: usize) -> io::Result<UnixStream> {
+  let mut retries = tries;
   let path = get_ipc_socket_path();
   let mut last_error = None;
   while retries > 0 {
@@ -34,8 +34,14 @@ pub fn connect() -> io::Result<UnixStream> {
       Ok(socket) => return Ok(socket),
       Err(err) => last_error = Some(err),
     }
-    thread::sleep(Duration::from_millis(100));
     retries -= 1;
+    if retries > 0 {
+      thread::sleep(Duration::from_millis(100));
+    }
   }
   Err(last_error.unwrap())
+}
+
+pub fn connect() -> io::Result<UnixStream> {
+  connect_inner(5)
 }
