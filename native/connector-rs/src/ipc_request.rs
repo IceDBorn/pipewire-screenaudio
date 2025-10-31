@@ -1,4 +1,4 @@
-use std::{io::Stdout, process::ChildStdout};
+use std::process::ChildStdout;
 
 use crate::{daemon, helpers::io, ipc};
 

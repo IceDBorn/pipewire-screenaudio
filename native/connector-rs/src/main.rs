@@ -16,7 +16,7 @@ mod ipc_request;
 mod monitor;
 
 use helpers::io;
-use tracing::{instrument, level_filters::LevelFilter, Level};
+use tracing::{level_filters::LevelFilter, Level};
 use tracing_appender::rolling::RollingFileAppender;
 use tracing_panic::panic_hook;
 use tracing_subscriber::{fmt, layer::SubscriberExt, EnvFilter, Layer, Registry};
