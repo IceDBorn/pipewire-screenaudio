@@ -100,7 +100,7 @@ impl Scheduler {
         self.done.set(true);
     }
 
-    #[instrument(skip(self))]
+    #[instrument(skip(self, stop_settings))]
     pub fn run(self, stop_settings: StopSettings) {
         let mut listener_core = None;
         if stop_settings.on_last_roundtrip {
