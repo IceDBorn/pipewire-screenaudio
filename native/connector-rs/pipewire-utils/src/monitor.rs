@@ -125,6 +125,7 @@ impl<AddedCallback: Fn(&OwnedPortInfo), RemovedCallback: Fn(&OwnedPortInfo)>
 }
 
 pub struct LinkTrackerHandle {
+    #[expect(unused)]
     listener: ProxyListener,
     id: Rc<Cell<Option<u32>>>,
 }

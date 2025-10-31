@@ -10,6 +10,7 @@ pub struct NodeProperties {
   object_serial: i64,
 
   #[serde(skip_serializing)]
+  #[allow(unused)]
   media_class: String,
 }
 

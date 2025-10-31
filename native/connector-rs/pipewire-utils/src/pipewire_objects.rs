@@ -113,6 +113,7 @@ pub struct OwnedPortInfo {
     pub(crate) channel: Option<StereoAudioChannel>,
     pub(crate) node_id: u32,
     pub(crate) id: u32,
+    #[allow(unused)]
     pub(crate) direction: PortDirection,
 }
 

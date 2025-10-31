@@ -1,8 +1,7 @@
 use std::{
     cell::{OnceCell, RefCell},
-    collections::{hash_map::Entry, HashMap, HashSet},
+    collections::{HashMap, HashSet},
     rc::Rc,
-    str::FromStr,
 };
 
 use libspa::utils::dict::DictRef;
@@ -575,8 +574,8 @@ impl PipewireClient {
                             node_and_ports_registry.try_remove_relevant_node(node_id);
                         }
                     } else {
-						tracing::trace!(node_id, "node relevancy has not changed");
-					}
+                        tracing::trace!(node_id, "node relevancy has not changed");
+                    }
                 }
             },
             {

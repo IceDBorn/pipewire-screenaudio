@@ -95,14 +95,14 @@ fn SetSharingNode(payload: io::Payload) -> Result<Value, String> {
   }))
 }
 
-fn IsPipewireScreenAudioRunning(payload: io::Payload) -> Result<Value, String> {
+fn IsPipewireScreenAudioRunning(_payload: io::Payload) -> Result<Value, String> {
   let is_running = ipc_request::is_daemon_running().is_ok_and(|running| running);
   Ok(json!({
     "isRunning": is_running
   }))
 }
 
-fn StopPipewireScreenAudio(payload: io::Payload) -> Result<Value, String> {
+fn StopPipewireScreenAudio(_payload: io::Payload) -> Result<Value, String> {
   let success = ipc_request::stop_daemon().is_ok();
 
   Ok(json!({
