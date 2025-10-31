@@ -111,8 +111,10 @@ impl<AddedCallback: Fn(&OwnedPortInfo), RemovedCallback: Fn(&OwnedPortInfo)>
     pub fn try_remove_port(&self, port_id: u32) -> Option<OwnedPortInfo> {
         let port_info = self.ports.borrow_mut().remove(&port_id);
         if let Some(port_info) = port_info.as_ref() {
-            if let Some(callback) = &self.relevant_port_removed_callback {
-                callback(port_info);
+            if self.relevant_nodes.borrow().contains(&port_info.node_id) {
+                if let Some(callback) = &self.relevant_port_removed_callback {
+                    callback(port_info);
+                }
             }
             self.nodes_to_ports
                 .borrow_mut()
