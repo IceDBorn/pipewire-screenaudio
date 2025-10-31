@@ -4,8 +4,8 @@ use thiserror::Error;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PortDirection {
-    INPUT,
-    OUTPUT,
+    Input,
+    Output,
 }
 
 #[derive(Debug)]
@@ -14,8 +14,8 @@ impl FromStr for PortDirection {
     type Err = InvalidPortError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "in" => Ok(PortDirection::INPUT),
-            "out" => Ok(PortDirection::OUTPUT),
+            "in" => Ok(PortDirection::Input),
+            "out" => Ok(PortDirection::Output),
             _ => Err(InvalidPortError),
         }
     }
@@ -51,17 +51,17 @@ pub struct Ports {
 }
 
 impl Ports {
-    pub fn get_stereo_channel<'a>(&self, channel: &StereoAudioChannel) -> u32 {
+    pub fn get_stereo_channel(&self, channel: &StereoAudioChannel) -> u32 {
         match channel {
-            &StereoAudioChannel::FrontLeft => self.fl_port,
-            &StereoAudioChannel::FrontRight => self.fr_port,
+            StereoAudioChannel::FrontLeft => self.fl_port,
+            StereoAudioChannel::FrontRight => self.fr_port,
         }
     }
     pub fn get_channel<'a>(&self, channel: &AudioChannel<'a>) -> Option<&u32> {
         match channel {
-            &AudioChannel::FrontLeft => Some(&self.fl_port),
-            &AudioChannel::FrontRight => Some(&self.fr_port),
-            &AudioChannel::Other(_) => None,
+            AudioChannel::FrontLeft => Some(&self.fl_port),
+            AudioChannel::FrontRight => Some(&self.fr_port),
+            AudioChannel::Other(_) => None,
         }
     }
 }

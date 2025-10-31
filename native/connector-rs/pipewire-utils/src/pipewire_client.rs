@@ -442,7 +442,7 @@ impl PipewireClient {
         let node_id = Rc::into_inner(node_id).unwrap().into_inner().unwrap();
 
         tracing::trace!("awaiting to find ports");
-        let ports = self.await_find_fl_fr_ports(node_id, PortDirection::INPUT);
+        let ports = self.await_find_fl_fr_ports(node_id, PortDirection::Input);
 
         NodeWithPorts { id: node_id, ports }
     }
@@ -467,7 +467,7 @@ impl PipewireClient {
     }
 
     pub fn link_nodes(&self, from_id: u32, to_ports: Ports) {
-        let from_ports = self.find_fl_fr_ports(from_id, PortDirection::OUTPUT, true);
+        let from_ports = self.find_fl_fr_ports(from_id, PortDirection::Output, true);
 
         let ports = [from_ports.fl_port, from_ports.fr_port]
             .into_iter()
@@ -597,7 +597,7 @@ impl PipewireClient {
                         return;
                     };
 
-                    if port_info.direction != PortDirection::OUTPUT {
+                    if port_info.direction != PortDirection::Output {
                         return;
                     }
 

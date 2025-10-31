@@ -46,6 +46,7 @@ pub struct StopSettingsBuilder {
     signal_receiver: Option<CancellationSignal>,
 }
 
+#[allow(clippy::derivable_impls)]
 impl Default for StopSettingsBuilder {
     fn default() -> Self {
         Self {
