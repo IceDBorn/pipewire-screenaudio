@@ -2,6 +2,7 @@ use std::{
   env,
   error::Error,
   io::{stdin, stdout},
+  panic,
   path::PathBuf,
 };
 
@@ -16,6 +17,7 @@ mod monitor;
 use helpers::io;
 use tracing::{level_filters::LevelFilter, Level};
 use tracing_appender::rolling::RollingFileAppender;
+use tracing_panic::panic_hook;
 use tracing_subscriber::{fmt, layer::SubscriberExt, EnvFilter, Layer, Registry};
 
 use crate::{daemon::monitor_and_connect_nodes, dirs::get_runtime_path};
@@ -60,6 +62,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     );
 
   tracing::subscriber::set_global_default(subscriber).expect("unable to set global subscriber");
+
+  panic::set_hook(Box::new(panic_hook));
 
   match subcommand.as_deref() {
     Some("daemon") => {

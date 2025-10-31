@@ -12,6 +12,7 @@ thiserror.workspace = true
 tracing.workspace = true
 tracing-appender = "0.2.3"
 tracing-subscriber.workspace = true
+tracing-panic = { version = "0.1.2", features = ["capture-backtrace"] }
 
 [workspace]
 members = ["pipewire-utils"]
