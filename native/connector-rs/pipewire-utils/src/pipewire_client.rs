@@ -12,7 +12,7 @@ use pipewire::{
     keys,
     link::Link,
     main_loop::MainLoopRc,
-    node::{Node, NodeInfoRef},
+    node::{Node, NodeChangeMask, NodeInfoRef},
     properties::properties,
     proxy::ProxyT,
     registry::{GlobalObject, Listener, RegistryRc},
@@ -23,7 +23,7 @@ use tracing::instrument;
 
 use crate::{
     cancellation_signal::CancellationSignal,
-    monitor::NodeAndPortsRegistry,
+    monitor::{LinkTrackerHandle, NodeAndPortsRegistry},
     pipewire_objects::*,
     proxies::ProxyRefs,
     roundtrip::{Scheduler, StopSettings, StopSettingsBuilder},
@@ -463,7 +463,7 @@ impl PipewireClient {
     fn try_link_ports(&self, from: u32, to: u32) {
         match self.link_ports(from, to) {
             Err(err) => tracing::warn!("failed to link ports: {err}"),
-            Ok(link) => tracing::trace!(link_id = link.upcast().id(), "linked ports"),
+            Ok(_) => tracing::trace!("linked ports"),
         };
     }
 
@@ -494,9 +494,12 @@ impl PipewireClient {
         let scheduler = self.create_scheduler();
         let registry = self.core.get_registry_rc()?;
 
+        let links_by_port = Rc::new(RefCell::new(HashMap::new()));
+
         let mut node_and_ports_registry = NodeAndPortsRegistry::default();
-        node_and_ports_registry.set_relevant_port_callback({
+        node_and_ports_registry.set_relevant_port_added_callback({
             let client = self.clone();
+            let links_by_port = links_by_port.clone();
             move |port_info| {
                 let Some(channel) = port_info.channel else {
                     tracing::debug!(
@@ -507,7 +510,43 @@ impl PipewireClient {
                     return;
                 };
                 let target_port = target_ports.get_stereo_channel(&channel);
-                client.try_link_ports(port_info.id, target_port);
+                match client.link_ports(port_info.id, target_port) {
+                    Ok(link) => {
+                        if let Some(prev_handle) = links_by_port
+                            .borrow_mut()
+                            .insert(port_info.id, LinkTrackerHandle::new(link))
+                        {
+                            tracing::warn!(
+                                prev_id = prev_handle.id(),
+                                "linked twice without unlinking"
+                            );
+                        }
+                        tracing::debug!(source_port = port_info.id, target_port, "linked ports");
+                    }
+                    Err(err) => {
+                        tracing::warn!(?err, "error while trying to link ports");
+                    }
+                }
+            }
+        });
+        node_and_ports_registry.set_relevant_port_removed_callback({
+            let registry = registry.clone();
+            let links_by_port = links_by_port.clone();
+            move |port_info| {
+                let port_id = port_info.id;
+                tracing::debug!(port_id, "port is no longer relevant, unlinking");
+                let Some(link_handle) = links_by_port.borrow_mut().remove(&port_id) else {
+                    tracing::warn!(
+                        port_id,
+                        "trying to unlink port, but link is not being tracked"
+                    );
+                    return;
+                };
+                let Some(link_id) = link_handle.id() else {
+                    tracing::warn!(port_id, "link does not have a defined id");
+                    return;
+                };
+                registry.destroy_global(link_id);
             }
         });
 
@@ -516,27 +555,35 @@ impl PipewireClient {
             {
                 let node_and_ports_registry = node_and_ports_registry.clone();
                 move |node| {
-                    let Some(props) = node.props() else {
-                        return;
-                    };
-                    if props.get(*keys::MEDIA_CLASS) != Some("Stream/Output/Audio") {
-                        return;
-                    }
-                    if !media_name_filter(props.get(*keys::MEDIA_NAME)) {
-                        return;
-                    }
-
                     let node_id: u32 = node.id();
 
-                    tracing::trace!(node_id, "node created");
-                    node_and_ports_registry.add_relevant_node(node_id);
+                    if !node.change_mask().contains(NodeChangeMask::PROPS) {
+                        return;
+                    }
+
+                    let is_node_relevant = node.props().is_some_and(|props| {
+                        props.get(*keys::MEDIA_CLASS) == Some("Stream/Output/Audio")
+                            && media_name_filter(props.get(*keys::MEDIA_NAME))
+                    });
+
+                    tracing::trace!(node_id, is_node_relevant, "node props updated");
+                    let was_node_relevant = node_and_ports_registry.is_node_relevant(node_id);
+                    if was_node_relevant != is_node_relevant {
+                        if is_node_relevant {
+                            node_and_ports_registry.add_relevant_node(node_id);
+                        } else {
+                            node_and_ports_registry.try_remove_relevant_node(node_id);
+                        }
+                    } else {
+						tracing::trace!(node_id, "node relevancy has not changed");
+					}
                 }
             },
             {
                 let node_and_ports_registry = node_and_ports_registry.clone();
                 move |node_id| {
                     tracing::trace!(node_id, "node removed");
-                    node_and_ports_registry.remove_relevant_node(node_id);
+                    node_and_ports_registry.try_remove_relevant_node(node_id);
                 }
             },
             None,
