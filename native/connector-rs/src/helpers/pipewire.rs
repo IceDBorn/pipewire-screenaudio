@@ -187,7 +187,7 @@ pub fn create_virtual_source(node_name: &String) -> i64 { // TODO Result<i64,Str
   let result = Command::new("pw-cli")
     .arg("create-node")
     .arg("adapter")
-    .arg(format!("{{ factory.name=support.null-audio-sink node.name={} media.class=Audio/Source/Virtual object.linger=1 audio.position=[FL,FR] }}", node_name))
+    .arg(format!("{{ factory.name=support.null-audio-sink node.name={} node.description={} media.class=Audio/Source/Virtual object.linger=1 audio.position=[FL,FR] }}", node_name))
     .output();
 
   if result.is_err() {
