@@ -365,6 +365,7 @@ impl PipewireClient {
             &properties! {
                 *keys::FACTORY_NAME => "support.null-audio-sink",
                 *keys::NODE_NAME => node_name.as_ref(),
+				*keys::NODE_DESCRIPTION => node_name.as_ref(),
                 *keys::MEDIA_CLASS => "Audio/Source/Virtual",
                 "audio.position" => "[FL, FR]",
                 *keys::OBJECT_LINGER => "1",
