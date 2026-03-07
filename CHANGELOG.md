@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.3.4 - 2023-10-26
+
+![Father Gascoigne](https://s6.gifyu.com/images/S8sjU.gif)
+
+### Fixed
+
+- Flake installation
+- Enqueued actions causing the nodes loop to stop (#61) @jim3692
+- micId being "null" instead of null, causing errors
+- setSelectedNode(null) always failing (#70)
+- Nodes loop being stopped after sharing (#67)
+- Multiple additions of dropdown listeners (#68)
+- Crash when starting "All Desktop Audio" without nodes (#69) @alansartorio
+
 ## 0.3.3 - 2023-10-22
 
 ### Added

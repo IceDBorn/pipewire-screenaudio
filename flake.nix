@@ -2,51 +2,74 @@
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
   description = "The native part of the Pipewire Screenaudio extension";
 
-  outputs = {
-    self,
-    nixpkgs,
-  }: let
-    pkgsFor = nixpkgs.legacyPackages;
-    systems = ["aarch64-linux" "i686-linux" "x86_64-linux"];
-    forAllSystems = nixpkgs.lib.genAttrs systems;
-    mkDate = longDate:
-      with builtins; (concatStringsSep "-" [
-      (substring 0 4 longDate)
-      (substring 4 2 longDate)
-      (substring 6 2 longDate)
-      ]);
-  in {
-    packages = forAllSystems (system: {
-      default = with pkgsFor.${system};
-        stdenv.mkDerivation {
-          name = "pipewire-screenaudio";
-          version = mkDate (self.lastModifiedDate or "19700101") + "_" + (self.shortRev or "dirty");
+  outputs = { self, nixpkgs, }:
+    let
+      forAllSystems = nixpkgs.lib.genAttrs systems;
+      pkgsFor = nixpkgs.legacyPackages;
+      read = builtins.readFile;
+      systems = [ "aarch64-linux" "i686-linux" "x86_64-linux" ];
+      write = builtins.toFile;
 
-          src = self;
+      mkDate = longDate:
+        with builtins;
+        (concatStringsSep "-" [
+          (substring 0 4 longDate)
+          (substring 4 2 longDate)
+          (substring 6 2 longDate)
+        ]);
 
-          buildInputs = [
-            gawk
-            hexdump
-            jq
-            pipewire
-            psmisc
-          ];
+      firefoxJSON = write "firefox.json" (read native/native-messaging-hosts/firefox.json);
+      connectorPath = "lib/mozilla/native-messaging-hosts/com.icedborn.pipewirescreenaudioconnector.json";
+    in {
+      packages = forAllSystems (system: {
+        default = with pkgsFor.${system};
+          rustPlatform.buildRustPackage {
+            name = "pipewire-screenaudio";
+            version = mkDate (self.lastModifiedDate or "19700101") + "_"
+              + (self.shortRev or "dirty");
 
-          installPhase = ''
-            runHook preInstall
+            src = ./native/connector-rs;
+            nativeBuildInputs = [
+              pkg-config
+            ];
+            buildInputs = [
+              pipewire
+            ];
+            LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [
+              libclang
+            ];
+            BINDGEN_EXTRA_CLANG_ARGS = ''
+              -I${glibc.dev}/include
+            '';
+            cargoLock.lockFile = ./native/connector-rs/Cargo.lock;
 
-            mkdir -p $out/lib/out
-            install -Dm755 native/connector/pipewire-screen-audio-connector.sh $out/lib/connector/pipewire-screen-audio-connector.sh
-            install -Dm755 native/connector/virtmic.sh $out/lib/connector/virtmic.sh
-            install -Dm755 native/connector/connect-and-monitor.sh $out/lib/connector/connect-and-monitor.sh
-
-            # Firefox manifest
-            sed -i "s|/usr/lib/pipewire-screenaudio|$out/lib|g" native/native-messaging-hosts/firefox.json
-            install -Dm644 native/native-messaging-hosts/firefox.json $out/lib/mozilla/native-messaging-hosts/com.icedborn.pipewirescreenaudioconnector.json
-
-            runHook postInstall
-          '';
-        };
-    });
-  };
+            postInstall = ''
+              # Firefox manifest
+              install -Dm644 ${firefoxJSON} "$out/${connectorPath}"
+              substituteInPlace "$out/${connectorPath}" --replace "/usr/lib/pipewire-screenaudio/connector-rs/target/debug" "$out/bin"
+            '';
+          };
+      });
+      devShells = forAllSystems (
+        system: with pkgsFor.${system}; {
+          default = mkShell {
+            buildInputs = [
+              cargo
+              rustc
+              rust-analyzer
+              rustfmt
+              clippy
+              pkg-config
+              pipewire
+            ];
+            LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [
+              libclang
+            ];
+            BINDGEN_EXTRA_CLANG_ARGS = ''
+              -I${glibc.dev}/include
+            '';
+          };
+        }
+      );
+    };
 }
