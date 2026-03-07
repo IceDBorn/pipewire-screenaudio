@@ -4,7 +4,22 @@ version = "0.3.5"
 edition = "2021"
 
 [dependencies]
-env_logger = "0.11"
-fork = "0.1"
-log = "0.4"
 serde_json = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+pipewire-utils.path = "pipewire-utils"
+ctrlc.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+tracing-appender = "0.2.3"
+tracing-subscriber.workspace = true
+tracing-panic = { version = "0.1.2", features = ["capture-backtrace"] }
+
+[workspace]
+members = ["pipewire-utils"]
+resolver = "3"
+
+[workspace.dependencies]
+tracing = "0.1.41"
+thiserror = "2.0.17"
+ctrlc = "3.5.1"
+tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }

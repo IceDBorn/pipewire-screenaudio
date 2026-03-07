@@ -1,17 +1,23 @@
 #![allow(non_snake_case)]
 
 use std::env;
+use std::env::current_exe;
+use std::process::Command;
+use std::process::Stdio;
 use std::str;
 
-extern crate serde_json;
+use pipewire_utils::PipewireClient;
 use serde_json::{json, Value};
 
+use crate::daemon;
 use crate::helpers::io;
 use crate::helpers::parse_numeric_argument;
-use crate::helpers::pipewire;
+use crate::helpers::pipewire::OutputNode;
+use crate::ipc;
+use crate::ipc_request;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
-const VIRTMIC_NODE_NAME: &str = "pipewire-screenaudio";
+pub const VIRTMIC_NODE_NAME: &str = "pipewire-screenaudio";
 
 fn GetVersion(_: io::Payload) -> Result<Value, String> {
   Ok(json!({
@@ -22,7 +28,7 @@ fn GetVersion(_: io::Payload) -> Result<Value, String> {
 fn GetSessionType(_: io::Payload) -> Result<Value, String> {
   let session_type = match env::var_os("WAYLAND_DISPLAY") {
     Some(_) => "wayland",
-    None => "x11"
+    None => "x11",
   };
 
   Ok(json!({
@@ -31,53 +37,85 @@ fn GetSessionType(_: io::Payload) -> Result<Value, String> {
 }
 
 fn GetNodes(_: io::Payload) -> Result<Value, String> {
-  let nodes = pipewire::get_output_nodes();
-  Ok(Value::from(nodes))
+  let client = PipewireClient::new().unwrap();
+  let nodes: Vec<_> = client
+    .list_output_nodes()
+    .into_iter()
+    .map(OutputNode::from)
+    .collect();
+  Ok(serde_json::to_value(nodes).unwrap())
 }
 
-fn StartPipewireScreenAudio(payload: io::Payload) -> Result<Value, String> {
-  let micId = pipewire::create_virtual_source_if_not_exists(&VIRTMIC_NODE_NAME.to_string());
+fn StartPipewireScreenAudio(_: io::Payload) -> Result<Value, String> {
+  let mut daemon_process = Command::new(current_exe().unwrap())
+    .arg("daemon")
+    .stdout(Stdio::piped())
+    .stderr(Stdio::null())
+    .stdin(Stdio::null())
+    .spawn()
+    .unwrap();
+
+  let daemon_stdout = daemon_process.stdout.take().unwrap();
+
+  let mic_id = ipc_request::read_start_result(daemon_stdout);
+  drop(daemon_process);
 
   Ok(json!({
-    "micId": micId
+    "micId": mic_id?
   }))
 }
 
 fn SetSharingNode(payload: io::Payload) -> Result<Value, String> {
-  let micId = parse_numeric_argument(payload.arguments["micId"].clone());
   let node = parse_numeric_argument(payload.arguments["node"].clone());
-  pipewire::disconnect_node(micId);
 
-  match pipewire::get_node_id_from_serial(node) {
-    None => Ok(json!({
-      "success": false
-    })),
-    Some(v) => {
-      let result = pipewire::connect_nodes(v, micId);
-      Ok(json!({
-        "success": result
-      }))
-    }
-  }
+  let client = PipewireClient::new().unwrap();
+  tracing::debug!("node serial to connect: {node}");
+  let node = if node == -1 {
+    None
+  } else {
+    let Some(node) = client.get_node_id_from_object_serial(node) else {
+      return Ok(json!({
+        "success": false
+      }));
+    };
+    tracing::info!("node id to connect: {node}");
+    Some(node)
+  };
+
+  let pipe = ipc::connect().map_err(|err| err.to_string())?;
+  io::write(daemon::Command::SetSharingNode { node }, &pipe).unwrap();
+  let res: daemon::Response = io::read(&pipe).unwrap();
+
+  let daemon::Response::SetSharingNodeResult { success } = res else {
+    tracing::error!("invalid response for SetSharingNode, {res:?}");
+    return Err(format!("invalid response for SetSharingNode, {res:?}"));
+  };
+
+  Ok(json!({
+    "success": success
+  }))
 }
 
-fn IsPipewireScreenAudioRunning(payload: io::Payload) -> Result<Value, String> {
-  let is_running = pipewire::node_exists(
-    parse_numeric_argument(payload.arguments["micId"].clone()),
-    &VIRTMIC_NODE_NAME.to_string(),
-  );
-
+fn IsPipewireScreenAudioRunning(_payload: io::Payload) -> Result<Value, String> {
+  let is_running = ipc_request::is_daemon_running().is_ok_and(|running| running);
   Ok(json!({
     "isRunning": is_running
   }))
 }
 
-fn StopPipewireScreenAudio(payload: io::Payload) -> Result<Value, String> {
-  let micId = parse_numeric_argument(payload.arguments["micId"].clone());
-  let result = pipewire::destroy_node_if_exists(micId);
+fn StopPipewireScreenAudio(_payload: io::Payload) -> Result<Value, String> {
+  let success = ipc_request::stop_daemon().is_ok();
 
   Ok(json!({
-    "success": result
+    "success": success
+  }))
+}
+
+fn SetInstanceIdentifier(payload: io::Payload) -> Result<Value, String> {
+  let instance_identifier = payload.arguments.get("id").unwrap().as_str().unwrap();
+  let success = ipc_request::set_instance_identifier(instance_identifier).is_ok();
+  Ok(json!({
+    "success": success
   }))
 }
 
@@ -91,6 +129,7 @@ pub fn run(payload: io::Payload) -> Result<Value, String> {
     "SetSharingNode" => SetSharingNode(payload),
     "IsPipewireScreenAudioRunning" => IsPipewireScreenAudioRunning(payload),
     "StopPipewireScreenAudio" => StopPipewireScreenAudio(payload),
+    "SetInstanceIdentifier" => SetInstanceIdentifier(payload),
     _ => Err(format!("Unknown command: {}", payload.command)),
   }
 }
