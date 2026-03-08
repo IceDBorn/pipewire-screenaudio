@@ -55,12 +55,14 @@
           default = mkShell {
             buildInputs = [
               cargo
-              rustc
-              rust-analyzer
-              rustfmt
               clippy
-              pkg-config
+              nodejs
               pipewire
+              pkg-config
+              rust-analyzer
+              rustc
+              rustfmt
+              yarn
             ];
             LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [
               libclang
