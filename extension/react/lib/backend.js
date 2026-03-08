@@ -131,10 +131,3 @@ export function setSharingNode(nodeSerials) {
     maps: { inMap: [[MIC_ID, "micId"]] }, // Read the `micId` from LocalStorage and pass it as the `micId` arg
   });
 }
-
-export function shareAllDesktopAudio() {
-  enqueueCommandToBackground({
-    cmd: "ShareAllDesktopAudio",
-    maps: { inMap: [[MIC_ID, "micId"]] }, // Read the `micId` from LocalStorage and pass it as the `micId` arg
-  });
-}

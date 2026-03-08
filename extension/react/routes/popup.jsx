@@ -23,7 +23,6 @@ import {
   startPipewireScreenAudio,
   stopPipewireScreenAudio,
   setSharingNode,
-  shareAllDesktopAudio,
 } from "../lib/backend";
 
 import {
@@ -61,7 +60,7 @@ export default function Popup() {
 
   const debouncedShareAllDesktopAudio = useDebouncedCallback(() => {
     if (allDesktopAudio) {
-      shareAllDesktopAudio();
+      setSharingNode([-1]);
     } else {
       setSharingNode([]);
     }
@@ -144,7 +143,7 @@ export default function Popup() {
     if (!isRunning) {
       startPipewireScreenAudio();
       if (allDesktopAudio) {
-        shareAllDesktopAudio();
+        setSharingNode([-1]);
       } else {
         setSharingNode(getNodeSerialsToShare());
       }
