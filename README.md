@@ -78,23 +78,24 @@ bash install.sh
     bash native/connector/cli.sh GetNodes
     ```
     ```bash
-    bash native/connector/cli.sh SetSharingNode '{ "micId": 100, "node": 200 }'
+    bash native/connector/cli.sh SetSharingNode '{ "nodes": [ 10840 ] }'
+    ```
+    ```bash
+    # All desktop audio
+    bash native/connector/cli.sh SetSharingNode '{ "nodes": [ -1 ] }'
+    ```
+    ```bash
+    # Multiple nodes
+    bash native/connector/cli.sh SetSharingNode '{ "nodes": [ 10840, 10841 ] }'
     ```
   - **Environment:**
     ```bash
     DEBUG=1 # Set to enable verbose logging
     ```
-
-## Known Problems
-
-- You can't stream firefox WebRTC calls at all while using `All Desktop Audio`, they are excluded by default
-
 ### resistFingerprinting
 
 - privacy.resistFingerprinting (enabled by default in LibreWolf, arkenfox user.js, etc.) breaks the extension. Either disable the preference or add any domains you wish to use Pipewire Screenaudio with to `privacy.resistFingerprinting.exemptedDomains` in `about:config`
 
 ## Planned Features
 
-- Multiple nodes selection
-- More customization options (node matching, watcher behavior etc.)
 - Chromium support
