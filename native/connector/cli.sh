@@ -7,7 +7,10 @@ source $PROJECT_ROOT/connector/util.sh
 cmd=$1
 args=$2
 
-json="{ \"cmd\": \"$cmd\", \"args\": [$args] }"
+json="{ \"cmd\": \"$cmd\" }"
+if [[ -n "$args" ]]; then
+	json=$(echo $json | jq --arg args "$args" '. + { args: ($args | fromjson) }')
+fi
 
 echo $cmd $args $json >/dev/stderr
 
