@@ -35,54 +35,50 @@
 			return audioDevice;
 		};
 
-		const getDisplayMedia = async () => {
-			let micId;
+		const getDisplayMedia = async (constraints = {}) => {
+			// Keep the original constraints (video fps/resolution/etc) and only
+			// inject `pipewire-screenaudio` audio track when appropriate.
+			const originalGetDisplayMedia =
+				navigator.mediaDevices.chromiumGetDisplayMedia.bind(
+					navigator.mediaDevices,
+				);
 
+			// If caller doesn't request audio, or provided an explicit deviceId,
+			// forward constraints unchanged.
+			if (
+				!constraints.audio ||
+				(typeof constraints.audio === "object" &&
+					constraints.audio !== null &&
+					(constraints.audio.deviceId || constraints.audio.deviceId === 0))
+			) {
+				return await originalGetDisplayMedia(constraints);
+			}
+
+			let micId;
 			try {
 				micId = await getAudioDevice("pipewire-screenaudio").then(
 					({ deviceId }) => deviceId,
 				);
 			} catch {
-				return await navigator.mediaDevices.chromiumGetDisplayMedia({
-					video: true,
-					audio: false,
-				});
+				return await originalGetDisplayMedia(constraints);
 			}
 
 			const capturePipewireScreenaudioMic =
 				await navigator.mediaDevices.getUserMedia({
 					audio: {
-						deviceId: {
-							exact: micId,
-						},
-
-						// We want auto gain control, noise cancellation and noise suppression disabled so that our stream won't sound bad
+						deviceId: { exact: micId },
 						autoGainControl: false,
 						echoCancellation: false,
 						noiseSuppression: false,
-
-						// We can set more audio constraints here, bellow are some examples
-						// channelCount: 2,
-						// latency: 0,
-						// sampleRate: 48000,
-						// sampleSize: 16,
-						// volume: 1.0
 					},
 				});
 
 			const [track] = capturePipewireScreenaudioMic.getAudioTracks();
 
-			const displayMedia = await navigator.mediaDevices.chromiumGetDisplayMedia(
-				{
-					video: true,
-					audio: true,
-				},
-			);
-
+			const displayMedia = await originalGetDisplayMedia(constraints);
 			displayMedia.addTrack(track);
-			watchTitle();
 
-			// Trigger title change to append the identifier
+			watchTitle();
 			document.title = document.title;
 
 			// Send the node name to exclude for All Desktop Audio
@@ -98,7 +94,6 @@
 
 				// TODO: Add instance clearing native logic when implementing multiple instances
 				console.log("track ended");
-
 				clearInterval(trackWatcher);
 			}, 50);
 
