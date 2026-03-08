@@ -227,7 +227,6 @@ export default function Popup() {
 						/>
 						<Button
 							sx={{
-								marginBottom: 1,
 								minWidth: 75,
 								marginLeft: 'auto',
 							}}
