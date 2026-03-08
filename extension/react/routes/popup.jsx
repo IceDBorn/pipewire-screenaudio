@@ -1,15 +1,16 @@
-// TODO: Create settings UI
 // TODO: Add nodes sorting
 import React, { useEffect, useState } from "react";
 
+import Alert from "@mui/material/Alert";
 import AppBar from "@mui/material/AppBar";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import Grid from "@mui/material/Grid";
+import Paper from "@mui/material/Paper";
+import Switch from "@mui/material/Switch";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
-import Button from "@mui/material/Button";
-import Alert from "@mui/material/Alert";
-import Paper from "@mui/material/Paper";
-import FormControlLabel from "@mui/material/FormControlLabel";
-import Switch from "@mui/material/Switch";
 
 import { useDebouncedCallback } from "use-debounce";
 
@@ -152,11 +153,6 @@ export default function Popup() {
     }
   }
 
-  function openSettingsPage() {
-    window.open(window.location.href + "?page=settings");
-    window.close();
-  }
-
   return (
     isInitialized && (
       <>
@@ -165,9 +161,6 @@ export default function Popup() {
             <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
               Pipewire Screenaudio
             </Typography>
-            <Button color="inherit" onClick={openSettingsPage}>
-              Settings
-            </Button>
           </Toolbar>
         </AppBar>
         {(isRunning || !isHealthy) && (
@@ -209,58 +202,43 @@ export default function Popup() {
             allDesktopAudio={allDesktopAudio}
           />
         )}
-        <Paper sx={{ maxWidth: 500, borderRadius: "0" }}>
-          <FormControlLabel
-            control={
-              <Switch
-                onChange={() => {
-                  const currentAllDesktopAudio = !allDesktopAudio;
-                  setAllDesktopAudio(currentAllDesktopAudio);
-                  updateLocalStorage(ALL_DESKTOP, currentAllDesktopAudio);
+        <Paper sx={{ maxWidth: 500, borderRadius: "0", padding: 1 }}>
+					<Grid container justify="space-between">
+						<FormControlLabel
+							control={
+								<Switch
+									onChange={() => {
+										const currentAllDesktopAudio = !allDesktopAudio;
+										setAllDesktopAudio(currentAllDesktopAudio);
+										updateLocalStorage(ALL_DESKTOP, currentAllDesktopAudio);
 
-                  if (currentAllDesktopAudio) {
-                    debouncedShareAllDesktopAudio();
-                  } else {
-                    shareNodes(nodes, currentAllDesktopAudio);
-                  }
-                }}
-              />
-            }
-            sx={{ marginLeft: 1, marginTop: -1 }}
-            label="All Desktop Audio"
-            checked={allDesktopAudio}
-            disabled={!isHealthy}
-          />
-          <Button
-            sx={{
-              marginBottom: 1,
-              minWidth: 75,
-              marginLeft: 13,
-            }}
-            variant="contained"
-            color={isRunning ? "error" : "success"}
-            onClick={handleStartStop}
-            disabled={!isHealthy}
-          >
-            {isRunning ? "Stop" : "Start"}
-          </Button>
-          <Button
-            sx={{
-              marginLeft: "1rem",
-              marginBottom: 1,
-              minWidth: 75,
-            }}
-            variant="contained"
-            color="error"
-            disabled={
-              isRunning ||
-              !nodes.some((node) => node.checked) ||
-              !isHealthy ||
-              allDesktopAudio
-            }
-          >
-            Hide
-          </Button>
+										if (currentAllDesktopAudio) {
+											debouncedShareAllDesktopAudio();
+										} else {
+											shareNodes(nodes, currentAllDesktopAudio);
+										}
+									}}
+								/>
+							}
+							sx={{ marginLeft: 1, marginTop: -1 }}
+							label="All Desktop Audio"
+							checked={allDesktopAudio}
+							disabled={!isHealthy}
+						/>
+						<Button
+							sx={{
+								marginBottom: 1,
+								minWidth: 75,
+								marginLeft: 'auto',
+							}}
+							variant="contained"
+							color={isRunning ? "error" : "success"}
+							onClick={handleStartStop}
+							disabled={!isHealthy}
+						>
+							{isRunning ? "Stop" : "Start"}
+						</Button>
+					</Grid>
         </Paper>
       </>
     )

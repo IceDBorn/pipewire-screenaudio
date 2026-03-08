@@ -14,7 +14,6 @@ import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 
 import Popup from "./routes/popup";
-import Settings from "./routes/settings";
 
 const darkTheme = createTheme({
   palette: {
@@ -35,10 +34,6 @@ function PageWrapper() {
 
   if (!search.has("page")) {
     return <Popup />;
-  }
-
-  if (search.get("page") === "settings") {
-    return <Settings />;
   }
 }
 
