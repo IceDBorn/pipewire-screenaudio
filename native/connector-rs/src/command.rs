@@ -66,24 +66,49 @@ fn StartPipewireScreenAudio(_: io::Payload) -> Result<Value, String> {
 }
 
 fn SetSharingNode(payload: io::Payload) -> Result<Value, String> {
-  let node = parse_numeric_argument(payload.arguments["node"].clone());
+  let nodes_arg = payload.arguments.get("nodes");
 
-  let client = PipewireClient::new().unwrap();
-  tracing::debug!("node serial to connect: {node}");
-  let node = if node == -1 {
-    None
+	let mut isAllDesktop = false;
+
+  let nodes = if let Some(nodes_value) = nodes_arg {
+    match nodes_value {
+      Value::Array(arr) => {
+        let mut node_ids = Vec::new();
+        let client = PipewireClient::new().unwrap();
+
+        for node_value in arr {
+					if node_value == -1 {
+						// If any node is -1, treat as AllDesktop (None)
+						node_ids.clear();
+						isAllDesktop = true;
+						break;
+					}
+
+          let node_serial = parse_numeric_argument(node_value.clone());
+          tracing::debug!("node serial to connect: {node_serial}");
+
+          let Some(node_id) = client.get_node_id_from_object_serial(node_serial) else {
+            return Ok(json!({
+              "success": false
+            }));
+          };
+          tracing::info!("node id to connect: {node_id}");
+          node_ids.push(node_id);
+        }
+
+        Some(node_ids)
+      }
+      _ => {
+        return Err("nodes argument must be an array".to_string());
+      }
+    }
   } else {
-    let Some(node) = client.get_node_id_from_object_serial(node) else {
-      return Ok(json!({
-        "success": false
-      }));
-    };
-    tracing::info!("node id to connect: {node}");
-    Some(node)
+    return Err("nodes argument must be an array".to_string());
   };
 
   let pipe = ipc::connect().map_err(|err| err.to_string())?;
-  io::write(daemon::Command::SetSharingNode { node }, &pipe).unwrap();
+	let nodes = if isAllDesktop { None } else { nodes };
+  io::write(daemon::Command::SetSharingNode { nodes }, &pipe).unwrap();
   let res: daemon::Response = io::read(&pipe).unwrap();
 
   let daemon::Response::SetSharingNodeResult { success } = res else {

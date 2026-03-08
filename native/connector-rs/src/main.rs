@@ -78,8 +78,15 @@ fn main() -> Result<(), Box<dyn Error>> {
     Some(_) | None => {
       let payload = io::read(stdin()).unwrap();
       tracing::info!(payload = format!("{payload:?}"), "running connector");
-      let result = command::run(payload).unwrap();
-      let _ = io::write(result, stdout());
+      match command::run(payload) {
+        Ok(result) => {
+          let _ = io::write(result, stdout());
+        }
+        Err(err) => {
+          tracing::error!("command error: {}", err);
+          let _ = io::write(err, stdout());
+        }
+      }
     }
   }
 
