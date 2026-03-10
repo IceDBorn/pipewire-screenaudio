@@ -36,3 +36,6 @@
 
 # Node deps
 /node_modules
+
+/result
+/pipewire-screenaudio.zip
