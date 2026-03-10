@@ -16,6 +16,7 @@ mod ipc_request;
 mod monitor;
 
 use helpers::io;
+use serde_json::json;
 use tracing::{level_filters::LevelFilter, Level};
 use tracing_appender::rolling::RollingFileAppender;
 use tracing_panic::panic_hook;
@@ -80,11 +81,23 @@ fn main() -> Result<(), Box<dyn Error>> {
       tracing::info!(payload = format!("{payload:?}"), "running connector");
       match command::run(payload) {
         Ok(result) => {
-          let _ = io::write(result, stdout());
+          let _ = io::write(
+            json!({
+              "success": true,
+              "response": result,
+            }),
+            stdout(),
+          );
         }
         Err(err) => {
           tracing::error!("command error: {}", err);
-          let _ = io::write(err, stdout());
+          let _ = io::write(
+            json!({
+              "success": false,
+              "errorMessage": err,
+            }),
+            stdout(),
+          );
         }
       }
     }

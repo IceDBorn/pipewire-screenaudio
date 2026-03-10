@@ -179,6 +179,7 @@ pub fn monitor_and_connect_nodes() -> Result<(), Error> {
 
   for stream in pipe.incoming() {
     if !KEEP_RUNNING.load(Ordering::Relaxed) {
+      tracing::warn!("stopping daemon");
       break;
     }
     let Ok(stream) = stream else {

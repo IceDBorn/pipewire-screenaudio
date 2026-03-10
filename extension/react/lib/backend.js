@@ -17,17 +17,16 @@ function enqueueCommandToBackground(command) {
 async function sendNativeMessage(command, args) {
   console.log("Sent native message", { command, args });
 
-  try {
-    return await chrome.runtime.sendNativeMessage(MESSAGE_NAME, {
-      cmd: command,
-      args: args,
-    });
-  } catch (err) {
-    console.error(
-      `Failed native "${command}" with args: ${JSON.stringify(args)}`,
+  const response = await chrome.runtime.sendNativeMessage(MESSAGE_NAME, {
+    cmd: command,
+    args: args,
+  });
+  if (!response.success) {
+    throw new Error(
+      `unsuccessful message response during call to ${command} with arguments ${JSON.stringify(args)}: ${response.errorMessage}`,
     );
-    throw err;
   }
+  return response.response;
 }
 
 async function sendMessage(message, command) {
@@ -98,7 +97,7 @@ export async function healthCheck() {
 }
 
 export async function getNodes() {
-  return sendNativeMessage("GetNodes");
+  return await sendNativeMessage("GetNodes");
 }
 
 export async function isPipewireScreenAudioRunning(micId) {

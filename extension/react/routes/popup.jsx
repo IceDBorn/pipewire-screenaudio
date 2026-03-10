@@ -72,7 +72,9 @@ function useNodeSelectionState(nodes) {
     let newNodeSelection;
     if (serials === null) {
       const turnOn = !nodes.every((node) => nodeSelection.has(node.serial));
-      newNodeSelection = new Set(turnOn ? nodes.map((node) => node.serial) : []);
+      newNodeSelection = new Set(
+        turnOn ? nodes.map((node) => node.serial) : [],
+      );
     } else {
       newNodeSelection = new Set(nodeSelection);
       for (const serial of serials) {
@@ -138,19 +140,33 @@ export default function Popup() {
 
       let previousNodes = null;
       const nodesReceive = () =>
-        getNodes().then((n) => {
-          const currentNodesStr = n.toString();
-          if (currentNodesStr === previousNodes) return;
-          previousNodes = currentNodesStr;
-          setNodes(n.map(mapNode));
-        });
+        getNodes().then(
+          (n) => {
+            const currentNodesStr = n.toString();
+            if (currentNodesStr === previousNodes) return;
+            previousNodes = currentNodesStr;
+            setNodes(n.map(mapNode));
+          },
+          (err) => {
+            console.error("unhandled error:", err);
+            setIsHealthy(false);
+            setIsInitialized(true);
+          },
+        );
       nodesReceive();
       nodesInterval = setInterval(nodesReceive, 2000);
 
       if (micId) {
-        const res = await isPipewireScreenAudioRunning(micId);
-        console.log({ res, micId });
-        setIsRunning(res);
+        try {
+          const res = await isPipewireScreenAudioRunning(micId);
+          console.log({ res, micId });
+          setIsRunning(res);
+        } catch {
+          console.error("unhandled error:", err);
+          setIsHealthy(false);
+          setIsInitialized(true);
+          return;
+        }
       }
 
       setAllDesktopAudio(readLocalStorage(ALL_DESKTOP));

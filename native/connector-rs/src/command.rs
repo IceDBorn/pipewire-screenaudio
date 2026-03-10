@@ -89,11 +89,9 @@ fn SetSharingNode(payload: io::Payload) -> Result<Value, String> {
       let node_serial = parse_numeric_argument(node_value.clone());
       tracing::debug!("node serial to connect: {node_serial}");
 
-      let Some(node_id) = client.get_node_id_from_object_serial(node_serial) else {
-        return Ok(json!({
-          "success": false
-        }));
-      };
+      let node_id = client
+        .get_node_id_from_object_serial(node_serial)
+        .ok_or_else(|| format!("failed to obtain node id for node with serial {node_serial}"))?;
       tracing::info!("node id to connect: {node_id}");
       node_ids.push(node_id);
     }
@@ -111,9 +109,11 @@ fn SetSharingNode(payload: io::Payload) -> Result<Value, String> {
     return Err(format!("invalid response for SetSharingNode, {res:?}"));
   };
 
-  Ok(json!({
-    "success": success
-  }))
+  if !success {
+	  return Err("unable to set sharing node".to_string());
+  }
+
+  Ok(json!({}))
 }
 
 fn IsPipewireScreenAudioRunning(_payload: io::Payload) -> Result<Value, String> {
@@ -124,19 +124,15 @@ fn IsPipewireScreenAudioRunning(_payload: io::Payload) -> Result<Value, String> 
 }
 
 fn StopPipewireScreenAudio(_payload: io::Payload) -> Result<Value, String> {
-  let success = ipc_request::stop_daemon().is_ok();
+  ipc_request::stop_daemon()?;
 
-  Ok(json!({
-    "success": success
-  }))
+  Ok(json!({}))
 }
 
 fn SetInstanceIdentifier(payload: io::Payload) -> Result<Value, String> {
   let instance_identifier = payload.arguments.get("id").unwrap().as_str().unwrap();
-  let success = ipc_request::set_instance_identifier(instance_identifier).is_ok();
-  Ok(json!({
-    "success": success
-  }))
+  ipc_request::set_instance_identifier(instance_identifier)?;
+  Ok(json!({}))
 }
 
 pub fn run(payload: io::Payload) -> Result<Value, String> {
