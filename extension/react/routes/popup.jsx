@@ -70,55 +70,69 @@ export default function Popup() {
   const getNodeSerialsToShare = () =>
     nodes?.filter((node) => node.checked).map((node) => node.serial);
 
-  useEffect(async () => {
-    try {
-      const health = await healthCheck();
-      setIsHealthy(health);
-    } catch (err) {
-      if (err.message === ERROR_VERSION_MISMATCH) {
-        setNativeVersion(err.cause.nativeVersion);
-        setExtensionVersion(err.cause.extensionVersion);
+  useEffect(() => {
+    let nodesInterval = null;
+    let micIdUpdatedEventListener = null;
+    let micIdRemovedEventListener = null;
+
+    let func = async () => {
+      try {
+        const health = await healthCheck();
+        setIsHealthy(health);
+      } catch (err) {
+        if (err.message === ERROR_VERSION_MISMATCH) {
+          setNativeVersion(err.cause.nativeVersion);
+          setExtensionVersion(err.cause.extensionVersion);
+        }
+
+        setIsHealthy(false);
+        setIsInitialized(true);
+        return;
       }
 
-      setIsHealthy(false);
+      let previousNodes = null;
+      const nodesReceive = () =>
+        getNodes().then((n) => {
+          const currentNodesStr = n.toString();
+          if (currentNodesStr === previousNodes) return;
+          previousNodes = currentNodesStr;
+          setNodes(n.map(mapNode));
+        });
+      nodesReceive();
+      nodesInterval = setInterval(nodesReceive, 2000);
+
+      if (micId) {
+        const res = await isPipewireScreenAudioRunning(micId);
+        console.log({ res, micId });
+        setIsRunning(res);
+      }
+
+      setAllDesktopAudio(readLocalStorage(ALL_DESKTOP));
+
+      micIdUpdatedEventListener = document.addEventListener(
+        EVENT_MIC_ID_UPDATED,
+        handleMicIdUpdated,
+      );
+      micIdRemovedEventListener = document.addEventListener(
+        EVENT_MIC_ID_REMOVED,
+        handleMicIdRemoved,
+      );
+
       setIsInitialized(true);
-      return;
-    }
+    };
 
-    let previousNodes = null;
-    const nodesReceive = () =>
-      getNodes().then((n) => {
-        const currentNodesStr = n.toString();
-        if (currentNodesStr === previousNodes) return;
-        previousNodes = currentNodesStr;
-        setNodes(n.map(mapNode));
-      });
-    nodesReceive();
-    const nodesInterval = setInterval(nodesReceive, 2000);
-
-    if (micId) {
-      const res = await isPipewireScreenAudioRunning(micId);
-      console.log({ res, micId });
-      setIsRunning(res);
-    }
-
-    setAllDesktopAudio(readLocalStorage(ALL_DESKTOP));
-
-    const micIdUpdatedEventListener = document.addEventListener(
-      EVENT_MIC_ID_UPDATED,
-      handleMicIdUpdated,
-    );
-    const micIdRemovedEventListener = document.addEventListener(
-      EVENT_MIC_ID_REMOVED,
-      handleMicIdRemoved,
-    );
-
-    setIsInitialized(true);
+    func();
 
     return () => {
-      clearInterval(nodesInterval);
-      document.removeEventListener(micIdUpdatedEventListener);
-      document.removeEventListener(micIdRemovedEventListener);
+      if (nodesInterval !== null) {
+        clearInterval(nodesInterval);
+      }
+      if (micIdUpdatedEventListener !== null) {
+        document.removeEventListener(micIdUpdatedEventListener);
+      }
+      if (micIdRemovedEventListener !== null) {
+        document.removeEventListener(micIdRemovedEventListener);
+      }
     };
   }, []);
 
