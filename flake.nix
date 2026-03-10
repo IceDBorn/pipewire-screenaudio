@@ -2,15 +2,21 @@
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
   description = "The native part of the Pipewire Screenaudio extension";
 
-  outputs = { self, nixpkgs, }:
+  outputs =
+    { self, nixpkgs }:
     let
       forAllSystems = nixpkgs.lib.genAttrs systems;
       pkgsFor = nixpkgs.legacyPackages;
       read = builtins.readFile;
-      systems = [ "aarch64-linux" "i686-linux" "x86_64-linux" ];
+      systems = [
+        "aarch64-linux"
+        "i686-linux"
+        "x86_64-linux"
+      ];
       write = builtins.toFile;
 
-      mkDate = longDate:
+      mkDate =
+        longDate:
         with builtins;
         (concatStringsSep "-" [
           (substring 0 4 longDate)
@@ -20,47 +26,109 @@
 
       firefoxJSON = write "firefox.json" (read native/native-messaging-hosts/firefox.json);
       connectorPath = "lib/mozilla/native-messaging-hosts/com.icedborn.pipewirescreenaudioconnector.json";
-    in {
-      packages = forAllSystems (system: {
-        default = with pkgsFor.${system};
-          rustPlatform.buildRustPackage {
-            name = "pipewire-screenaudio";
-            version = mkDate (self.lastModifiedDate or "19700101") + "_"
-              + (self.shortRev or "dirty");
+    in
+    {
+      packages = forAllSystems (
+        system:
+        let
+          pkgs = pkgsFor.${system};
+          fs = pkgs.lib.fileset;
+        in
+        rec {
+          default =
+            with pkgs;
+            rustPlatform.buildRustPackage {
+              name = "pipewire-screenaudio";
+              version = mkDate (self.lastModifiedDate or "19700101") + "_" + (self.shortRev or "dirty");
 
-            src = ./native/connector-rs;
-            nativeBuildInputs = [
-              pkg-config
-            ];
-            buildInputs = [
-              pipewire
-            ];
-            LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [
-              libclang
-            ];
-            BINDGEN_EXTRA_CLANG_ARGS = ''
-              -I${glibc.dev}/include
-            '';
-            cargoLock.lockFile = ./native/connector-rs/Cargo.lock;
+              src = ./native/connector-rs;
+              nativeBuildInputs = [
+                pkg-config
+              ];
+              buildInputs = [
+                pipewire
+              ];
+              LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [
+                libclang
+              ];
+              BINDGEN_EXTRA_CLANG_ARGS = ''
+                -I${glibc.dev}/include
+              '';
+              cargoLock.lockFile = ./native/connector-rs/Cargo.lock;
 
-            postInstall = ''
-              # Firefox manifest
-              install -Dm644 ${firefoxJSON} "$out/${connectorPath}"
-              substituteInPlace "$out/${connectorPath}" --replace "/usr/lib/pipewire-screenaudio/connector-rs/target/debug" "$out/bin"
+              postInstall = ''
+                # Firefox manifest
+                install -Dm644 ${firefoxJSON} "$out/${connectorPath}"
+                substituteInPlace "$out/${connectorPath}" --replace "/usr/lib/pipewire-screenaudio/connector-rs/target/debug" "$out/bin"
+              '';
+            };
+          extension-react = pkgs.stdenvNoCC.mkDerivation (finalAttrs: {
+            pname = "pipewire-screenaudio-extension-react";
+            version = "0.4.0";
+
+            src = fs.toSource {
+              root = ./.;
+              fileset = fs.unions [
+                ./yarn.lock
+                ./package.json
+                ./extension/react
+              ];
+            };
+
+            yarnOfflineCache = pkgs.fetchYarnDeps {
+              yarnLock = finalAttrs.src + "/yarn.lock";
+              hash = "sha256-Z/4lmw+AiiQycsppLna+Y2uFKd+5RTAUjILQVqN5mOM=";
+            };
+
+            nativeBuildInputs = with pkgs; [
+              yarnConfigHook
+              yarnBuildHook
+              # Needed for executing package.json scripts
+              nodejs
+            ];
+            installPhase = ''
+              cp -r extension/react/dist $out/
             '';
-          };
-      });
+          });
+          extension =
+            pkgs.runCommand "pipewire-screenaudio-extension"
+              {
+                src = fs.toSource {
+                  root = ./extension;
+                  fileset = fs.difference ./extension (
+                    fs.fileFilter (file: file.name == ".prettierrc.yml") ./extension
+                  );
+                };
+                nativeBuildInputs = with pkgs; [
+                  zip
+                ];
+              }
+              ''
+                mkdir -p release
+
+                mkdir -p release/react
+                ln -s ${extension-react} release/react/dist
+
+                cp -r $src/scripts $src/assets $src/manifest.json release/
+
+                cd release
+                zip -r - . > $out
+              '';
+        }
+      );
       devShells = forAllSystems (
         system: with pkgsFor.${system}; {
           default = mkShell {
             buildInputs = [
               cargo
-              rustc
-              rust-analyzer
-              rustfmt
               clippy
-              pkg-config
+              nodejs
               pipewire
+              pkg-config
+              rust-analyzer
+              rustc
+              rustfmt
+              yarn
             ];
             LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [
               libclang

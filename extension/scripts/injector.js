@@ -23,8 +23,6 @@ function injectCode(src) {
 	nullthrows(document.head || document.documentElement).appendChild(script);
 }
 
-injectCode(chrome.runtime.getURL("/scripts/index.js"));
-
 window.addEventListener("message", ({ data }) => {
 	if (data.message === "instance-identifier") {
 		chrome.runtime.sendMessage({
@@ -34,3 +32,5 @@ window.addEventListener("message", ({ data }) => {
 		});
 	}
 });
+
+injectCode(chrome.runtime.getURL("/scripts/override-gdm.js"));

@@ -3,11 +3,17 @@
 let commandsQueue = [];
 let commandsQueueRunning = false;
 
-function sendNativeMessage(messageName, cmd, args) {
-	return chrome.runtime.sendNativeMessage(messageName, {
+async function sendNativeMessage(messageName, cmd, args) {
+	const response = await chrome.runtime.sendNativeMessage(messageName, {
 		cmd,
-		args: args ? [args] : undefined,
+		args,
 	});
+	if (!response.success) {
+		throw new Error(
+			`unsuccessful message response during call to ${cmd} with arguments ${JSON.stringify(args)}: ${response.errorMessage}`,
+		);
+	}
+	return response.response;
 }
 
 async function runQueuedCommands() {
@@ -72,7 +78,9 @@ function handleMessage(request) {
 	}
 
 	if (request.message === "instance-identifier") {
-		return sendNativeMessage(request.messageName, "SetInstanceIdentifier", { id: request.instanceIdentifier });
+		return sendNativeMessage(request.messageName, "SetInstanceIdentifier", {
+			id: request.instanceIdentifier,
+		});
 	}
 }
 

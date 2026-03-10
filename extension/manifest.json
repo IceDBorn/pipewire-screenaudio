@@ -1,8 +1,7 @@
 {
-
   "manifest_version": 3,
   "name": "Pipewire Screenaudio",
-  "version": "0.3.4",
+  "version": "0.4.0",
 
   "description": "Passthrough pipewire audio to WebRTC screenshare",
 
@@ -13,7 +12,7 @@
   },
 
   "action": {
-    "default_popup": "assets/web/html/popup.html"
+    "default_popup": "react/dist/index.html"
   },
 
   "icons": {
@@ -36,15 +35,12 @@
     "scripts": ["scripts/background.js"]
   },
 
-  "permissions": [
-    "nativeMessaging"
-  ],
+  "permissions": ["nativeMessaging"],
 
   "web_accessible_resources": [
     {
       "matches": ["<all_urls>"],
-      "resources": [ "scripts/index.js" ]
+      "resources": ["scripts/override-gdm.js"]
     }
   ]
-
 }

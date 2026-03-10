@@ -3,7 +3,5 @@
   "description": "Connector to communicate with the browser",
   "path": "/usr/lib/pipewire-screenaudio/connector-rs/target/debug/connector-rs",
   "type": "stdio",
-  "allowed_extensions": [
-    "pipewire-screenaudio@icenjim"
-  ]
+  "allowed_extensions": ["pipewire-screenaudio@icenjim"]
 }

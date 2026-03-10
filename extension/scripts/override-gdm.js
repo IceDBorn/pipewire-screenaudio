@@ -1,6 +1,5 @@
 (() => {
 	let sessionType = null;
-	let titleWatcher = null;
 
 	const instanceIdentifier = `pipewire-screenaudio-${createRandomString(16)}`;
 
@@ -35,54 +34,50 @@
 			return audioDevice;
 		};
 
-		const getDisplayMedia = async () => {
-			let micId;
+		const getDisplayMedia = async (constraints = {}) => {
+			// Keep the original constraints (video fps/resolution/etc) and only
+			// inject `pipewire-screenaudio` audio track when appropriate.
+			const originalGetDisplayMedia =
+				navigator.mediaDevices.chromiumGetDisplayMedia.bind(
+					navigator.mediaDevices,
+				);
 
+			// If caller doesn't request audio, or provided an explicit deviceId,
+			// forward constraints unchanged.
+			if (
+				!constraints.audio ||
+				(typeof constraints.audio === "object" &&
+					constraints.audio !== null &&
+					(constraints.audio.deviceId || constraints.audio.deviceId === 0))
+			) {
+				return await originalGetDisplayMedia(constraints);
+			}
+
+			let micId;
 			try {
 				micId = await getAudioDevice("pipewire-screenaudio").then(
 					({ deviceId }) => deviceId,
 				);
 			} catch {
-				return await navigator.mediaDevices.chromiumGetDisplayMedia({
-					video: true,
-					audio: false,
-				});
+				return await originalGetDisplayMedia(constraints);
 			}
 
 			const capturePipewireScreenaudioMic =
 				await navigator.mediaDevices.getUserMedia({
 					audio: {
-						deviceId: {
-							exact: micId,
-						},
-
-						// We want auto gain control, noise cancellation and noise suppression disabled so that our stream won't sound bad
+						deviceId: { exact: micId },
 						autoGainControl: false,
 						echoCancellation: false,
 						noiseSuppression: false,
-
-						// We can set more audio constraints here, bellow are some examples
-						// channelCount: 2,
-						// latency: 0,
-						// sampleRate: 48000,
-						// sampleSize: 16,
-						// volume: 1.0
 					},
 				});
 
 			const [track] = capturePipewireScreenaudioMic.getAudioTracks();
 
-			const displayMedia = await navigator.mediaDevices.chromiumGetDisplayMedia(
-				{
-					video: true,
-					audio: true,
-				},
-			);
-
+			const displayMedia = await originalGetDisplayMedia(constraints);
 			displayMedia.addTrack(track);
-			watchTitle();
 
-			// Trigger title change to append the identifier
+			const stopWatchTitle = watchTitle();
 			document.title = document.title;
 
 			// Send the node name to exclude for All Desktop Audio
@@ -98,7 +93,11 @@
 
 				// TODO: Add instance clearing native logic when implementing multiple instances
 				console.log("track ended");
-
+				try {
+					stopWatchTitle();
+				} catch (e) {
+					console.error("error while stop watching title", e);
+				}
 				clearInterval(trackWatcher);
 			}, 50);
 
@@ -110,12 +109,10 @@
 
 	// Watch the title element for changes and append our identifier if missing
 	function watchTitle() {
-		if (titleWatcher) return;
-
 		const titleEl = document.querySelector("title");
 		if (!titleEl) return;
 
-		titleWatcher = new MutationObserver((mutations) => {
+		const titleWatcher = new MutationObserver((mutations) => {
 			for (const mut of mutations) {
 				if (["childList", "characterData"].includes(mut.type)) {
 					if (document.title.includes(instanceIdentifier)) break;
@@ -130,6 +127,8 @@
 			characterData: true,
 			subtree: true,
 		});
+
+		return () => titleWatcher.disconnect();
 	}
 
 	overrideGetDisplayMedia();

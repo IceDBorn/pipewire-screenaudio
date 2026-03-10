@@ -31,7 +31,7 @@ pub enum Error {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "cmd")]
 pub enum Command {
-  SetSharingNode { node: Option<u32> },
+  SetSharingNode { nodes: Option<Vec<u32>> },
   SetInstanceIdentifier { instance_identifier: String },
   Ping,
   Stop,
@@ -56,7 +56,7 @@ pub enum Response {
 static KEEP_RUNNING: AtomicBool = AtomicBool::new(true);
 
 enum SharingNodeState {
-  Id(u32),
+  Ids(Vec<u32>),
   AllDesktop,
   NotSharing,
 }
@@ -71,9 +71,11 @@ impl DaemonState {
   fn reshare(&mut self, virtual_node: &NodeWithPorts, pipewire_client: &PipewireClient) -> bool {
     let _ = self.running_thread.take();
     pipewire_client.unlink_node_ports(virtual_node.ports);
-    let success = match self.sharing_node_state {
-      SharingNodeState::Id(node_id) => {
-        pipewire_client.link_nodes(node_id, virtual_node.ports);
+    let success = match &self.sharing_node_state {
+      SharingNodeState::Ids(node_ids) => {
+        for node_id in node_ids {
+          pipewire_client.link_nodes(*node_id, virtual_node.ports);
+        }
         true
       }
       SharingNodeState::AllDesktop => {
@@ -113,9 +115,9 @@ fn handle_client(
   tracing::info!("input: {:?}", command);
 
   match command {
-    Command::SetSharingNode { node } => {
-      state.sharing_node_state = match node {
-        Some(node_id) => SharingNodeState::Id(node_id),
+    Command::SetSharingNode { nodes } => {
+      state.sharing_node_state = match nodes {
+        Some(node_ids) => SharingNodeState::Ids(node_ids),
         None => SharingNodeState::AllDesktop,
       };
       let success = state.reshare(virtual_node, pipewire_client);
@@ -177,6 +179,7 @@ pub fn monitor_and_connect_nodes() -> Result<(), Error> {
 
   for stream in pipe.incoming() {
     if !KEEP_RUNNING.load(Ordering::Relaxed) {
+      tracing::warn!("stopping daemon");
       break;
     }
     let Ok(stream) = stream else {
