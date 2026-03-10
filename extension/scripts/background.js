@@ -4,9 +4,14 @@ let commandsQueue = [];
 let commandsQueueRunning = false;
 
 async function sendNativeMessage(messageName, cmd, args) {
-	const response = await chrome.runtime.sendNativeMessage(messageName, { cmd, args });
+	const response = await chrome.runtime.sendNativeMessage(messageName, {
+		cmd,
+		args,
+	});
 	if (!response.success) {
-		throw new Error(`unsuccessful message response during call to ${cmd} with arguments ${JSON.stringify(args)}: ${response.errorMessage}`);
+		throw new Error(
+			`unsuccessful message response during call to ${cmd} with arguments ${JSON.stringify(args)}: ${response.errorMessage}`,
+		);
 	}
 	return response.response;
 }

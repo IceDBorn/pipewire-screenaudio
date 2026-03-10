@@ -110,7 +110,7 @@ fn SetSharingNode(payload: io::Payload) -> Result<Value, String> {
   };
 
   if !success {
-	  return Err("unable to set sharing node".to_string());
+    return Err("unable to set sharing node".to_string());
   }
 
   Ok(json!({}))

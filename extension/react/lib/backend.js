@@ -101,7 +101,8 @@ export async function getNodes() {
 }
 
 export async function isPipewireScreenAudioRunning(micId) {
-  return (await sendNativeMessage("IsPipewireScreenAudioRunning", { micId })).isRunning;
+  return (await sendNativeMessage("IsPipewireScreenAudioRunning", { micId }))
+    .isRunning;
 }
 
 export function startPipewireScreenAudio() {
