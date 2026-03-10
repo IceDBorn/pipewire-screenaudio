@@ -104,13 +104,21 @@ export default function Popup() {
 
     setAllDesktopAudio(readLocalStorage(ALL_DESKTOP));
 
-    document.addEventListener(EVENT_MIC_ID_UPDATED, handleMicIdUpdated);
-    document.addEventListener(EVENT_MIC_ID_REMOVED, handleMicIdRemoved);
+    const micIdUpdatedEventListener = document.addEventListener(
+      EVENT_MIC_ID_UPDATED,
+      handleMicIdUpdated,
+    );
+    const micIdRemovedEventListener = document.addEventListener(
+      EVENT_MIC_ID_REMOVED,
+      handleMicIdRemoved,
+    );
 
     setIsInitialized(true);
 
     return () => {
       clearInterval(nodesInterval);
+      document.removeEventListener(micIdUpdatedEventListener);
+      document.removeEventListener(micIdRemovedEventListener);
     };
   }, []);
 
