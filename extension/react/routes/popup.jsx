@@ -1,5 +1,5 @@
 // TODO: Add nodes sorting
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 
 import Alert from "@mui/material/Alert";
 import AppBar from "@mui/material/AppBar";
@@ -31,10 +31,12 @@ import {
   ALL_DESKTOP,
   readLocalStorage,
   updateLocalStorage,
+  SELECTED_NODES,
 } from "../lib/local-storage";
 import { useDidUpdateEffect, useLocalStorage } from "../lib/hooks";
 
 import NodesTable from "../components/nodes-table";
+import matchNode from "../lib/match-node";
 
 function mapNode(node) {
   return {
@@ -45,6 +47,52 @@ function mapNode(node) {
   };
 }
 
+function useNodeSelectionState(nodes) {
+  const [nodeSelection, setNodeSelection] = useState(new Set());
+
+  useEffect(() => {
+    if (nodes === null) return;
+    // only keep nodes that actually exist
+    const selectedNodes = readLocalStorage(SELECTED_NODES) ?? [];
+    setNodeSelection(
+      new Set(
+        selectedNodes
+          .filter((selectedNode) =>
+            nodes.some((node) => matchNode(node, selectedNode)),
+          )
+          .map((node) => node.serial),
+      ),
+    );
+  }, [nodes]);
+
+  /**
+   * @type {function(int[]):void}
+   */
+  const toggleNodes = (serials) => {
+    let newNodeSelection;
+    if (serials === null) {
+      const turnOn = !nodes.every((node) => nodeSelection.has(node.serial));
+      newNodeSelection = new Set(turnOn ? nodes.map((node) => node.serial) : []);
+    } else {
+      newNodeSelection = new Set(nodeSelection);
+      for (const serial of serials) {
+        if (newNodeSelection.has(serial)) {
+          newNodeSelection.delete(serial);
+        } else {
+          newNodeSelection.add(serial);
+        }
+      }
+    }
+    updateLocalStorage(
+      SELECTED_NODES,
+      nodes.filter((node) => newNodeSelection.has(node.serial)),
+    );
+    setNodeSelection(newNodeSelection);
+  };
+
+  return { nodeSelection, toggleNodes };
+}
+
 export default function Popup() {
   const [isHealthy, setIsHealthy] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -52,11 +100,12 @@ export default function Popup() {
   const [isRunning, setIsRunning] = useState(false);
   const [nativeVersion, setNativeVersion] = useState("");
   const [extensionVersion, setExtensionVersion] = useState("");
-  const [nodes, setNodes] = useState([]);
+  const [nodes, setNodes] = useState(null);
   const [micId, setMicId] = useLocalStorage(MIC_ID);
+  const { nodeSelection, toggleNodes } = useNodeSelectionState(nodes);
 
   const debouncedSetSharingNodes = useDebouncedCallback(() => {
-    setSharingNode(getNodeSerialsToShare());
+    setSharingNode(Array.from(nodeSelection));
   }, 1000);
 
   const debouncedShareAllDesktopAudio = useDebouncedCallback(() => {
@@ -66,9 +115,6 @@ export default function Popup() {
       setSharingNode([]);
     }
   }, 1000);
-
-  const getNodeSerialsToShare = () =>
-    nodes?.filter((node) => node.checked).map((node) => node.serial);
 
   useEffect(() => {
     let nodesInterval = null;
@@ -156,9 +202,8 @@ export default function Popup() {
     setIsRunning(false);
   }
 
-  function shareNodes(n, a) {
-    setNodes(n);
-    if (!isRunning || a) return;
+  function shareNodes(allDesktopAudio) {
+    if (!isRunning || allDesktopAudio) return;
     debouncedSetSharingNodes();
   }
 
@@ -168,7 +213,7 @@ export default function Popup() {
       if (allDesktopAudio) {
         setSharingNode([-1]);
       } else {
-        setSharingNode(getNodeSerialsToShare());
+        setSharingNode(Array.from(nodeSelection));
       }
     } else {
       stopPipewireScreenAudio(micId);
@@ -198,7 +243,7 @@ export default function Popup() {
                 : "The native connector is missing or misconfigured"}
           </Alert>
         )}
-        {!nodes.length && (
+        {(!nodes || !nodes.length) && (
           <Paper sx={{ minWidth: 500, minHeight: 80, borderRadius: 0 }}>
             <div></div>
             <Typography
@@ -216,10 +261,14 @@ export default function Popup() {
           </Paper>
         )}
         {/* Content */}
-        {nodes.length > 0 && (
+        {nodes && nodes.length > 0 && (
           <NodesTable
-            shareNodes={shareNodes}
             nodes={nodes}
+            nodeSelection={nodeSelection}
+            toggleNodes={(serials) => {
+              toggleNodes(serials);
+              shareNodes(allDesktopAudio);
+            }}
             hasError={!isHealthy}
             allDesktopAudio={allDesktopAudio}
           />
@@ -237,7 +286,7 @@ export default function Popup() {
                     if (currentAllDesktopAudio) {
                       debouncedShareAllDesktopAudio();
                     } else {
-                      shareNodes(nodes, currentAllDesktopAudio);
+                      shareNodes(currentAllDesktopAudio);
                     }
                   }}
                 />
