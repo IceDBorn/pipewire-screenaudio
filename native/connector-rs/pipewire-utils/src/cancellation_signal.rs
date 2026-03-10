@@ -33,7 +33,11 @@ impl CancellationSignal {
         )
     }
 
-    pub fn attach(self, loop_: &Loop, callback: impl Fn() + 'static) -> AttachedCancellationSignal<'_> {
+    pub fn attach(
+        self,
+        loop_: &Loop,
+        callback: impl Fn() + 'static,
+    ) -> AttachedCancellationSignal<'_> {
         AttachedCancellationSignal {
             receiver: self.receiver.attach(loop_, move |_| callback()),
         }

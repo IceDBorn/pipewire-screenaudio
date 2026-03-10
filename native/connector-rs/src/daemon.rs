@@ -73,9 +73,9 @@ impl DaemonState {
     pipewire_client.unlink_node_ports(virtual_node.ports);
     let success = match &self.sharing_node_state {
       SharingNodeState::Ids(node_ids) => {
-				for node_id in node_ids {
-					pipewire_client.link_nodes(*node_id, virtual_node.ports);
-				}
+        for node_id in node_ids {
+          pipewire_client.link_nodes(*node_id, virtual_node.ports);
+        }
         true
       }
       SharingNodeState::AllDesktop => {

@@ -68,7 +68,7 @@ fn StartPipewireScreenAudio(_: io::Payload) -> Result<Value, String> {
 fn SetSharingNode(payload: io::Payload) -> Result<Value, String> {
   let nodes_arg = payload.arguments.get("nodes");
 
-	let mut isAllDesktop = false;
+  let mut isAllDesktop = false;
 
   let nodes = if let Some(nodes_value) = nodes_arg {
     match nodes_value {
@@ -77,12 +77,12 @@ fn SetSharingNode(payload: io::Payload) -> Result<Value, String> {
         let client = PipewireClient::new().unwrap();
 
         for node_value in arr {
-					if node_value == -1 {
-						// If any node is -1, treat as AllDesktop (None)
-						node_ids.clear();
-						isAllDesktop = true;
-						break;
-					}
+          if node_value == -1 {
+            // If any node is -1, treat as AllDesktop (None)
+            node_ids.clear();
+            isAllDesktop = true;
+            break;
+          }
 
           let node_serial = parse_numeric_argument(node_value.clone());
           tracing::debug!("node serial to connect: {node_serial}");
@@ -107,7 +107,7 @@ fn SetSharingNode(payload: io::Payload) -> Result<Value, String> {
   };
 
   let pipe = ipc::connect().map_err(|err| err.to_string())?;
-	let nodes = if isAllDesktop { None } else { nodes };
+  let nodes = if isAllDesktop { None } else { nodes };
   io::write(daemon::Command::SetSharingNode { nodes }, &pipe).unwrap();
   let res: daemon::Response = io::read(&pipe).unwrap();
 
