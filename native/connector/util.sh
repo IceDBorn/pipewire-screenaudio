@@ -1,5 +1,4 @@
-VERSION="0.3.4"
-VIRTMIC_NODE_NAME='pipewire-screenaudio'
+#!/usr/bin/bash
 
 TEMP_PATH_ROOT="$XDG_RUNTIME_DIR/pipewire-screenaudio"
 FIFO_PATH="$TEMP_PATH_ROOT/fifos"
