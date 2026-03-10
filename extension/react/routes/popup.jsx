@@ -96,8 +96,9 @@ function useNodeSelectionState(nodes) {
 }
 
 export default function Popup() {
-  const [isHealthy, setIsHealthy] = useState(false);
+  const [versionMatches, setVersionMatches] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [connectorConnection, setConnectorConnection] = useState(false);
   const [allDesktopAudio, setAllDesktopAudio] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
   const [nativeVersion, setNativeVersion] = useState("");
@@ -105,6 +106,7 @@ export default function Popup() {
   const [nodes, setNodes] = useState(null);
   const [micId, setMicId] = useLocalStorage(MIC_ID);
   const { nodeSelection, toggleNodes } = useNodeSelectionState(nodes);
+  const isHealthy = versionMatches && connectorConnection;
 
   const debouncedSetSharingNodes = useDebouncedCallback(() => {
     setSharingNode(Array.from(nodeSelection));
@@ -126,14 +128,16 @@ export default function Popup() {
     let func = async () => {
       try {
         const health = await healthCheck();
-        setIsHealthy(health);
+        setVersionMatches(health);
+        setConnectorConnection(true);
       } catch (err) {
         if (err.message === ERROR_VERSION_MISMATCH) {
           setNativeVersion(err.cause.nativeVersion);
           setExtensionVersion(err.cause.extensionVersion);
+          setVersionMatches(false);
+          setConnectorConnection(true);
         }
 
-        setIsHealthy(false);
         setIsInitialized(true);
         return;
       }
@@ -149,7 +153,6 @@ export default function Popup() {
           },
           (err) => {
             console.error("unhandled error:", err);
-            setIsHealthy(false);
             setIsInitialized(true);
           },
         );
@@ -163,7 +166,6 @@ export default function Popup() {
           setIsRunning(res);
         } catch {
           console.error("unhandled error:", err);
-          setIsHealthy(false);
           setIsInitialized(true);
           return;
         }
@@ -246,17 +248,19 @@ export default function Popup() {
             </Typography>
           </Toolbar>
         </AppBar>
-        {(isRunning || !isHealthy) && (
+        {(!versionMatches || !connectorConnection || isRunning) && (
           <Alert
             severity={isRunning ? "info" : "error"}
             color={isRunning ? "info" : "error"}
             sx={{ maxWidth: 500 }}
           >
-            {!isHealthy
-              ? `Version mismatch! Extension: ${extensionVersion}, Native: ${nativeVersion}`
-              : isRunning
-                ? `Running with ID: ${micId}`
-                : "The native connector is missing or misconfigured"}
+            {!connectorConnection
+              ? "The native connector is missing or misconfigured"
+              : !versionMatches
+                ? `Version mismatch! Extension: ${extensionVersion}, Native: ${nativeVersion}`
+                : isRunning
+                  ? `Running with ID: ${micId}`
+                  : console.error("unreachable")}
           </Alert>
         )}
         {(!nodes || !nodes.length) && (
