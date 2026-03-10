@@ -1,6 +1,5 @@
 (() => {
 	let sessionType = null;
-	let titleWatcher = null;
 
 	const instanceIdentifier = `pipewire-screenaudio-${createRandomString(16)}`;
 
@@ -78,7 +77,7 @@
 			const displayMedia = await originalGetDisplayMedia(constraints);
 			displayMedia.addTrack(track);
 
-			watchTitle();
+			const stopWatchTitle = watchTitle();
 			document.title = document.title;
 
 			// Send the node name to exclude for All Desktop Audio
@@ -94,6 +93,11 @@
 
 				// TODO: Add instance clearing native logic when implementing multiple instances
 				console.log("track ended");
+				try {
+					stopWatchTitle();
+				} catch (e) {
+					console.error("error while stop watching title", e);
+				}
 				clearInterval(trackWatcher);
 			}, 50);
 
@@ -105,12 +109,10 @@
 
 	// Watch the title element for changes and append our identifier if missing
 	function watchTitle() {
-		if (titleWatcher) return;
-
 		const titleEl = document.querySelector("title");
 		if (!titleEl) return;
 
-		titleWatcher = new MutationObserver((mutations) => {
+		const titleWatcher = new MutationObserver((mutations) => {
 			for (const mut of mutations) {
 				if (["childList", "characterData"].includes(mut.type)) {
 					if (document.title.includes(instanceIdentifier)) break;
@@ -125,6 +127,8 @@
 			characterData: true,
 			subtree: true,
 		});
+
+		return () => titleWatcher.disconnect();
 	}
 
 	overrideGetDisplayMedia();
