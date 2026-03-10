@@ -1,5 +1,4 @@
 {
-
   "manifest_version": 3,
   "name": "Pipewire Screenaudio",
   "version": "0.3.4",
@@ -36,15 +35,12 @@
     "scripts": ["scripts/background.js"]
   },
 
-  "permissions": [
-    "nativeMessaging"
-  ],
+  "permissions": ["nativeMessaging"],
 
   "web_accessible_resources": [
     {
       "matches": ["<all_urls>"],
-      "resources": [ "scripts/override-gdm.js" ]
+      "resources": ["scripts/override-gdm.js"]
     }
   ]
-
 }

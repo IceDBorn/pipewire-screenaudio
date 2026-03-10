@@ -172,8 +172,8 @@ export default function Popup() {
             {!isHealthy
               ? `Version mismatch! Extension: ${extensionVersion}, Native: ${nativeVersion}`
               : isRunning
-              ? `Running with ID: ${micId}`
-              : "The native connector is missing or misconfigured"}
+                ? `Running with ID: ${micId}`
+                : "The native connector is missing or misconfigured"}
           </Alert>
         )}
         {!nodes.length && (
@@ -203,41 +203,41 @@ export default function Popup() {
           />
         )}
         <Paper sx={{ maxWidth: 500, borderRadius: "0", padding: 1 }}>
-					<Grid container justify="space-between">
-						<FormControlLabel
-							control={
-								<Switch
-									onChange={() => {
-										const currentAllDesktopAudio = !allDesktopAudio;
-										setAllDesktopAudio(currentAllDesktopAudio);
-										updateLocalStorage(ALL_DESKTOP, currentAllDesktopAudio);
+          <Grid container justify="space-between">
+            <FormControlLabel
+              control={
+                <Switch
+                  onChange={() => {
+                    const currentAllDesktopAudio = !allDesktopAudio;
+                    setAllDesktopAudio(currentAllDesktopAudio);
+                    updateLocalStorage(ALL_DESKTOP, currentAllDesktopAudio);
 
-										if (currentAllDesktopAudio) {
-											debouncedShareAllDesktopAudio();
-										} else {
-											shareNodes(nodes, currentAllDesktopAudio);
-										}
-									}}
-								/>
-							}
-							sx={{ marginLeft: 1, marginTop: -1 }}
-							label="All Desktop Audio"
-							checked={allDesktopAudio}
-							disabled={!isHealthy}
-						/>
-						<Button
-							sx={{
-								minWidth: 75,
-								marginLeft: 'auto',
-							}}
-							variant="contained"
-							color={isRunning ? "error" : "success"}
-							onClick={handleStartStop}
-							disabled={!isHealthy}
-						>
-							{isRunning ? "Stop" : "Start"}
-						</Button>
-					</Grid>
+                    if (currentAllDesktopAudio) {
+                      debouncedShareAllDesktopAudio();
+                    } else {
+                      shareNodes(nodes, currentAllDesktopAudio);
+                    }
+                  }}
+                />
+              }
+              sx={{ marginLeft: 1, marginTop: -1 }}
+              label="All Desktop Audio"
+              checked={allDesktopAudio}
+              disabled={!isHealthy}
+            />
+            <Button
+              sx={{
+                minWidth: 75,
+                marginLeft: "auto",
+              }}
+              variant="contained"
+              color={isRunning ? "error" : "success"}
+              onClick={handleStartStop}
+              disabled={!isHealthy}
+            >
+              {isRunning ? "Stop" : "Start"}
+            </Button>
+          </Grid>
         </Paper>
       </>
     )
