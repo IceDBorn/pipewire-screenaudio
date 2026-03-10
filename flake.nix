@@ -104,15 +104,15 @@
                 ];
               }
               ''
-                                mkdir -p release
+                mkdir -p release
 
-                                mkdir -p release/react
-                                ln -s ${extension-react} release/react/dist
+                mkdir -p release/react
+                ln -s ${extension-react} release/react/dist
 
-                                cp -r $src/scripts $src/assets $src/manifest.json release/
+                cp -r $src/scripts $src/assets $src/manifest.json release/
 
-                				cd release
-                                zip -r - . > $out
+                cd release
+                zip -r - . > $out
               '';
         }
       );
