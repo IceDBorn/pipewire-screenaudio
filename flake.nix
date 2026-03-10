@@ -64,7 +64,7 @@
             };
           extension-react = pkgs.stdenvNoCC.mkDerivation (finalAttrs: {
             pname = "pipewire-screenaudio-extension-react";
-            version = "0.4.0";
+            version = "0.4.1";
 
             src = fs.toSource {
               root = ./.;
