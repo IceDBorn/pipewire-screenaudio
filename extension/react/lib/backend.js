@@ -21,6 +21,10 @@ async function sendNativeMessage(command, args) {
     cmd: command,
     args: args,
   });
+  // support previous connector versions
+  if (response.success === undefined) {
+    return response;
+  }
   if (!response.success) {
     throw new Error(
       `unsuccessful message response during call to ${command} with arguments ${JSON.stringify(args)}: ${response.errorMessage}`,
