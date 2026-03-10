@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 
 import Table from "@mui/material/Table";
 import TableContainer from "@mui/material/TableContainer";
@@ -10,58 +10,14 @@ import TableCell from "@mui/material/TableCell";
 import Paper from "@mui/material/Paper";
 import Checkbox from "@mui/material/Checkbox";
 
-import {
-  ALL_DESKTOP,
-  SELECTED_ROWS,
-  readLocalStorage,
-  updateLocalStorage,
-} from "../lib/local-storage";
-
-import matchNode from "../lib/match-node";
-
 export default function NodesTable({
   hasError,
   allDesktopAudio,
   nodes,
-  shareNodes,
+  nodeSelection,
+  toggleNodes,
 }) {
-  const [allChecked, setAllChecked] = useState(false);
-  const [rows, setRows] = useState(nodes);
-
-  function onCheckboxChanged(event, id) {
-    const isChecked = event.target.checked;
-    if (id !== null) {
-      setRows(
-        rows.map((row, idx) =>
-          idx === id ? { ...row, checked: isChecked } : row,
-        ),
-      );
-    } else {
-      setRows(rows.map((row) => ({ ...row, checked: isChecked })));
-    }
-  }
-
-  useEffect(() => {
-    const rowsMap = Object.fromEntries(rows.map((r) => [r.serial, r]));
-
-    const saved = readLocalStorage(SELECTED_ROWS);
-    if (saved) {
-      saved.forEach((s) => {
-        const row = rowsMap[s.serial];
-        if (row && matchNode(s, row)) {
-          row.checked = !!s.checked;
-        }
-      });
-    }
-
-    setRows(Object.values(rowsMap));
-  }, []);
-
-  useEffect(() => {
-    setAllChecked(rows.map(({ checked }) => checked).every(Boolean));
-    updateLocalStorage(SELECTED_ROWS, rows);
-    shareNodes(rows, readLocalStorage(ALL_DESKTOP));
-  }, [rows]);
+  const allChecked = nodes.every((node) => nodeSelection.has(node.serial));
 
   return (
     <TableContainer
@@ -93,7 +49,7 @@ export default function NodesTable({
             <TableCell>
               <Checkbox
                 disabled={allDesktopAudio || hasError}
-                onChange={(event) => onCheckboxChanged(event, null)}
+                onChange={(event) => toggleNodes(null)}
                 checked={allChecked}
               />
             </TableCell>
@@ -102,16 +58,16 @@ export default function NodesTable({
           </TableRow>
         </TableHead>
         <TableBody>
-          {rows.map((row, id) => (
+          {nodes.map((node) => (
             <TableRow
-              key={row.mediaName}
+              key={node.mediaName}
               sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
             >
               <TableCell>
                 <Checkbox
-                  onChange={(event) => onCheckboxChanged(event, id)}
+                  onChange={(event) => toggleNodes([node.serial])}
                   disabled={allDesktopAudio || hasError}
-                  checked={row.checked}
+                  checked={nodeSelection.has(node.serial)}
                 />
               </TableCell>
               <TableCell component="th" scope="row">
@@ -123,7 +79,7 @@ export default function NodesTable({
                     whiteSpace: "nowrap",
                   }}
                 >
-                  {row.mediaName}
+                  {node.mediaName}
                 </div>
               </TableCell>
               <TableCell>
@@ -135,7 +91,7 @@ export default function NodesTable({
                     whiteSpace: "nowrap",
                   }}
                 >
-                  {row.applicationName}
+                  {node.applicationName}
                 </div>
               </TableCell>
             </TableRow>
