@@ -70,44 +70,39 @@ fn SetSharingNode(payload: io::Payload) -> Result<Value, String> {
 
   let mut isAllDesktop = false;
 
-  let nodes = if let Some(nodes_value) = nodes_arg {
-    match nodes_value {
-      Value::Array(arr) => {
-        let mut node_ids = Vec::new();
-        let client = PipewireClient::new().unwrap();
+  let arr = nodes_arg
+    .and_then(|nodes_arg| nodes_arg.as_array())
+    .ok_or_else(|| "nodes argument must be an array".to_string())?;
 
-        for node_value in arr {
-          if node_value == -1 {
-            // If any node is -1, treat as AllDesktop (None)
-            node_ids.clear();
-            isAllDesktop = true;
-            break;
-          }
+  let nodes = {
+    let mut node_ids = Vec::new();
+    let client = PipewireClient::new().unwrap();
 
-          let node_serial = parse_numeric_argument(node_value.clone());
-          tracing::debug!("node serial to connect: {node_serial}");
-
-          let Some(node_id) = client.get_node_id_from_object_serial(node_serial) else {
-            return Ok(json!({
-              "success": false
-            }));
-          };
-          tracing::info!("node id to connect: {node_id}");
-          node_ids.push(node_id);
-        }
-
-        Some(node_ids)
+    for node_value in arr {
+      if node_value == -1 {
+        // If any node is -1, treat as AllDesktop (None)
+        node_ids.clear();
+        isAllDesktop = true;
+        break;
       }
-      _ => {
-        return Err("nodes argument must be an array".to_string());
-      }
+
+      let node_serial = parse_numeric_argument(node_value.clone());
+      tracing::debug!("node serial to connect: {node_serial}");
+
+      let Some(node_id) = client.get_node_id_from_object_serial(node_serial) else {
+        return Ok(json!({
+          "success": false
+        }));
+      };
+      tracing::info!("node id to connect: {node_id}");
+      node_ids.push(node_id);
     }
-  } else {
-    return Err("nodes argument must be an array".to_string());
+
+    node_ids
   };
 
   let pipe = ipc::connect().map_err(|err| err.to_string())?;
-  let nodes = if isAllDesktop { None } else { nodes };
+  let nodes = if isAllDesktop { None } else { Some(nodes) };
   io::write(daemon::Command::SetSharingNode { nodes }, &pipe).unwrap();
   let res: daemon::Response = io::read(&pipe).unwrap();
 
