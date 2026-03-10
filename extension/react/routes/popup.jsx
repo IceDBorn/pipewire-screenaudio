@@ -106,6 +106,7 @@ export default function Popup() {
   const [nodes, setNodes] = useState(null);
   const [micId, setMicId] = useLocalStorage(MIC_ID);
   const { nodeSelection, toggleNodes } = useNodeSelectionState(nodes);
+  const isHealthy = versionMatches && connectorConnection;
 
   const debouncedSetSharingNodes = useDebouncedCallback(() => {
     setSharingNode(Array.from(nodeSelection));
@@ -288,7 +289,7 @@ export default function Popup() {
               toggleNodes(serials);
               shareNodes(allDesktopAudio);
             }}
-            hasError={!versionMatches}
+            hasError={!isHealthy}
             allDesktopAudio={allDesktopAudio}
           />
         )}
@@ -313,7 +314,7 @@ export default function Popup() {
               sx={{ marginLeft: 1, marginTop: -1 }}
               label="All Desktop Audio"
               checked={allDesktopAudio}
-              disabled={!versionMatches}
+              disabled={!isHealthy}
             />
             <Button
               sx={{
@@ -323,7 +324,7 @@ export default function Popup() {
               variant="contained"
               color={isRunning ? "error" : "success"}
               onClick={handleStartStop}
-              disabled={!versionMatches}
+              disabled={!isHealthy}
             >
               {isRunning ? "Stop" : "Start"}
             </Button>
