@@ -1,4 +1,4 @@
-export const SELECTED_NODE_SERIALS = "selectedNodeSerials";
+export const SELECTED_NODES = "selectedNodes";
 export const MIC_ID = "micId";
 export const ALL_DESKTOP = "allDesktopAudio";
 
