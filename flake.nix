@@ -21,8 +21,13 @@
       firefoxJSON = write "firefox.json" (read native/native-messaging-hosts/firefox.json);
       connectorPath = "lib/mozilla/native-messaging-hosts/com.icedborn.pipewirescreenaudioconnector.json";
     in {
-      packages = forAllSystems (system: {
-        default = with pkgsFor.${system};
+      packages = forAllSystems (system:
+        let
+          pkgs = pkgsFor.${system};
+          fs = pkgs.lib.fileset;
+        in
+        rec {
+        default = with pkgs;
           rustPlatform.buildRustPackage {
             name = "pipewire-screenaudio";
             version = mkDate (self.lastModifiedDate or "19700101") + "_"
@@ -49,7 +54,60 @@
               substituteInPlace "$out/${connectorPath}" --replace "/usr/lib/pipewire-screenaudio/connector-rs/target/debug" "$out/bin"
             '';
           };
-      });
+          extension-react = pkgs.stdenvNoCC.mkDerivation (finalAttrs: {
+            pname = "pipewire-screenaudio-extension-react";
+            version = "0.4.0";
+
+            src = fs.toSource {
+              root = ./.;
+              fileset = fs.unions [
+                ./yarn.lock
+                ./package.json
+                ./extension/react
+              ];
+            };
+
+            yarnOfflineCache = pkgs.fetchYarnDeps {
+              yarnLock = finalAttrs.src + "/yarn.lock";
+              hash = "sha256-Z/4lmw+AiiQycsppLna+Y2uFKd+5RTAUjILQVqN5mOM=";
+            };
+
+            nativeBuildInputs = with pkgs; [
+              yarnConfigHook
+              yarnBuildHook
+              # Needed for executing package.json scripts
+              nodejs
+            ];
+            installPhase = ''
+              cp -r extension/react/dist $out/
+            '';
+          });
+          extension =
+            pkgs.runCommand "pipewire-screenaudio-extension"
+              {
+                src = fs.toSource {
+                  root = ./extension;
+                  fileset = fs.difference ./extension (
+                    fs.fileFilter (file: file.name == ".prettierrc.yml") ./extension
+                  );
+                };
+                nativeBuildInputs = with pkgs; [
+                  zip
+                ];
+              }
+              ''
+                mkdir -p release
+
+                mkdir -p release/react
+                ln -s ${extension-react} release/react/dist
+
+                cp -r $src/scripts $src/assets $src/manifest.json release/
+
+				cd release
+                zip -r - . > $out
+              '';
+        }
+      );
       devShells = forAllSystems (
         system: with pkgsFor.${system}; {
           default = mkShell {
