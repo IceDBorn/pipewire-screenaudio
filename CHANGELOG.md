@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.4.0 - 2026-03-10
+
+### What's Changed
+
+* Implement simple CLI wrapper for connector by @jim3692 in https://github.com/IceDBorn/pipewire-screenaudio/pull/97
+* Rust rewrite by @jim3692, @alansartorio in https://github.com/IceDBorn/pipewire-screenaudio/pull/99
+* Fixing Teamspeak 6 segfault by supplying node.description in pipewire.rs by @licentiapoetica in https://github.com/IceDBorn/pipewire-screenaudio/pull/112
+* Fix missing AudioCallbackDriver by @jim3692 in https://github.com/IceDBorn/pipewire-screenaudio/pull/87
+* New UI based on MUI by @IceDBorn in https://github.com/IceDBorn/pipewire-screenaudio/pull/71
+* Frontend react rewrite by @jim3692, @IceDBorn, @alansartorio in https://github.com/IceDBorn/pipewire-screenaudio/pull/71
+* Fix injector breaking stream audio/video constraints by @IceDBorn in https://github.com/IceDBorn/pipewire-screenaudio/pull/71
+
+### New Contributors
+
+* @Andreas02-dev made their first contribution in https://github.com/IceDBorn/pipewire-screenaudio/pull/95
+* @jvdcf-dev made their first contribution in https://github.com/IceDBorn/pipewire-screenaudio/pull/107
+* @DADA30000 made their first contribution in https://github.com/IceDBorn/pipewire-screenaudio/pull/110
+* @licentiapoetica made their first contribution in https://github.com/IceDBorn/pipewire-screenaudio/pull/112
+
+**Full Changelog**: https://github.com/IceDBorn/pipewire-screenaudio/compare/0.3.4...0.4.0
+
 ## 0.3.4 - 2023-10-26
 
 ![Father Gascoigne](https://s6.gifyu.com/images/S8sjU.gif)
