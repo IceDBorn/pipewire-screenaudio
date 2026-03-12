@@ -13,8 +13,12 @@ function injectCode(src) {
 
 		chrome.runtime
 			.sendMessage({ messageName: MESSAGE_NAME, message: "get-session-type" })
-			.then(({ type }) => {
-				window.postMessage({ message: "set-session-type", type });
+			.then((response) => {
+				if (!response) return;
+				window.postMessage({
+					message: "set-session-type",
+					type: response.type,
+				});
 			});
 
 		this.remove();

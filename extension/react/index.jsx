@@ -1,8 +1,8 @@
 import { createRoot } from "react-dom/client";
 import {
-  createBrowserRouter,
-  useSearchParams,
-  RouterProvider,
+	createBrowserRouter,
+	useSearchParams,
+	RouterProvider,
 } from "react-router-dom";
 
 import "@fontsource/roboto/300.css";
@@ -16,34 +16,34 @@ import CssBaseline from "@mui/material/CssBaseline";
 import Popup from "./routes/popup";
 
 const darkTheme = createTheme({
-  palette: {
-    mode: "dark",
-  },
+	palette: {
+		mode: "dark",
+	},
 });
 
 const router = createBrowserRouter([
-  {
-    path: "/react/dist/index.html",
-    element: <PageWrapper />,
-  },
+	{
+		path: "/react/dist/index.html",
+		element: <PageWrapper />,
+	},
 ]);
 
 function PageWrapper() {
-  const [search] = useSearchParams();
-  console.log(search);
+	const [search] = useSearchParams();
+	console.log(search);
 
-  if (!search.has("page")) {
-    return <Popup />;
-  }
+	if (!search.has("page")) {
+		return <Popup />;
+	}
 }
 
 function App() {
-  return (
-    <ThemeProvider theme={darkTheme}>
-      <CssBaseline />
-      <RouterProvider router={router} basename="/react/dist/index.html" />
-    </ThemeProvider>
-  );
+	return (
+		<ThemeProvider theme={darkTheme}>
+			<CssBaseline />
+			<RouterProvider router={router} basename="/react/dist/index.html" />
+		</ThemeProvider>
+	);
 }
 
 const rootEl = document.getElementById("root");

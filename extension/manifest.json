@@ -1,46 +1,44 @@
 {
-  "manifest_version": 3,
-  "name": "Pipewire Screenaudio",
-  "version": "0.4.1",
+	"manifest_version": 3,
+	"name": "Pipewire Screenaudio",
+	"version": "0.4.1",
 
-  "description": "Passthrough pipewire audio to WebRTC screenshare",
+	"description": "Passthrough pipewire audio to WebRTC screenshare",
 
-  "browser_specific_settings": {
-    "gecko": {
-      "id": "pipewire-screenaudio@icenjim"
-    }
-  },
+	"browser_specific_settings": {
+		"gecko": {
+			"id": "pipewire-screenaudio@icenjim"
+		}
+	},
 
-  "action": {
-    "default_popup": "react/dist/index.html"
-  },
+	"action": {
+		"default_popup": "react/dist/index.html"
+	},
 
-  "icons": {
-    "16": "assets/icons/icon.svg",
-    "32": "assets/icons/icon.svg",
-    "48": "assets/icons/icon.svg",
-    "64": "assets/icons/icon.svg"
-  },
+	"icons": {
+		"128": "assets/icons/icon.png"
+	},
 
-  "content_scripts": [
-    {
-      "matches": ["<all_urls>"],
-      "run_at": "document_start",
-      "js": ["scripts/injector.js"],
-      "all_frames": true
-    }
-  ],
+	"content_scripts": [
+		{
+			"matches": ["<all_urls>"],
+			"run_at": "document_start",
+			"js": ["scripts/injector.js"],
+			"all_frames": true
+		}
+	],
 
-  "background": {
-    "scripts": ["scripts/background.js"]
-  },
+	"background": {
+		"scripts": ["scripts/background.js"],
+		"service_worker": "scripts/background.js"
+	},
 
-  "permissions": ["nativeMessaging"],
+	"permissions": ["nativeMessaging", "storage"],
 
-  "web_accessible_resources": [
-    {
-      "matches": ["<all_urls>"],
-      "resources": ["scripts/override-gdm.js"]
-    }
-  ]
+	"web_accessible_resources": [
+		{
+			"matches": ["<all_urls>"],
+			"resources": ["scripts/override-gdm.js"]
+		}
+	]
 }

@@ -30,9 +30,10 @@ async function runQueuedCommands() {
 			const { inMap, outMap } = command.maps || {};
 
 			if (inMap) {
-				inMap.forEach(([storageKey, argKey]) => {
-					args[argKey] = window.localStorage.getItem(storageKey);
-				});
+				for (const [storageKey, argKey] of inMap) {
+					const stored = await chrome.storage.local.get(storageKey);
+					args[argKey] = stored[storageKey] ?? null;
+				}
 			}
 
 			console.log(args);
@@ -45,12 +46,11 @@ async function runQueuedCommands() {
 			console.log(result);
 
 			if (outMap) {
-				outMap.forEach(([storageKey, resultKey]) => {
-					window.localStorage.setItem(
-						storageKey,
-						resultKey ? result[resultKey] : null,
-					);
-				});
+				for (const [storageKey, resultKey] of outMap) {
+					await chrome.storage.local.set({
+						[storageKey]: resultKey ? result[resultKey] : null,
+					});
+				}
 			}
 
 			if (command.event) {
