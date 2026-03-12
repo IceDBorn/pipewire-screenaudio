@@ -38,6 +38,8 @@ import { useDidUpdateEffect, useLocalStorage } from "../lib/hooks";
 import NodesTable from "../components/nodes-table";
 import matchNode from "../lib/match-node";
 
+const isChromium = typeof browser === "undefined";
+
 function mapNode(node) {
 	return {
 		mediaName: node.properties["media.name"],
@@ -300,27 +302,31 @@ export default function Popup() {
 				)}
 				<Paper sx={{ maxWidth: 500, borderRadius: "0", padding: 1 }}>
 					<Grid container justify="space-between">
-						<FormControlLabel
-							control={
-								<Switch
-									onChange={() => {
-										const currentAllDesktopAudio = !allDesktopAudio;
-										setAllDesktopAudio(currentAllDesktopAudio);
-										updateLocalStorage(ALL_DESKTOP, currentAllDesktopAudio);
+						<span
+							title={isChromium ? "Not supported on Chromium browsers" : ""}
+						>
+							<FormControlLabel
+								control={
+									<Switch
+										onChange={() => {
+											const currentAllDesktopAudio = !allDesktopAudio;
+											setAllDesktopAudio(currentAllDesktopAudio);
+											updateLocalStorage(ALL_DESKTOP, currentAllDesktopAudio);
 
-										if (currentAllDesktopAudio) {
-											debouncedShareAllDesktopAudio();
-										} else {
-											shareNodes(currentAllDesktopAudio);
-										}
-									}}
-								/>
-							}
-							sx={{ marginLeft: 1, marginTop: -1 }}
-							label="All Desktop Audio"
-							checked={allDesktopAudio}
-							disabled={!isHealthy}
-						/>
+											if (currentAllDesktopAudio) {
+												debouncedShareAllDesktopAudio();
+											} else {
+												shareNodes(currentAllDesktopAudio);
+											}
+										}}
+									/>
+								}
+								sx={{ marginLeft: 0 }}
+								label="All Desktop Audio"
+								checked={allDesktopAudio}
+								disabled={!isHealthy || isChromium}
+							/>
+						</span>
 						<Button
 							sx={{
 								minWidth: 75,
