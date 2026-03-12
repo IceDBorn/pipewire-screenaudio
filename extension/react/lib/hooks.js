@@ -13,10 +13,14 @@ export function useDidUpdateEffect(fn, inputs) {
 }
 
 export function useLocalStorage(name) {
-	const [data, setData] = useState(null);
+	const [data, setData] = useState(undefined);
+	const [isLoading, setIsLoading] = useState(true);
 
 	useEffect(() => {
-		readLocalStorage(name).then((val) => setData(val));
+		readLocalStorage(name).then((val) => {
+			setData(val);
+			setIsLoading(false);
+		});
 	}, [name]);
 
 	const setStoredData = (val) => {
@@ -24,5 +28,5 @@ export function useLocalStorage(name) {
 		updateLocalStorage(name, val);
 	};
 
-	return [data, setStoredData];
+	return { isLoading, data, setData: setStoredData };
 }

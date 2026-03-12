@@ -50,24 +50,21 @@ function mapNode(node) {
 }
 
 function useNodeSelectionState(nodes) {
-	const [nodeSelection, setNodeSelection] = useState(new Set());
+	const {
+		data: storedNodeSelection,
+		setData: setStoredNodeSelection,
+		isLoading,
+	} = useLocalStorage(SELECTED_NODES);
 
-	useEffect(() => {
-		if (nodes === null) return;
-		// only keep nodes that actually exist
-		(async () => {
-			const selectedNodes = (await readLocalStorage(SELECTED_NODES)) ?? [];
-			setNodeSelection(
-				new Set(
-					selectedNodes
-						.filter((selectedNode) =>
-							nodes.some((node) => matchNode(node, selectedNode)),
-						)
-						.map((node) => node.serial),
-				),
-			);
-		})();
-	}, [nodes]);
+	if (isLoading || !nodes) return { isLoading: true };
+
+	const nodeSelection = new Set(
+		(storedNodeSelection ?? [])
+			.filter((selectedNode) =>
+				nodes.some((node) => matchNode(node, selectedNode)),
+			)
+			.map((node) => node.serial),
+	);
 
 	/**
 	 * @type {function(int[]):void}
@@ -89,14 +86,12 @@ function useNodeSelectionState(nodes) {
 				}
 			}
 		}
-		updateLocalStorage(
-			SELECTED_NODES,
+		setStoredNodeSelection(
 			nodes.filter((node) => newNodeSelection.has(node.serial)),
 		);
-		setNodeSelection(newNodeSelection);
 	};
 
-	return { nodeSelection, toggleNodes };
+	return { isLoading: false, nodeSelection, toggleNodes };
 }
 
 export default function Popup() {
@@ -108,8 +103,16 @@ export default function Popup() {
 	const [nativeVersion, setNativeVersion] = useState("");
 	const [extensionVersion, setExtensionVersion] = useState("");
 	const [nodes, setNodes] = useState(null);
-	const [micId, setMicId] = useLocalStorage(MIC_ID);
-	const { nodeSelection, toggleNodes } = useNodeSelectionState(nodes);
+	const {
+		isLoading: isMicIdLoading,
+		data: micId,
+		setData: setMicId,
+	} = useLocalStorage(MIC_ID);
+	const {
+		isLoading: isNodeSelectionLoading,
+		nodeSelection,
+		toggleNodes,
+	} = useNodeSelectionState(nodes);
 	const isHealthy = versionMatches && connectorConnection;
 
 	const debouncedSetSharingNodes = useDebouncedCallback(() => {
@@ -246,7 +249,9 @@ export default function Popup() {
 	}
 
 	return (
-		isInitialized && (
+		isInitialized &&
+		!isMicIdLoading &&
+		!isNodeSelectionLoading && (
 			<>
 				<AppBar position="static" sx={{ maxWidth: 500 }}>
 					<Toolbar>
