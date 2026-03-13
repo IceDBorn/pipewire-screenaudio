@@ -184,7 +184,7 @@ function useNodes({ enabled }) {
  * @param {boolean} param0.enabled
  */
 function useCurrentMicId({ enabled }) {
-	const [isRunning, setIsRunning] = useState(false);
+	const [isRunning, setIsRunning] = useState(null);
 	const {
 		isLoading: isLocalStorageLoading,
 		data: micId,
@@ -316,7 +316,7 @@ export default function Popup() {
 						</Typography>
 					</Toolbar>
 				</AppBar>
-				{(!connectorConnection || !versionMatches || isRunning) && (
+				{(!connectorConnection || !versionMatches || (isCurrentMicIdInitialized && isRunning)) && (
 					<Alert
 						severity={isRunning ? "info" : "error"}
 						color={isRunning ? "info" : "error"}
@@ -396,7 +396,7 @@ export default function Popup() {
 							variant="contained"
 							color={isRunning ? "error" : "success"}
 							onClick={handleStartStop}
-							disabled={!isHealthy}
+							disabled={!isHealthy || !isCurrentMicIdInitialized}
 						>
 							{isRunning ? "Stop" : "Start"}
 						</Button>
