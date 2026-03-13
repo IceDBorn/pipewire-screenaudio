@@ -146,7 +146,7 @@ export default function Popup() {
       const nodesReceive = () =>
         getNodes().then(
           (n) => {
-            const currentNodesStr = n.toString();
+            const currentNodesStr = JSON.stringify(n);
             if (currentNodesStr === previousNodes) return;
             previousNodes = currentNodesStr;
             setNodes(n.map(mapNode));
