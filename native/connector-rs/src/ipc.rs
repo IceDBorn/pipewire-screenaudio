@@ -54,5 +54,5 @@ pub fn connect_inner(tries: usize) -> io::Result<UnixStream> {
 }
 
 pub fn connect() -> io::Result<UnixStream> {
-  connect_inner(5)
+  connect_inner(1)
 }
