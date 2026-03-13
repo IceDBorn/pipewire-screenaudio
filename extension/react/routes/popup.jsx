@@ -347,8 +347,8 @@ export default function Popup() {
 					</Alert>
 				)}
 				{/* Content */}
-				{areNodesInitialized &&
-					(areNodesErrored || !nodes.length ? (
+				{(areNodesInitialized || showConnectionError) &&
+					(showConnectionError || !nodes.length ? (
 						<Paper sx={{ minWidth: 500, minHeight: 80, borderRadius: 0 }}>
 							<div></div>
 							<Typography
@@ -361,7 +361,7 @@ export default function Popup() {
 									paddingBottom: 5,
 								}}
 							>
-								{areNodesErrored
+								{showConnectionError
 									? "Could not retrieve node list"
 									: "No nodes available for sharing"}
 							</Typography>
