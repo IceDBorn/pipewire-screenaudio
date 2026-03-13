@@ -153,7 +153,7 @@ export default function Popup() {
 			const nodesReceive = () =>
 				getNodes().then(
 					(n) => {
-						const currentNodesStr = n.toString();
+						const currentNodesStr = JSON.stringify(n);
 						if (currentNodesStr === previousNodes) return;
 						previousNodes = currentNodesStr;
 						setNodes(n.map(mapNode));
@@ -201,10 +201,16 @@ export default function Popup() {
 				clearInterval(nodesInterval);
 			}
 			if (micIdUpdatedEventListener !== null) {
-				document.removeEventListener(micIdUpdatedEventListener);
+				document.removeEventListener(
+					EVENT_MIC_ID_UPDATED,
+					micIdUpdatedEventListener,
+				);
 			}
 			if (micIdRemovedEventListener !== null) {
-				document.removeEventListener(micIdRemovedEventListener);
+				document.removeEventListener(
+					EVENT_MIC_ID_REMOVED,
+					micIdRemovedEventListener,
+				);
 			}
 		};
 	}, []);
