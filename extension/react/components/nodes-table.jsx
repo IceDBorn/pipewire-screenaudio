@@ -23,15 +23,12 @@ export default function NodesTable({
 		<TableContainer
 			component={Paper}
 			sx={{
-				maxWidth: 500,
-				overflow: "scroll",
 				minHeight: 100,
 				maxHeight: 275,
 				borderRadius: 0,
 			}}
 		>
 			<Table
-				sx={{ minWidth: 500, maxWidth: 500 }}
 				size="small"
 				disabled={hasError}
 			>
@@ -86,7 +83,7 @@ export default function NodesTable({
 								<div
 									style={{
 										overflow: "hidden",
-										width: 160,
+										width: 140,
 										textOverflow: "ellipsis",
 										whiteSpace: "nowrap",
 									}}

@@ -322,7 +322,7 @@ export default function Popup() {
 	return (
 		!isHealthcheckLoading && (
 			<>
-				<AppBar position="static" sx={{ maxWidth: 500 }}>
+				<AppBar position="static">
 					<Toolbar>
 						<Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
 							Pipewire Screenaudio
@@ -335,7 +335,6 @@ export default function Popup() {
 					<Alert
 						severity={isRunning ? "info" : "error"}
 						color={isRunning ? "info" : "error"}
-						sx={{ maxWidth: 500 }}
 					>
 						{showConnectionError
 							? "The native connector is missing or misconfigured"
@@ -350,7 +349,7 @@ export default function Popup() {
 				{nodesSuccessfullyLoaded &&
 					!isNodeSelectionLoading &&
 					(!nodes.length ? (
-						<Paper sx={{ minWidth: 500, minHeight: 80, borderRadius: 0 }}>
+						<Paper sx={{ minHeight: 80, borderRadius: 0 }}>
 							<div></div>
 							<Typography
 								variant="h6"
@@ -377,7 +376,7 @@ export default function Popup() {
 							allDesktopAudio={allDesktopAudio}
 						/>
 					))}
-				<Paper sx={{ maxWidth: 500, borderRadius: "0", padding: 1 }}>
+				<Paper sx={{ borderRadius: "0", padding: 1 }}>
 					<Grid container justify="space-between">
 						<span
 							title={isChromium ? "Not supported on Chromium browsers" : ""}
