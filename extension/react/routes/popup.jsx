@@ -148,6 +148,7 @@ function useHealthchecks() {
 function useNodes({ enabled }) {
 	const [nodes, setNodes] = useState(null);
 	const [isInitialized, setIsInitialized] = useState(false);
+	const [isErrored, setIsErrored] = useState(false);
 
 	useEffect(() => {
 		if (!enabled) return;
@@ -159,9 +160,11 @@ function useNodes({ enabled }) {
 				const currentNodesStr = JSON.stringify(n);
 				if (currentNodesStr !== previousNodes) setNodes(n.map(mapNode));
 				previousNodes = currentNodesStr;
+				setIsErrored(false);
 			} catch (err) {
-				console.error("unhandled error:", err);
+				console.error("error receiving nodes: ", err);
 				setNodes(null);
+				setIsErrored(true);
 			}
 			if (!isInitialized) setIsInitialized(true);
 		};
@@ -176,7 +179,7 @@ function useNodes({ enabled }) {
 		};
 	}, [enabled]);
 
-	return { nodes, isInitialized };
+	return { nodes, isErrored, isInitialized };
 }
 
 /**
@@ -252,12 +255,15 @@ export default function Popup() {
 		nativeVersion,
 		extensionVersion,
 	} = useHealthchecks();
-	const isHealthy =
-		!isHealthcheckLoading && versionMatches && connectorConnection;
 
-	const { nodes, isInitialized: areNodesInitialized } = useNodes({
+	const {
+		nodes,
+		isErrored: areNodesErrored,
+		isInitialized: areNodesInitialized,
+	} = useNodes({
 		enabled: !isHealthcheckLoading && connectorConnection,
 	});
+	const nodesSuccessfullyLoaded = areNodesInitialized && !areNodesErrored;
 
 	const {
 		isInitialized: isCurrentMicIdInitialized,
@@ -274,7 +280,10 @@ export default function Popup() {
 		isLoading: isNodeSelectionLoading,
 		nodeSelection,
 		toggleNodes,
-	} = useNodeSelectionState({ nodes, areNodesLoading: !areNodesInitialized });
+	} = useNodeSelectionState({
+		nodes,
+		areNodesLoading: !nodesSuccessfullyLoaded,
+	});
 
 	const debouncedSetSharingNodes = useDebouncedCallback(() => {
 		setSharingNode(Array.from(nodeSelection));
@@ -287,6 +296,10 @@ export default function Popup() {
 			setSharingNode([]);
 		}
 	}, 1000);
+
+	const showConnectionError = !connectorConnection || areNodesErrored;
+	const isHealthy =
+		!isHealthcheckLoading && versionMatches && !showConnectionError;
 
 	function shareNodes(allDesktopAudio) {
 		if (!isHealthy || !isRunning || allDesktopAudio) return;
@@ -316,13 +329,15 @@ export default function Popup() {
 						</Typography>
 					</Toolbar>
 				</AppBar>
-				{(!connectorConnection || !versionMatches || (isCurrentMicIdInitialized && isRunning)) && (
+				{(showConnectionError ||
+					!versionMatches ||
+					(isCurrentMicIdInitialized && isRunning)) && (
 					<Alert
 						severity={isRunning ? "info" : "error"}
 						color={isRunning ? "info" : "error"}
 						sx={{ maxWidth: 500 }}
 					>
-						{!connectorConnection
+						{showConnectionError
 							? "The native connector is missing or misconfigured"
 							: !versionMatches
 								? `Version mismatch! Extension: ${extensionVersion}, Native: ${nativeVersion}`
@@ -332,7 +347,7 @@ export default function Popup() {
 					</Alert>
 				)}
 				{/* Content */}
-				{areNodesInitialized &&
+				{nodesSuccessfullyLoaded &&
 					!isNodeSelectionLoading &&
 					(!nodes.length ? (
 						<Paper sx={{ minWidth: 500, minHeight: 80, borderRadius: 0 }}>
