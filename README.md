@@ -62,14 +62,12 @@ bash install.sh
 ## Usage
 
 - #### Via the extension
-
   - Install the [extension](https://addons.mozilla.org/firefox/addon/pipewire-screenaudio)
   - Optional: Grant extension with access permissions to all sites
   - Join a WebRTC call, click the extension icon, select an audio node and share
   - Stream, your transmission should contain both audio and video
 
 - #### Via the CLI
-
   - **Description:** It's used to manually call the commands that are normally called by the extension. It is meant for troubleshooting, but it could be used for integrating the connector with other apps.
   - **Usage:**
     ```bash
@@ -94,10 +92,7 @@ bash install.sh
     ```bash
     DEBUG=1 # Set to enable verbose logging
     ```
+
 ### resistFingerprinting
 
 - privacy.resistFingerprinting (enabled by default in LibreWolf, arkenfox user.js, etc.) breaks the extension. Either disable the preference or add any domains you wish to use Pipewire Screenaudio with to `privacy.resistFingerprinting.exemptedDomains` in `about:config`
-
-## Planned Features
-
-- Chromium support
