@@ -123,7 +123,7 @@ fi
 if prompt_yn_question "Do you want to build the extension?" "N"; then
 	check_required_bins "${REQUIRED_BINS_JS[@]}"
 	( cd "$projectRoot/extension/react" && yarn install && yarn build || exit 1 ) || exit 1
-	echo -e
+	echo
 else
 	echo "Skipping extension build."
 fi
@@ -135,7 +135,7 @@ while true; do
 	elif prompt_yn_question "Do you want to build the native connector?" "Y"; then
 		check_required_bins "${REQUIRED_BINS_RUST[@]}"
 		( cd "$projectRoot/native/connector-rs" && cargo build || exit 1 ) || exit 1
-		echo -e
+		echo
 		CONNECTOR_PATH="$projectRoot/native/connector-rs/target/debug/connector-rs"
 	else
 		echo -e "Native connector is required.\n" >/dev/stderr
@@ -151,10 +151,12 @@ prompt_browser_type
 # Native messaging hosts path selection
 echo -e "Provide the browser native messaging hosts directory path:"
 if [[ "$BROWSER" == "firefox" ]]; then
+	echo "Example paths: ~/.config/mozilla/firefox/native-messaging-hosts, ~/.mozilla/native-messaging-hosts"
 	prompt_native_messaging_hosts_path
 	ALLOWED_FIELD="allowed_extensions"
 	ALLOWED_VALUE="pipewire-screenaudio@icenjim"
 elif [[ "$BROWSER" == "chromium" ]]; then
+	echo "Example path: ~/.config/google-chrome/NativeMessagingHosts"
 	prompt_native_messaging_hosts_path
 	extid=$(prompt_chromium_extension_id)
 	ALLOWED_FIELD="allowed_origins"
