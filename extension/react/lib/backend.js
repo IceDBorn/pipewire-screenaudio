@@ -136,3 +136,13 @@ export function setSharingNode(nodeSerials) {
 		maps: { inMap: [[MIC_ID, "micId"]] }, // Read the `micId` from LocalStorage and pass it as the `micId` arg
 	});
 }
+
+export const isChromium = () => typeof browser === "undefined";
+
+export const isIncognito = () => {
+	if (isChromium()) {
+		return false;
+	}
+
+	return !!browser?.extension.inIncognitoContext;
+}

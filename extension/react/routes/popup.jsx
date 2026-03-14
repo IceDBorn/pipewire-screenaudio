@@ -20,6 +20,8 @@ import {
 	EVENT_MIC_ID_REMOVED,
 	healthCheck,
 	getNodes,
+	isChromium,
+	isIncognito,
 	isPipewireScreenAudioRunning,
 	startPipewireScreenAudio,
 	stopPipewireScreenAudio,
@@ -37,8 +39,6 @@ import { useDidUpdateEffect, useLocalStorage } from "../lib/hooks";
 
 import NodesTable from "../components/nodes-table";
 import matchNode from "../lib/match-node";
-
-const isChromium = typeof browser === "undefined";
 
 function mapNode(node) {
 	return {
@@ -380,7 +380,7 @@ export default function Popup() {
 				<Paper sx={{ borderRadius: "0", padding: 1 }}>
 					<Grid container justify="space-between">
 						<span
-							title={isChromium ? "Not supported on Chromium browsers" : ""}
+							title={isChromium() ? "Not supported on Chromium browsers" : ""}
 						>
 							<FormControlLabel
 								control={
@@ -400,7 +400,7 @@ export default function Popup() {
 								sx={{ marginLeft: 0 }}
 								label="All Desktop Audio"
 								checked={allDesktopAudio}
-								disabled={!isHealthy || isChromium || isAllDesktopAudioLoading}
+								disabled={!isHealthy || isAllDesktopAudioLoading || isChromium() || isIncognito()}
 							/>
 						</span>
 						<Button
