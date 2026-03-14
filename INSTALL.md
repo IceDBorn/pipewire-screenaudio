@@ -13,7 +13,7 @@
 
 ## Browser Extension
 
-You can install the extension from your browser store or build and sideload it locally.
+You can install the extension from your browser's extension store or build and sideload it locally.
 
 ### Published Extensions
 
@@ -49,13 +49,13 @@ Configuration paths vary by browser. Some common locations are:
 
 ## Native Connector
 
-- The native connector can be built from source or installed via your package manager.
+- The native connector can be built from source or installed via your package manager
 - The typical binary path is: `/usr/lib/pipewire-screenaudio/connector/connector-rs`
 
 If you build the connector yourself, do not move or delete the project directory, as the binary resides within it. If you move the directory, rerun the install script to update the path.
 
 ## Uninstallation
 
-- Remove the browser extension from your browser's extensions page.
-- Delete the `com.icedborn.pipewirescreenaudioconnector.json` manifest from your browser's native messaging hosts directory (see above for locations).
-- Remove the native connector binary if built from source (see above for typical paths).
+- Remove the browser extension from your browser's extensions page
+- Delete the `com.icedborn.pipewirescreenaudioconnector.json` manifest from your browser's native messaging hosts directory
+- Remove the native connector binary if built from source
