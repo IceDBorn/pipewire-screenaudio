@@ -22,10 +22,12 @@ You can install the extension from your browser's extension store or build and s
 
 ### Local Installation
 
-- **Firefox-based browsers:** Go to [about:debugging](about:debugging#/runtime/this-firefox) and click "Load Temporary Add-on".
-- **Chromium-based browsers:** Go to [chrome://extensions](chrome://extensions) and click "Load unpacked".
-
-Select the `manifest.json` file inside the `extension` directory in the project root.
+- **Firefox-based browsers:**
+  1.  Go to [about:debugging](about:debugging#/runtime/this-firefox) and click "Load Temporary Add-on".
+  1.  Select the `manifest.json` file inside the `extension` directory in the project root
+- **Chromium-based browsers:**
+  1.  Go to [chrome://extensions](chrome://extensions) and click "Load unpacked".
+  1.  Select the `extension` directory containing the `manifest.json` file in the project root
 
 > **Note:** For Chromium-based browsers, after loading the extension, copy its ID and provide it to the install script when prompted.
 
