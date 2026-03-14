@@ -44,4 +44,4 @@ The native connector can either be built, or installed from your package manager
 
 The typical path of the binary should be `/usr/lib/pipewire-screenaudio/connector/connector-rs`
 
-If you opt to build it yourself, make sure to not delete the project, as the binary resides within it.
+If you opt to build it yourself, make sure to not move or delete the project's directory, as the binary resides within it. If you decide to move it, you should run the install script again.
