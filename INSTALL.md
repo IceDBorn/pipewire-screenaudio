@@ -24,7 +24,7 @@ Our current published extensions are:
 
 The extension has to communicate with a native connector, for Pipewire management. For security reasons, browsers require explicit configuration on which extensions can communicate with which binaries.
 
-Each browser has each own path for this configuration. Some of the known paths are:
+Each browser has its own path for this configuration. Some of the known paths are:
 
 #### Firefox Based
 
