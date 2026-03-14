@@ -1,47 +1,49 @@
-# Installing pipewire-screenaudio
+# Installation Guide
 
 ## Dependencies
 
-#### React
-
+### Extension UI
 - Node.js
 - Yarn
 
-#### Rust
-
+### Native Connector
 - Cargo
 
-## Extension
+## Browser Extension
 
-The extension can either be installed from the browser's store, or built and sideloaded.
+You can install the extension from your browser store or build and sideload it locally.
 
-Our current published extensions are:
+### Published Extensions
+- [Firefox Add-ons](https://addons.mozilla.org/en-US/firefox/addon/pipewire-screenaudio/)
+- Chrome Web Store: *Coming soon*
 
-- Firefox Add Ons: https://addons.mozilla.org/en-US/firefox/addon/pipewire-screenaudio/
-- Chrome Web Store: TBD
+### Local Installation
+- **Firefox-based browsers:** Go to [about:debugging](about:debugging#/runtime/this-firefox) and click "Load Temporary Add-on".
+- **Chromium-based browsers:** Go to [chrome://extensions](chrome://extensions) and click "Load unpacked".
+
+Select the `manifest.json` file inside the `extension` directory in the project root.
+
+> **Note:** For Chromium-based browsers, after loading the extension, copy its ID and provide it to the install script when prompted.
 
 ## Native Messaging Hosts
 
-The extension has to communicate with a native connector, for Pipewire management. For security reasons, browsers require explicit configuration on which extensions can communicate with which binaries.
+The extension communicates with a native connector for pipewire management. For security reasons, browsers require explicit configuration specifying which extensions can interact with which binaries.
 
-Each browser has its own path for this configuration. Some of the known paths are:
+Configuration paths vary by browser. Some common locations are:
 
-#### Firefox Based
+### Firefox-based Browsers
+- `~/.mozilla/native-messaging-hosts` or `~/.config/mozilla/firefox/native-messaging-hosts` (Firefox)
+- `~/.librewolf/native-messaging-hosts` (Librewolf)
 
-- `~/.mozilla/native-messaging-hosts` or `~/.config/mozilla/firefox/native-messaging-hosts` for Firefox
-- `~/.librewolf/native-messaging-hosts` for Librewolf
-
-#### Chromium Based
-
-- `~/.config/BraveSoftware/Brave-Browser/NativeMessagingHosts` for Brave
-- `~/.config/chromium/NativeMessagingHosts` for Chromium
-- `~/.config/net.imput.helium/NativeMessagingHosts` for Helium
-- `~/.config/google-chrome/NativeMessagingHosts` for Google Chrome
+### Chromium-based Browsers
+- `~/.config/BraveSoftware/Brave-Browser/NativeMessagingHosts` (Brave)
+- `~/.config/chromium/NativeMessagingHosts` (Chromium)
+- `~/.config/net.imput.helium/NativeMessagingHosts` (Helium)
+- `~/.config/google-chrome/NativeMessagingHosts` (Google Chrome)
 
 ## Native Connector
 
-The native connector can either be built, or installed from your package manager. In case it's installed from the package manager, the path of the binary should be provided.
+- The native connector can be built from source or installed via your package manager.
+- The typical binary path is: `/usr/lib/pipewire-screenaudio/connector/connector-rs`
 
-The typical path of the binary should be `/usr/lib/pipewire-screenaudio/connector/connector-rs`
-
-If you opt to build it yourself, make sure to not move or delete the project's directory, as the binary resides within it. If you decide to move it, you should run the install script again.
+If you build the connector yourself, do not move or delete the project directory, as the binary resides within it. If you move the directory, rerun the install script to update the path.
