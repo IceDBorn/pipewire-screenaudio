@@ -3,5 +3,5 @@
 	"description": "Connector to communicate with the browser",
 	"path": "CONNECTOR_BINARY_PATH",
 	"type": "stdio",
-	"allowed_*": ["EXTENSION_ID"]
+	"ALLOWED_FIELD": ["ALLOWED_VALUE"]
 }
