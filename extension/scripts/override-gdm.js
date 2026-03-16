@@ -77,14 +77,19 @@
 			const displayMedia = await originalGetDisplayMedia(constraints);
 			displayMedia.addTrack(track);
 
-			const stopWatchTitle = watchTitle();
-			document.title = document.title;
+			const isChromium = typeof browser === "undefined";
+			let stopWatchTitle;
 
-			// Send the node name to exclude for All Desktop Audio
-			window.postMessage({
-				message: "instance-identifier",
-				instanceIdentifier,
-			});
+			if (!isChromium) {
+				stopWatchTitle = watchTitle();
+				document.title = document.title;
+
+				// Send the node name to exclude for All Desktop Audio
+				window.postMessage({
+					message: "instance-identifier",
+					instanceIdentifier,
+				});
+			}
 
 			// Watch track and clear instance when ended
 			// Workaround solution for firefox, because it does not support MediaStream's inactive event
@@ -93,11 +98,15 @@
 
 				// TODO: Add instance clearing native logic when implementing multiple instances
 				console.log("track ended");
-				try {
-					stopWatchTitle();
-				} catch (e) {
-					console.error("error while stop watching title", e);
+
+				if (stopWatchTitle) {
+					try {
+						stopWatchTitle();
+					} catch (e) {
+						console.error("error while stop watching title.", e);
+					}
 				}
+
 				clearInterval(trackWatcher);
 			}, 50);
 
