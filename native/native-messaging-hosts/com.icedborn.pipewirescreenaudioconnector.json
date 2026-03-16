@@ -1,7 +1,7 @@
 {
 	"name": "com.icedborn.pipewirescreenaudioconnector",
 	"description": "Connector to communicate with the browser",
-	"path": "/usr/lib/pipewire-screenaudio/connector-rs/target/debug/connector-rs",
+	"path": "CONNECTOR_BINARY_PATH",
 	"type": "stdio",
-	"allowed_extensions": ["pipewire-screenaudio@icenjim"]
+	"ALLOWED_FIELD": ["ALLOWED_VALUE"]
 }
