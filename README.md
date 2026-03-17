@@ -49,8 +49,7 @@ You can find us on [Matrix](https://matrix.to/#/#pipewire-screenaudio:matrix.org
 #### Requirements
 
 - cargo
-- npx
-- pipewire
+- node.js
 - yarn
 
 ```bash
@@ -58,6 +57,8 @@ git clone https://github.com/IceDBorn/pipewire-screenaudio.git
 cd pipewire-screenaudio
 bash install.sh
 ```
+
+For detailed instructions check [INSTALL.md](https://github.com/IceDBorn/pipewire-screenaudio/blob/main/INSTALL.md)
 
 ## Usage
 
