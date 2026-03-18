@@ -39,6 +39,7 @@ import { useDidUpdateEffect, useLocalStorage } from "../lib/hooks";
 
 import NodesTable from "../components/nodes-table";
 import matchNode from "../lib/match-node";
+import { unreachable } from "../lib/utils";
 
 /** @import { PwNode, MicIdUpdatedEvent } from "../lib/types" */
 /** @import NativeMessaging from "../lib/nativeMessageTypes" */
@@ -66,23 +67,20 @@ function useNodeSelectionState({ nodes, areNodesLoading }) {
 		isLoading,
 	} = useLocalStorage(SELECTED_NODES);
 
-	if (isLoading || areNodesLoading) return { isLoading: true };
+	if (isLoading || areNodesLoading)
+		return {
+			isLoading: true,
+			nodeSelection: undefined,
+			toggleNodes: undefined,
+		};
 
-	let nodeSelection;
-
-	if (!nodes) {
-		nodeSelection = new Set(
-			(storedNodeSelection ?? []).map((node) => node.serial),
-		);
-	} else {
-		nodeSelection = new Set(
-			(storedNodeSelection ?? [])
-				.filter((selectedNode) =>
-					nodes.some((node) => matchNode(node, selectedNode)),
-				)
-				.map((node) => node.serial),
-		);
-	}
+	const nodeSelection = new Set(
+		(storedNodeSelection ?? [])
+			.filter((selectedNode) =>
+				nodes.some((node) => matchNode(node, selectedNode)),
+			)
+			.map((node) => node.serial),
+	);
 
 	/**
 	 * @type {(serials: number[] | null) => void}
@@ -193,7 +191,13 @@ function useNodes({ enabled }) {
 		};
 	}, [enabled]);
 
-	return { nodes, isErrored, isInitialized };
+	return !isInitialized
+		? { nodes: null, isErrored: false, isInitialized }
+		: isErrored
+			? { nodes: null, isErrored, isInitialized }
+			: nodes !== null
+				? { nodes, isErrored, isInitialized }
+				: unreachable();
 }
 
 /**
@@ -201,7 +205,6 @@ function useNodes({ enabled }) {
  * @param {boolean} param0.enabled
  */
 function useCurrentMicId({ enabled }) {
-	const [isRunning, setIsRunning] = useState(null);
 	const {
 		isLoading: isLocalStorageLoading,
 		data: micId,
@@ -211,29 +214,29 @@ function useCurrentMicId({ enabled }) {
 
 	const shouldListen = enabled && !isLocalStorageLoading;
 
-	/**
-	 * @param {MicIdUpdatedEvent} id
-	 */
-	function handleMicIdUpdated(id) {
-		if (!id) return;
-		setMicId(id.detail.micId);
-		setIsRunning(true);
-	}
-
-	function handleMicIdRemoved() {
-		setMicId(null);
-		setIsRunning(false);
-	}
-
 	useEffect(() => {
 		if (!shouldListen) return;
 
+		/**
+		 * @param {MicIdUpdatedEvent} id
+		 */
+		function handleMicIdUpdated(id) {
+			if (isLocalStorageLoading) unreachable();
+			setMicId(id.detail.micId);
+		}
+
+		function handleMicIdRemoved() {
+			if (isLocalStorageLoading) unreachable();
+			setMicId(null);
+		}
+
 		let func = async () => {
 			try {
-				const res = await isPipewireScreenAudioRunning(micId);
-				console.log({ res, micId });
-				if (!res) setMicId(null);
-				setIsRunning(res);
+				if (micId !== null) {
+					const res = await isPipewireScreenAudioRunning(micId);
+					console.log({ res, micId });
+					if (!res) setMicId(null);
+				}
 
 				document.addEventListener(EVENT_MIC_ID_UPDATED, handleMicIdUpdated);
 				document.addEventListener(EVENT_MIC_ID_REMOVED, handleMicIdRemoved);
@@ -251,7 +254,12 @@ function useCurrentMicId({ enabled }) {
 		};
 	}, [shouldListen]);
 
-	return { isInitialized, micId, isRunning };
+	if (!isInitialized)
+		return { isInitialized, micId: undefined, isRunning: undefined };
+
+	if (micId === undefined) unreachable("should be set if initialized");
+
+	return { isInitialized, micId };
 }
 
 /**
@@ -259,6 +267,13 @@ function useCurrentMicId({ enabled }) {
  */
 function useAllDesktopAudio() {
 	const { isLoading, data, setData } = useLocalStorage(ALL_DESKTOP);
+
+	if (isLoading)
+		return {
+			isAllDesktopAudioLoading: isLoading,
+			allDesktopAudio: data,
+			setAllDesktopAudio: setData,
+		};
 
 	return {
 		isAllDesktopAudioLoading: isLoading,
@@ -285,13 +300,11 @@ export default function Popup() {
 	});
 	const nodesSuccessfullyLoaded = areNodesInitialized && !areNodesErrored;
 
-	const {
-		isInitialized: isCurrentMicIdInitialized,
-		isRunning,
-		micId,
-	} = useCurrentMicId({
+	const { isInitialized: isCurrentMicIdInitialized, micId } = useCurrentMicId({
 		enabled: !isHealthcheckLoading && connectorConnection,
 	});
+
+	const isRunning = isCurrentMicIdInitialized && micId !== null;
 
 	const { isAllDesktopAudioLoading, allDesktopAudio, setAllDesktopAudio } =
 		useAllDesktopAudio();
@@ -300,10 +313,20 @@ export default function Popup() {
 		isLoading: isNodeSelectionLoading,
 		nodeSelection,
 		toggleNodes,
-	} = useNodeSelectionState({
-		nodes,
-		areNodesLoading: !nodesSuccessfullyLoaded,
-	});
+	} = useNodeSelectionState(
+		nodesSuccessfullyLoaded
+			? {
+					nodes,
+					areNodesLoading: false,
+				}
+			: {
+					nodes: undefined,
+					areNodesLoading: true,
+				},
+	);
+
+	const nodeSelectionSuccessfullyLoaded =
+		nodesSuccessfullyLoaded && !isNodeSelectionLoading;
 
 	const shareNodes = useDebouncedCallback(
 		/**
@@ -327,7 +350,10 @@ export default function Popup() {
 
 	const showConnectionError = !connectorConnection || areNodesErrored;
 	const isHealthy =
-		!isHealthcheckLoading && versionMatches && !showConnectionError;
+		!isHealthcheckLoading &&
+		versionMatches &&
+		nodeSelectionSuccessfullyLoaded &&
+		!isAllDesktopAudioLoading;
 
 	async function handleStartStop() {
 		if (!isRunning) {
@@ -335,6 +361,10 @@ export default function Popup() {
 			if (allDesktopAudio) {
 				setSharingNode([-1]);
 			} else {
+				if (!nodeSelectionSuccessfullyLoaded)
+					unreachable(
+						"start/stop button is clickable only after node selection is loaded",
+					);
 				setSharingNode(Array.from(nodeSelection));
 			}
 		} else {
@@ -352,9 +382,7 @@ export default function Popup() {
 						</Typography>
 					</Toolbar>
 				</AppBar>
-				{(showConnectionError ||
-					!versionMatches ||
-					(isCurrentMicIdInitialized && isRunning)) && (
+				{(showConnectionError || !versionMatches || isRunning) && (
 					<Alert
 						severity={isRunning ? "info" : "error"}
 						color={isRunning ? "info" : "error"}
@@ -365,12 +393,13 @@ export default function Popup() {
 								? `Version mismatch! Extension: ${extensionVersion}, Native: ${nativeVersion}`
 								: isRunning
 									? `Running with ID: ${micId}`
-									: console.error("unreachable")}
+									: unreachable()}
 					</Alert>
 				)}
 				{/* Content */}
-				{(areNodesInitialized || showConnectionError) &&
-					(showConnectionError || !nodes.length ? (
+				{(nodeSelectionSuccessfullyLoaded || showConnectionError) &&
+					((nodeSelectionSuccessfullyLoaded && !nodes.length) ||
+					showConnectionError ? (
 						<Paper sx={{ minHeight: 80, borderRadius: 0 }}>
 							<div></div>
 							<Typography
@@ -388,17 +417,22 @@ export default function Popup() {
 									: "No nodes available for sharing"}
 							</Typography>
 						</Paper>
-					) : (
+					) : nodeSelectionSuccessfullyLoaded ? (
 						<NodesTable
 							nodes={nodes}
 							nodeSelection={nodeSelection}
 							toggleNodes={(serials) => {
+								if (!isHealthy)
+									unreachable(
+										"inner interactions are disabled while !isHealthy, so this wont be called",
+									);
 								toggleNodes(serials);
 								shareNodes(allDesktopAudio);
 							}}
-							hasError={!isHealthy}
-							allDesktopAudio={allDesktopAudio}
+							disableInteraction={!isHealthy || allDesktopAudio}
 						/>
+					) : (
+						unreachable()
 					))}
 				<Paper sx={{ borderRadius: "0", padding: 1 }}>
 					<Grid container>
@@ -409,6 +443,8 @@ export default function Popup() {
 								control={
 									<Switch
 										onChange={() => {
+											if (isAllDesktopAudioLoading)
+												unreachable("switch is disabled while loading");
 											const currentAllDesktopAudio = !allDesktopAudio;
 											setAllDesktopAudio(currentAllDesktopAudio);
 
@@ -423,7 +459,12 @@ export default function Popup() {
 								sx={{ marginLeft: 0 }}
 								label="All Desktop Audio"
 								checked={allDesktopAudio}
-								disabled={!isHealthy || isAllDesktopAudioLoading || isChromium() || isIncognito()}
+								disabled={
+									!isHealthy ||
+									isAllDesktopAudioLoading ||
+									isChromium() ||
+									isIncognito()
+								}
 							/>
 						</span>
 						<Button

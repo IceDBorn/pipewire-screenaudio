@@ -14,15 +14,13 @@ import Checkbox from "@mui/material/Checkbox";
 
 /**
  * @param {Object} param0
- * @param {boolean} param0.hasError
- * @param {boolean} param0.allDesktopAudio
+ * @param {boolean} param0.disableInteraction
  * @param {PwNode[]} param0.nodes
  * @param {Set<number>} param0.nodeSelection
  * @param {(serials: number[] | null) => void} param0.toggleNodes
  */
 export default function NodesTable({
-	hasError,
-	allDesktopAudio,
+	disableInteraction,
 	nodes,
 	nodeSelection,
 	toggleNodes,
@@ -52,7 +50,7 @@ export default function NodesTable({
 					<TableRow>
 						<TableCell>
 							<Checkbox
-								disabled={allDesktopAudio || hasError}
+								disabled={disableInteraction}
 								onChange={(event) => toggleNodes(null)}
 								checked={allChecked}
 							/>
@@ -70,7 +68,7 @@ export default function NodesTable({
 							<TableCell>
 								<Checkbox
 									onChange={(event) => toggleNodes([node.serial])}
-									disabled={allDesktopAudio || hasError}
+									disabled={disableInteraction}
 									checked={nodeSelection.has(node.serial)}
 								/>
 							</TableCell>

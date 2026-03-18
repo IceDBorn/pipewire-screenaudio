@@ -86,6 +86,7 @@ function handleMessage(message) {
 
 	if (message === EVENT_MIC_ID_UPDATED) {
 		readLocalStorage(MIC_ID).then((micId) => {
+			if (micId === null) return;
 			/**
 			 * @type MicIdUpdatedEvent
 			 */
@@ -105,7 +106,10 @@ function handleMessage(message) {
 chrome.runtime.onMessage.addListener(handleMessage);
 
 export async function healthCheck() {
-	const { version: nativeVersion } = await sendNativeMessage("GetVersion");
+	const { version: nativeVersion } = await sendNativeMessage(
+		"GetVersion",
+		undefined,
+	);
 
 	if (!matchVersion(nativeVersion, EXT_VERSION)) {
 		throw new Error(ERROR_VERSION_MISMATCH, {
@@ -120,7 +124,7 @@ export async function healthCheck() {
 }
 
 export async function getNodes() {
-	return await sendNativeMessage("GetNodes");
+	return await sendNativeMessage("GetNodes", undefined);
 }
 
 /**
@@ -135,6 +139,7 @@ export function startPipewireScreenAudio() {
 	isStopping = false;
 	enqueueCommandToBackground({
 		cmd: "StartPipewireScreenAudio",
+		args: undefined,
 		maps: { outMap: [[MIC_ID, "micId"]] }, // Set the `micId` in LocalStorage to the incoming `micId`
 		event: EVENT_MIC_ID_UPDATED,
 	});
@@ -172,4 +177,4 @@ export const isIncognito = () => {
 	}
 
 	return !!browser?.extension.inIncognitoContext;
-}
+};

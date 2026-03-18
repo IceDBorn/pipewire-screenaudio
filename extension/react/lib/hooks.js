@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { readLocalStorage, updateLocalStorage } from "./local-storage";
+import { unreachable } from "./utils";
 
 /** @import { LocalStorageTypes, UseLocalStorageResult } from "./types" */
 
@@ -45,5 +46,13 @@ export function useLocalStorage(name) {
 		updateLocalStorage(name, val);
 	};
 
-	return { isLoading, data, setData: setStoredData };
+	return isLoading
+		? { isLoading, data: undefined, setData: undefined }
+		: data !== undefined
+			? {
+					isLoading,
+					data,
+					setData: setStoredData,
+				}
+			: unreachable();
 }

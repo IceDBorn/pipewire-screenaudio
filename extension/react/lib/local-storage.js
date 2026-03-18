@@ -11,7 +11,11 @@ export const ALL_DESKTOP = "allDesktopAudio";
  */
 export async function readLocalStorage(name) {
 	try {
-		const stored = await chrome.storage.local.get(name);
+		/**
+		 * @type {typeof chrome.storage.local.get<Partial<LocalStorageTypes>>}
+		 */
+		const chromeStorageLocalGet = chrome.storage.local.get;
+		const stored = await chromeStorageLocalGet(name);
 		return stored[name] ?? null;
 	} catch {
 		return null;

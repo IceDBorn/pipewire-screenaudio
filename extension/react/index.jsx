@@ -15,6 +15,7 @@ import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 
 import Popup from "./routes/popup";
+import { unreachable } from "./lib/utils";
 
 const darkTheme = createTheme({
 	palette: {
@@ -48,5 +49,6 @@ function App() {
 }
 
 const rootEl = document.getElementById("root");
+if (rootEl === null) unreachable("root element must exist");
 const root = createRoot(rootEl);
 root.render(<App />);
