@@ -38,10 +38,7 @@ export default function NodesTable({
 				borderRadius: 0,
 			}}
 		>
-			<Table
-				size="small"
-				disabled={hasError}
-			>
+			<Table size="small">
 				<TableHead
 					sx={{
 						position: "sticky",

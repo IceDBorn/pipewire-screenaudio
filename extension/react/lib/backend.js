@@ -78,16 +78,6 @@ function matchVersion(a, b) {
 	return aSplit[0] === bSplit[0] && aSplit[1] === bSplit[1];
 }
 
-function getNewPromise() {
-	let resolvePromise, rejectPromise;
-	const promise = new Promise((resolve, reject) => {
-		resolvePromise = resolve;
-		rejectPromise = reject;
-	});
-
-	return { promise, resolvePromise, rejectPromise };
-}
-
 /**
  * @param {string} message
  */

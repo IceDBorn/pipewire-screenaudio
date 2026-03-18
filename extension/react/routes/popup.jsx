@@ -52,7 +52,6 @@ function mapNode(node) {
 		mediaName: node.properties["media.name"],
 		applicationName: node.properties["application.name"],
 		serial: node.properties["object.serial"],
-		checked: false,
 	};
 }
 
@@ -402,7 +401,7 @@ export default function Popup() {
 						/>
 					))}
 				<Paper sx={{ borderRadius: "0", padding: 1 }}>
-					<Grid container justify="space-between">
+					<Grid container>
 						<span
 							title={isChromium() ? "Not supported on Chromium browsers" : ""}
 						>

@@ -41,7 +41,6 @@ async function runQueuedCommands() {
 				command.messageName,
 				command.cmd,
 				args,
-				command.maps,
 			);
 			console.log(result);
 

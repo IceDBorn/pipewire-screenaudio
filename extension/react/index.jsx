@@ -1,3 +1,4 @@
+import React from "react";
 import { createRoot } from "react-dom/client";
 import {
 	createBrowserRouter,
@@ -41,7 +42,7 @@ function App() {
 	return (
 		<ThemeProvider theme={darkTheme}>
 			<CssBaseline />
-			<RouterProvider router={router} basename="/react/dist/index.html" />
+			<RouterProvider router={router} />
 		</ThemeProvider>
 	);
 }
