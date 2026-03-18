@@ -77,7 +77,7 @@
 
             yarnOfflineCache = pkgs.fetchYarnDeps {
               yarnLock = finalAttrs.src + "/yarn.lock";
-              hash = "sha256-Z/4lmw+AiiQycsppLna+Y2uFKd+5RTAUjILQVqN5mOM=";
+              hash = "sha256-5Wv5Rup62XVFDgmH/Bgb9C6JdMqHApYEs8YVwfTgkgg=";
             };
 
             nativeBuildInputs = with pkgs; [

@@ -10,6 +10,16 @@ import TableCell from "@mui/material/TableCell";
 import Paper from "@mui/material/Paper";
 import Checkbox from "@mui/material/Checkbox";
 
+/** @import { PwNode } from "../lib/types" */
+
+/**
+ * @param {Object} param0
+ * @param {boolean} param0.hasError
+ * @param {boolean} param0.allDesktopAudio
+ * @param {PwNode[]} param0.nodes
+ * @param {Set<number>} param0.nodeSelection
+ * @param {(serials: number[] | null) => void} param0.toggleNodes
+ */
 export default function NodesTable({
 	hasError,
 	allDesktopAudio,

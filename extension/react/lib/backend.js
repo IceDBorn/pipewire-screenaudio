@@ -10,10 +10,24 @@ export const EVENT_MIC_ID_REMOVED = "onMicIdRemoved";
 
 let isStopping = false;
 
+/** @import NativeMessaging from "./nativeMessageTypes" */
+/** @import BackendTypes from "./backendTypes" */
+/** @import { MicIdUpdatedEvent } from "./types" */
+
+/**
+ * @template {NativeMessaging.Commands} Command
+ * @param {BackendTypes.BackgroundCommand<Command>} command
+ */
 function enqueueCommandToBackground(command) {
 	sendMessage("enqueue-command", command);
 }
 
+/**
+ * @template {NativeMessaging.Commands} Command
+ * @param {Command} command
+ * @param {NativeMessaging.Requests[Command]} args
+ * @returns {Promise<NativeMessaging.Responses[Command]>}
+ */
 async function sendNativeMessage(command, args) {
 	console.log("Sent native message", { command, args });
 
@@ -33,6 +47,10 @@ async function sendNativeMessage(command, args) {
 	return response.response;
 }
 
+/**
+ * @param {string} message
+ * @param {any} command
+ */
 async function sendMessage(message, command) {
 	console.log("Sent message", { command, message });
 
@@ -50,6 +68,10 @@ async function sendMessage(message, command) {
 	}
 }
 
+/**
+ * @param {string} a
+ * @param {string} b
+ */
 function matchVersion(a, b) {
 	const aSplit = a.split(".");
 	const bSplit = b.split(".");
@@ -66,11 +88,17 @@ function getNewPromise() {
 	return { promise, resolvePromise, rejectPromise };
 }
 
+/**
+ * @param {string} message
+ */
 function handleMessage(message) {
 	console.log({ message });
 
 	if (message === EVENT_MIC_ID_UPDATED) {
 		readLocalStorage(MIC_ID).then((micId) => {
+			/**
+			 * @type MicIdUpdatedEvent
+			 */
 			const event = new CustomEvent(EVENT_MIC_ID_UPDATED, {
 				detail: { micId },
 			});
@@ -105,6 +133,9 @@ export async function getNodes() {
 	return await sendNativeMessage("GetNodes");
 }
 
+/**
+ * @param {number} micId
+ */
 export async function isPipewireScreenAudioRunning(micId) {
 	return (await sendNativeMessage("IsPipewireScreenAudioRunning", { micId }))
 		.isRunning;
@@ -119,6 +150,9 @@ export function startPipewireScreenAudio() {
 	});
 }
 
+/**
+ * @param {number} micId
+ */
 export function stopPipewireScreenAudio(micId) {
 	isStopping = true;
 	enqueueCommandToBackground({
@@ -129,6 +163,9 @@ export function stopPipewireScreenAudio(micId) {
 	});
 }
 
+/**
+ * @param {number[]} nodeSerials
+ */
 export function setSharingNode(nodeSerials) {
 	enqueueCommandToBackground({
 		cmd: "SetSharingNode",

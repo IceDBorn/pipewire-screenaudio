@@ -40,6 +40,13 @@ import { useDidUpdateEffect, useLocalStorage } from "../lib/hooks";
 import NodesTable from "../components/nodes-table";
 import matchNode from "../lib/match-node";
 
+/** @import { PwNode, MicIdUpdatedEvent } from "../lib/types" */
+/** @import NativeMessaging from "../lib/nativeMessageTypes" */
+
+/**
+ * @param {NativeMessaging.PwNode} node
+ * @returns {PwNode}
+ */
 function mapNode(node) {
 	return {
 		mediaName: node.properties["media.name"],
@@ -50,9 +57,8 @@ function mapNode(node) {
 }
 
 /**
- * @param {Object} param0
- * @param {object[]} param0.nodes
- * @param {boolean} param0.areNodesLoading
+ * @param {{nodes: PwNode[], areNodesLoading: false} | {nodes: any, areNodesLoading: true}} param0
+ * @returns {{isLoading: true, nodeSelection: undefined, toggleNodes: undefined} | {isLoading: false, nodeSelection: Set<number>, toggleNodes: (serials: number[] | null) => void }}
  */
 function useNodeSelectionState({ nodes, areNodesLoading }) {
 	const {
@@ -80,7 +86,7 @@ function useNodeSelectionState({ nodes, areNodesLoading }) {
 	}
 
 	/**
-	 * @type {function(int[]):void}
+	 * @type {(serials: number[] | null) => void}
 	 */
 	const toggleNodes = (serials) => {
 		let newNodeSelection;
@@ -109,10 +115,16 @@ function useNodeSelectionState({ nodes, areNodesLoading }) {
 
 function useHealthchecks() {
 	const [isLoading, setIsLoading] = useState(true);
-	const [versionMatches, setVersionMatches] = useState(null);
+	const [versionMatches, setVersionMatches] = useState(
+		/** @type {boolean | null} */ (null),
+	);
 	const [connectorConnection, setConnectorConnection] = useState(false);
-	const [extensionVersion, setExtensionVersion] = useState(null);
-	const [nativeVersion, setNativeVersion] = useState(null);
+	const [extensionVersion, setExtensionVersion] = useState(
+		/** @type {string | null} */ (null),
+	);
+	const [nativeVersion, setNativeVersion] = useState(
+		/** @type {string | null} */ (null),
+	);
 
 	useEffect(() => {
 		(async () => {
@@ -146,13 +158,16 @@ function useHealthchecks() {
  * @param {boolean} param0.enabled
  */
 function useNodes({ enabled }) {
-	const [nodes, setNodes] = useState(null);
+	const [nodes, setNodes] = useState(/** @type {PwNode[] | null} */ (null));
 	const [isInitialized, setIsInitialized] = useState(false);
 	const [isErrored, setIsErrored] = useState(false);
 
 	useEffect(() => {
 		if (!enabled) return;
 
+		/**
+		 * @type {string | null}
+		 */
 		let previousNodes = null;
 		const nodesReceive = async () => {
 			try {
@@ -197,6 +212,9 @@ function useCurrentMicId({ enabled }) {
 
 	const shouldListen = enabled && !isLocalStorageLoading;
 
+	/**
+	 * @param {MicIdUpdatedEvent} id
+	 */
 	function handleMicIdUpdated(id) {
 		if (!id) return;
 		setMicId(id.detail.micId);
@@ -237,6 +255,9 @@ function useCurrentMicId({ enabled }) {
 	return { isInitialized, micId, isRunning };
 }
 
+/**
+ * @returns {{isAllDesktopAudioLoading: true, allDesktopAudio: undefined, setAllDesktopAudio: undefined} | {isAllDesktopAudioLoading: false, allDesktopAudio: boolean, setAllDesktopAudio: (value: boolean) => void}}
+ */
 function useAllDesktopAudio() {
 	const { isLoading, data, setData } = useLocalStorage(ALL_DESKTOP);
 
@@ -285,9 +306,17 @@ export default function Popup() {
 		areNodesLoading: !nodesSuccessfullyLoaded,
 	});
 
-	const debouncedSetSharingNodes = useDebouncedCallback(() => {
-		setSharingNode(Array.from(nodeSelection));
-	}, 1000);
+	const shareNodes = useDebouncedCallback(
+		/**
+		 * @param {boolean} allDesktopAudio
+		 */
+		(allDesktopAudio) => {
+			if (!isHealthy || !isRunning || allDesktopAudio) return;
+			if (isNodeSelectionLoading) unreachable();
+			setSharingNode(Array.from(nodeSelection));
+		},
+		1000,
+	);
 
 	const debouncedShareAllDesktopAudio = useDebouncedCallback(() => {
 		if (allDesktopAudio) {
@@ -300,11 +329,6 @@ export default function Popup() {
 	const showConnectionError = !connectorConnection || areNodesErrored;
 	const isHealthy =
 		!isHealthcheckLoading && versionMatches && !showConnectionError;
-
-	function shareNodes(allDesktopAudio) {
-		if (!isHealthy || !isRunning || allDesktopAudio) return;
-		debouncedSetSharingNodes();
-	}
 
 	async function handleStartStop() {
 		if (!isRunning) {
