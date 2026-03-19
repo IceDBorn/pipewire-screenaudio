@@ -41,14 +41,10 @@ import NodesTable from "../components/nodes-table";
 import matchNode from "../lib/match-node";
 import { unreachable } from "../lib/utils";
 
-/** @import { PwNode, MicIdUpdatedEvent } from "../lib/types" */
-/** @import NativeMessaging from "../lib/nativeMessageTypes" */
+import type { PwNode, MicIdUpdatedEvent } from "../lib/types";
+import type * as NativeMessaging from "../lib/nativeMessageTypes";
 
-/**
- * @param {NativeMessaging.PwNode} node
- * @returns {PwNode}
- */
-function mapNode(node) {
+function mapNode(node: NativeMessaging.PwNode): PwNode {
 	return {
 		mediaName: node.properties["media.name"],
 		applicationName: node.properties["application.name"],
@@ -56,11 +52,18 @@ function mapNode(node) {
 	};
 }
 
-/**
- * @param {{nodes: PwNode[], areNodesLoading: false} | {nodes: any, areNodesLoading: true}} param0
- * @returns {{isLoading: true, nodeSelection: undefined, toggleNodes: undefined} | {isLoading: false, nodeSelection: Set<number>, toggleNodes: (serials: number[] | null) => void }}
- */
-function useNodeSelectionState({ nodes, areNodesLoading }) {
+function useNodeSelectionState({
+	nodes,
+	areNodesLoading,
+}:
+	| { nodes: PwNode[]; areNodesLoading: false }
+	| { nodes: any; areNodesLoading: true }):
+	| { isLoading: true; nodeSelection: undefined; toggleNodes: undefined }
+	| {
+			isLoading: false;
+			nodeSelection: Set<number>;
+			toggleNodes: (serials: number[] | null) => void;
+	  } {
 	const {
 		data: storedNodeSelection,
 		setData: setStoredNodeSelection,
@@ -82,10 +85,7 @@ function useNodeSelectionState({ nodes, areNodesLoading }) {
 			.map((node) => node.serial),
 	);
 
-	/**
-	 * @type {(serials: number[] | null) => void}
-	 */
-	const toggleNodes = (serials) => {
+	const toggleNodes = (serials: number[] | null) => {
 		let newNodeSelection;
 		if (serials === null) {
 			const turnOn = !nodes.every((node) => nodeSelection.has(node.serial));
@@ -112,16 +112,10 @@ function useNodeSelectionState({ nodes, areNodesLoading }) {
 
 function useHealthchecks() {
 	const [isLoading, setIsLoading] = useState(true);
-	const [versionMatches, setVersionMatches] = useState(
-		/** @type {boolean | null} */ (null),
-	);
+	const [versionMatches, setVersionMatches] = useState<boolean | null>(null);
 	const [connectorConnection, setConnectorConnection] = useState(false);
-	const [extensionVersion, setExtensionVersion] = useState(
-		/** @type {string | null} */ (null),
-	);
-	const [nativeVersion, setNativeVersion] = useState(
-		/** @type {string | null} */ (null),
-	);
+	const [extensionVersion, setExtensionVersion] = useState<string | null>(null);
+	const [nativeVersion, setNativeVersion] = useState<string | null>(null);
 
 	useEffect(() => {
 		(async () => {
@@ -150,22 +144,15 @@ function useHealthchecks() {
 	};
 }
 
-/**
- * @param {Object} param0
- * @param {boolean} param0.enabled
- */
-function useNodes({ enabled }) {
-	const [nodes, setNodes] = useState(/** @type {PwNode[] | null} */ (null));
+function useNodes({ enabled }: { enabled: boolean }) {
+	const [nodes, setNodes] = useState<PwNode[] | null>(null);
 	const [isInitialized, setIsInitialized] = useState(false);
 	const [isErrored, setIsErrored] = useState(false);
 
 	useEffect(() => {
 		if (!enabled) return;
 
-		/**
-		 * @type {string | null}
-		 */
-		let previousNodes = null;
+		let previousNodes: string | null = null;
 		const nodesReceive = async () => {
 			try {
 				const n = await getNodes();
@@ -200,11 +187,7 @@ function useNodes({ enabled }) {
 				: unreachable();
 }
 
-/**
- * @param {Object} param0
- * @param {boolean} param0.enabled
- */
-function useCurrentMicId({ enabled }) {
+function useCurrentMicId({ enabled }: { enabled: boolean }) {
 	const {
 		isLoading: isLocalStorageLoading,
 		data: micId,
@@ -217,10 +200,7 @@ function useCurrentMicId({ enabled }) {
 	useEffect(() => {
 		if (!shouldListen) return;
 
-		/**
-		 * @param {MicIdUpdatedEvent} id
-		 */
-		function handleMicIdUpdated(id) {
+		function handleMicIdUpdated(id: MicIdUpdatedEvent) {
 			if (isLocalStorageLoading) unreachable();
 			setMicId(id.detail.micId);
 		}
@@ -262,10 +242,17 @@ function useCurrentMicId({ enabled }) {
 	return { isInitialized, micId };
 }
 
-/**
- * @returns {{isAllDesktopAudioLoading: true, allDesktopAudio: undefined, setAllDesktopAudio: undefined} | {isAllDesktopAudioLoading: false, allDesktopAudio: boolean, setAllDesktopAudio: (value: boolean) => void}}
- */
-function useAllDesktopAudio() {
+function useAllDesktopAudio():
+	| {
+			isAllDesktopAudioLoading: true;
+			allDesktopAudio: undefined;
+			setAllDesktopAudio: undefined;
+	  }
+	| {
+			isAllDesktopAudioLoading: false;
+			allDesktopAudio: boolean;
+			setAllDesktopAudio: (value: boolean) => void;
+	  } {
 	const { isLoading, data, setData } = useLocalStorage(ALL_DESKTOP);
 
 	if (isLoading)
@@ -328,17 +315,11 @@ export default function Popup() {
 	const nodeSelectionSuccessfullyLoaded =
 		nodesSuccessfullyLoaded && !isNodeSelectionLoading;
 
-	const shareNodes = useDebouncedCallback(
-		/**
-		 * @param {boolean} allDesktopAudio
-		 */
-		(allDesktopAudio) => {
-			if (!isHealthy || !isRunning || allDesktopAudio) return;
-			if (isNodeSelectionLoading) unreachable();
-			setSharingNode(Array.from(nodeSelection));
-		},
-		1000,
-	);
+	const shareNodes = useDebouncedCallback((allDesktopAudio: boolean) => {
+		if (!isHealthy || !isRunning || allDesktopAudio) return;
+		if (isNodeSelectionLoading) unreachable();
+		setSharingNode(Array.from(nodeSelection));
+	}, 1000);
 
 	const debouncedShareAllDesktopAudio = useDebouncedCallback(() => {
 		if (allDesktopAudio) {

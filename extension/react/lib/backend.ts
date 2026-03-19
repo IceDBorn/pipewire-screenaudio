@@ -10,25 +10,20 @@ export const EVENT_MIC_ID_REMOVED = "onMicIdRemoved";
 
 let isStopping = false;
 
-/** @import NativeMessaging from "./nativeMessageTypes" */
-/** @import BackendTypes from "./backendTypes" */
-/** @import { MicIdUpdatedEvent } from "./types" */
+import * as NativeMessaging from "./nativeMessageTypes";
+import * as BackendTypes from "./backendTypes";
+import { MicIdUpdatedEvent } from "./types";
 
-/**
- * @template {NativeMessaging.Commands} Command
- * @param {BackendTypes.BackgroundCommand<Command>} command
- */
-function enqueueCommandToBackground(command) {
+function enqueueCommandToBackground<Command extends NativeMessaging.Commands>(
+	command: BackendTypes.BackgroundCommand<Command>,
+) {
 	sendMessage("enqueue-command", command);
 }
 
-/**
- * @template {NativeMessaging.Commands} Command
- * @param {Command} command
- * @param {NativeMessaging.Requests[Command]} args
- * @returns {Promise<NativeMessaging.Responses[Command]>}
- */
-async function sendNativeMessage(command, args) {
+async function sendNativeMessage<Command extends NativeMessaging.Commands>(
+	command: Command,
+	args: NativeMessaging.Requests[Command],
+): Promise<NativeMessaging.Responses[Command]> {
 	console.log("Sent native message", { command, args });
 
 	const response = await chrome.runtime.sendNativeMessage(MESSAGE_NAME, {
@@ -47,11 +42,7 @@ async function sendNativeMessage(command, args) {
 	return response.response;
 }
 
-/**
- * @param {string} message
- * @param {any} command
- */
-async function sendMessage(message, command) {
+async function sendMessage(message: string, command: any) {
 	console.log("Sent message", { command, message });
 
 	try {
@@ -68,29 +59,19 @@ async function sendMessage(message, command) {
 	}
 }
 
-/**
- * @param {string} a
- * @param {string} b
- */
-function matchVersion(a, b) {
+function matchVersion(a: string, b: string) {
 	const aSplit = a.split(".");
 	const bSplit = b.split(".");
 	return aSplit[0] === bSplit[0] && aSplit[1] === bSplit[1];
 }
 
-/**
- * @param {string} message
- */
-function handleMessage(message) {
+function handleMessage(message: string) {
 	console.log({ message });
 
 	if (message === EVENT_MIC_ID_UPDATED) {
-		readLocalStorage(MIC_ID).then((micId) => {
+		readLocalStorage(MIC_ID).then((micId: number) => {
 			if (micId === null) return;
-			/**
-			 * @type MicIdUpdatedEvent
-			 */
-			const event = new CustomEvent(EVENT_MIC_ID_UPDATED, {
+			const event: MicIdUpdatedEvent = new CustomEvent(EVENT_MIC_ID_UPDATED, {
 				detail: { micId },
 			});
 			document.dispatchEvent(event);
@@ -127,10 +108,7 @@ export async function getNodes() {
 	return await sendNativeMessage("GetNodes", undefined);
 }
 
-/**
- * @param {number} micId
- */
-export async function isPipewireScreenAudioRunning(micId) {
+export async function isPipewireScreenAudioRunning(micId: number) {
 	return (await sendNativeMessage("IsPipewireScreenAudioRunning", { micId }))
 		.isRunning;
 }
@@ -145,10 +123,7 @@ export function startPipewireScreenAudio() {
 	});
 }
 
-/**
- * @param {number} micId
- */
-export function stopPipewireScreenAudio(micId) {
+export function stopPipewireScreenAudio(micId: number) {
 	isStopping = true;
 	enqueueCommandToBackground({
 		cmd: "StopPipewireScreenAudio",
@@ -158,10 +133,7 @@ export function stopPipewireScreenAudio(micId) {
 	});
 }
 
-/**
- * @param {number[]} nodeSerials
- */
-export function setSharingNode(nodeSerials) {
+export function setSharingNode(nodeSerials: number[]) {
 	enqueueCommandToBackground({
 		cmd: "SetSharingNode",
 		args: { nodes: nodeSerials },

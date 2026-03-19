@@ -9,21 +9,18 @@ import TableCell from "@mui/material/TableCell";
 
 import Paper from "@mui/material/Paper";
 import Checkbox from "@mui/material/Checkbox";
+import type { PwNode } from "../lib/types";
 
-/** @import { PwNode } from "../lib/types" */
-
-/**
- * @param {Object} param0
- * @param {boolean} param0.disableInteraction
- * @param {PwNode[]} param0.nodes
- * @param {Set<number>} param0.nodeSelection
- * @param {(serials: number[] | null) => void} param0.toggleNodes
- */
 export default function NodesTable({
 	disableInteraction,
 	nodes,
 	nodeSelection,
 	toggleNodes,
+}: {
+	disableInteraction: boolean;
+	nodes: PwNode[];
+	nodeSelection: Set<number>;
+	toggleNodes: (serials: number[] | null) => void;
 }) {
 	const allChecked = nodes.every((node) => nodeSelection.has(node.serial));
 

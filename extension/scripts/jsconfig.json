@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "allowJs": true,   /* Allow JavaScript files to be compiled/type-checked. */
+	"allowJs": true,
     "checkJs": true,   /* Enable error reporting in type-checked JavaScript files. */
     "noEmit": true,    /* Only perform type checking and don't output files. */
     "esModuleInterop": false, /* Enables compatibility for default imports (optional, but recommended). */
@@ -9,17 +9,10 @@
     "moduleResolution": "bundler", /* Resolve modules using Node.js style resolution. */
 	"moduleDetection": "force",
     "lib": ["ESNext", "DOM"], /* Specify a set of bundled library declaration files that describe the target runtime environment. */
-    "strictNullChecks": true,
-    "noImplicitAny": true,
-    "jsx": "react",
-    "maxNodeModuleJsDepth": 0
+    "strictNullChecks": true
   },
   "include": [
-    "extension/react/*" /* Specify which files to include in the project. */
-  ],
-  "exclude": [
-    "node_modules", /* Specify which files to exclude. */
-    "extension/react/dist"
+    "*" /* Specify which files to include in the project. */
   ]
 }
 
