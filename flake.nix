@@ -24,7 +24,7 @@
           (substring 6 2 longDate)
         ]);
 
-      firefoxJSON = write "firefox.json" (read native/native-messaging-hosts/firefox.json);
+      manifestJSON = write "manifest.json" (read native/native-messaging-hosts/com.icedborn.pipewirescreenaudioconnector.json);
       connectorPath = "lib/mozilla/native-messaging-hosts/com.icedborn.pipewirescreenaudioconnector.json";
     in
     {
@@ -58,8 +58,11 @@
 
               postInstall = ''
                 # Firefox manifest
-                install -Dm644 ${firefoxJSON} "$out/${connectorPath}"
-                substituteInPlace "$out/${connectorPath}" --replace "/usr/lib/pipewire-screenaudio/connector-rs/target/debug" "$out/bin"
+                install -Dm644 ${manifestJSON} "$out/${connectorPath}"
+                substituteInPlace "$out/${connectorPath}" \
+                    --replace "CONNECTOR_BINARY_PATH" "$out/bin/connector-rs" \
+                    --replace "ALLOWED_FIELD" "allowed_extensions" \
+                    --replace "ALLOWED_VALUE" "pipewire-screenaudio@icenjim"
               '';
             };
           extension-react = pkgs.stdenvNoCC.mkDerivation (finalAttrs: {
