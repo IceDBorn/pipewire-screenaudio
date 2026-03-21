@@ -77,7 +77,7 @@
 			const displayMedia = await originalGetDisplayMedia(constraints);
 			displayMedia.addTrack(track);
 
-			const isChromium = typeof browser === "undefined";
+			const isChromium = typeof window.chrome !== "undefined";
 			let stopWatchTitle;
 
 			if (!isChromium) {
