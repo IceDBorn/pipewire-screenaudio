@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.4.2 - 2026-03-24
+
+### What's Changed
+
+* Fix node list not updating by @alansartorio in https://github.com/IceDBorn/pipewire-screenaudio/pull/123
+* Fix error while removing event listeners during cleanup by @alansartorio in https://github.com/IceDBorn/pipewire-screenaudio/pull/122
+* Refactor popup component into multiple hooks that each manages their own state by @alansartorio in https://github.com/IceDBorn/pipewire-screenaudio/pull/124
+* Improve popup size consistency when in errored state by @alansartorio in https://github.com/IceDBorn/pipewire-screenaudio/pull/125
+* Fix popup showing both scrollbars in chromium by @alansartorio in https://github.com/IceDBorn/pipewire-screenaudio/pull/126
+* feat(popup): disable all desktop in firefox private windows by @jim3692 in https://github.com/IceDBorn/pipewire-screenaudio/pull/128
+* rework(install): support multiple browsers by @IceDBorn in https://github.com/IceDBorn/pipewire-screenaudio/pull/127
+* fix(override-gdm): do not edit page title on chromium by @IceDBorn in https://github.com/IceDBorn/pipewire-screenaudio/pull/129
+* (update): readme deps & add reference to install.md by @IceDBorn in https://github.com/IceDBorn/pipewire-screenaudio/pull/131
+* fix(flake): use the new manifest introduced in cb2860b6c25c20f92794e2e59c9699e0481bb491 by @Kladki in https://github.com/IceDBorn/pipewire-screenaudio/pull/130
+* fix(override-gdm): chromium detection by @IceDBorn in https://github.com/IceDBorn/pipewire-screenaudio/pull/134
+* readme: add Chrome Web Store url by @jim3692 in https://github.com/IceDBorn/pipewire-screenaudio/pull/135
+
+### New Contributors
+
+* @Kladki made their first contribution in https://github.com/IceDBorn/pipewire-screenaudio/pull/130
+
+**Full Changelog**: https://github.com/IceDBorn/pipewire-screenaudio/compare/0.4.1...0.4.2
+
 ## 0.4.1 - 2026-03-10
 
 ### What's Changed
@@ -13,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Fix version check compatibility by @alansartorio in https://github.com/IceDBorn/pipewire-screenaudio/pull/116
 
 **Full Changelog**: https://github.com/IceDBorn/pipewire-screenaudio/compare/0.4.0...0.4.1
+
 ## 0.4.0 - 2026-03-10
 
 ### What's Changed
