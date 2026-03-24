@@ -1,6 +1,6 @@
 {
 	"name": "pipewire-screenaudio",
-	"version": "0.3.1",
+	"version": "0.4.2",
 	"scripts": {
 		"build": "vite build extension/react"
 	},
