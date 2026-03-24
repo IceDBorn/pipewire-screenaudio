@@ -18,7 +18,7 @@ You can install the extension from your browser's extension store or build and s
 ### Published Extensions
 
 - [Firefox Add-ons](https://addons.mozilla.org/en-US/firefox/addon/pipewire-screenaudio/)
-- Chrome Web Store: _Coming soon_
+- [Chrome Web Store](https://chromewebstore.google.com/detail/pipewire-screenaudio/cbmjbapailadjabjnjnnbfdimkbdicja)
 
 ### Local Installation
 
