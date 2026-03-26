@@ -39,50 +39,53 @@ import { useDidUpdateEffect, useLocalStorage } from "../lib/hooks";
 
 import NodesTable from "../components/nodes-table";
 import matchNode from "../lib/match-node";
+import { unreachable } from "../lib/utils";
 
-function mapNode(node) {
+import type { PwNode, MicIdUpdatedEvent } from "../lib/types";
+import type * as NativeMessaging from "../lib/nativeMessageTypes";
+
+function mapNode(node: NativeMessaging.PwNode): PwNode {
 	return {
 		mediaName: node.properties["media.name"],
 		applicationName: node.properties["application.name"],
 		serial: node.properties["object.serial"],
-		checked: false,
 	};
 }
 
-/**
- * @param {Object} param0
- * @param {object[]} param0.nodes
- * @param {boolean} param0.areNodesLoading
- */
-function useNodeSelectionState({ nodes, areNodesLoading }) {
+function useNodeSelectionState({
+	nodes,
+	areNodesLoading,
+}:
+	| { nodes: PwNode[]; areNodesLoading: false }
+	| { nodes: any; areNodesLoading: true }):
+	| { isLoading: true; nodeSelection: undefined; toggleNodes: undefined }
+	| {
+			isLoading: false;
+			nodeSelection: Set<number>;
+			toggleNodes: (serials: number[] | null) => void;
+	  } {
 	const {
 		data: storedNodeSelection,
 		setData: setStoredNodeSelection,
 		isLoading,
 	} = useLocalStorage(SELECTED_NODES);
 
-	if (isLoading || areNodesLoading) return { isLoading: true };
+	if (isLoading || areNodesLoading)
+		return {
+			isLoading: true,
+			nodeSelection: undefined,
+			toggleNodes: undefined,
+		};
 
-	let nodeSelection;
+	const nodeSelection = new Set(
+		(storedNodeSelection ?? [])
+			.filter((selectedNode) =>
+				nodes.some((node) => matchNode(node, selectedNode)),
+			)
+			.map((node) => node.serial),
+	);
 
-	if (!nodes) {
-		nodeSelection = new Set(
-			(storedNodeSelection ?? []).map((node) => node.serial),
-		);
-	} else {
-		nodeSelection = new Set(
-			(storedNodeSelection ?? [])
-				.filter((selectedNode) =>
-					nodes.some((node) => matchNode(node, selectedNode)),
-				)
-				.map((node) => node.serial),
-		);
-	}
-
-	/**
-	 * @type {function(int[]):void}
-	 */
-	const toggleNodes = (serials) => {
+	const toggleNodes = (serials: number[] | null) => {
 		let newNodeSelection;
 		if (serials === null) {
 			const turnOn = !nodes.every((node) => nodeSelection.has(node.serial));
@@ -109,10 +112,10 @@ function useNodeSelectionState({ nodes, areNodesLoading }) {
 
 function useHealthchecks() {
 	const [isLoading, setIsLoading] = useState(true);
-	const [versionMatches, setVersionMatches] = useState(null);
+	const [versionMatches, setVersionMatches] = useState<boolean | null>(null);
 	const [connectorConnection, setConnectorConnection] = useState(false);
-	const [extensionVersion, setExtensionVersion] = useState(null);
-	const [nativeVersion, setNativeVersion] = useState(null);
+	const [extensionVersion, setExtensionVersion] = useState<string | null>(null);
+	const [nativeVersion, setNativeVersion] = useState<string | null>(null);
 
 	useEffect(() => {
 		(async () => {
@@ -141,19 +144,15 @@ function useHealthchecks() {
 	};
 }
 
-/**
- * @param {Object} param0
- * @param {boolean} param0.enabled
- */
-function useNodes({ enabled }) {
-	const [nodes, setNodes] = useState(null);
+function useNodes({ enabled }: { enabled: boolean }) {
+	const [nodes, setNodes] = useState<PwNode[] | null>(null);
 	const [isInitialized, setIsInitialized] = useState(false);
 	const [isErrored, setIsErrored] = useState(false);
 
 	useEffect(() => {
 		if (!enabled) return;
 
-		let previousNodes = null;
+		let previousNodes: string | null = null;
 		const nodesReceive = async () => {
 			try {
 				const n = await getNodes();
@@ -179,15 +178,16 @@ function useNodes({ enabled }) {
 		};
 	}, [enabled]);
 
-	return { nodes, isErrored, isInitialized };
+	return !isInitialized
+		? { nodes: null, isErrored: false, isInitialized }
+		: isErrored
+			? { nodes: null, isErrored, isInitialized }
+			: nodes !== null
+				? { nodes, isErrored, isInitialized }
+				: unreachable();
 }
 
-/**
- * @param {Object} param0
- * @param {boolean} param0.enabled
- */
-function useCurrentMicId({ enabled }) {
-	const [isRunning, setIsRunning] = useState(null);
+function useCurrentMicId({ enabled }: { enabled: boolean }) {
 	const {
 		isLoading: isLocalStorageLoading,
 		data: micId,
@@ -197,26 +197,26 @@ function useCurrentMicId({ enabled }) {
 
 	const shouldListen = enabled && !isLocalStorageLoading;
 
-	function handleMicIdUpdated(id) {
-		if (!id) return;
-		setMicId(id.detail.micId);
-		setIsRunning(true);
-	}
-
-	function handleMicIdRemoved() {
-		setMicId(null);
-		setIsRunning(false);
-	}
-
 	useEffect(() => {
 		if (!shouldListen) return;
 
+		function handleMicIdUpdated(id: MicIdUpdatedEvent) {
+			if (isLocalStorageLoading) unreachable();
+			setMicId(id.detail.micId);
+		}
+
+		function handleMicIdRemoved() {
+			if (isLocalStorageLoading) unreachable();
+			setMicId(null);
+		}
+
 		let func = async () => {
 			try {
-				const res = await isPipewireScreenAudioRunning(micId);
-				console.log({ res, micId });
-				if (!res) setMicId(null);
-				setIsRunning(res);
+				if (micId !== null) {
+					const res = await isPipewireScreenAudioRunning(micId);
+					console.log({ res, micId });
+					if (!res) setMicId(null);
+				}
 
 				document.addEventListener(EVENT_MIC_ID_UPDATED, handleMicIdUpdated);
 				document.addEventListener(EVENT_MIC_ID_REMOVED, handleMicIdRemoved);
@@ -234,11 +234,33 @@ function useCurrentMicId({ enabled }) {
 		};
 	}, [shouldListen]);
 
-	return { isInitialized, micId, isRunning };
+	if (!isInitialized)
+		return { isInitialized, micId: undefined, isRunning: undefined };
+
+	if (micId === undefined) unreachable("should be set if initialized");
+
+	return { isInitialized, micId };
 }
 
-function useAllDesktopAudio() {
+function useAllDesktopAudio():
+	| {
+			isAllDesktopAudioLoading: true;
+			allDesktopAudio: undefined;
+			setAllDesktopAudio: undefined;
+	  }
+	| {
+			isAllDesktopAudioLoading: false;
+			allDesktopAudio: boolean;
+			setAllDesktopAudio: (value: boolean) => void;
+	  } {
 	const { isLoading, data, setData } = useLocalStorage(ALL_DESKTOP);
+
+	if (isLoading)
+		return {
+			isAllDesktopAudioLoading: isLoading,
+			allDesktopAudio: data,
+			setAllDesktopAudio: setData,
+		};
 
 	return {
 		isAllDesktopAudioLoading: isLoading,
@@ -265,13 +287,11 @@ export default function Popup() {
 	});
 	const nodesSuccessfullyLoaded = areNodesInitialized && !areNodesErrored;
 
-	const {
-		isInitialized: isCurrentMicIdInitialized,
-		isRunning,
-		micId,
-	} = useCurrentMicId({
+	const { isInitialized: isCurrentMicIdInitialized, micId } = useCurrentMicId({
 		enabled: !isHealthcheckLoading && connectorConnection,
 	});
+
+	const isRunning = isCurrentMicIdInitialized && micId !== null;
 
 	const { isAllDesktopAudioLoading, allDesktopAudio, setAllDesktopAudio } =
 		useAllDesktopAudio();
@@ -280,12 +300,24 @@ export default function Popup() {
 		isLoading: isNodeSelectionLoading,
 		nodeSelection,
 		toggleNodes,
-	} = useNodeSelectionState({
-		nodes,
-		areNodesLoading: !nodesSuccessfullyLoaded,
-	});
+	} = useNodeSelectionState(
+		nodesSuccessfullyLoaded
+			? {
+					nodes,
+					areNodesLoading: false,
+				}
+			: {
+					nodes: undefined,
+					areNodesLoading: true,
+				},
+	);
 
-	const debouncedSetSharingNodes = useDebouncedCallback(() => {
+	const nodeSelectionSuccessfullyLoaded =
+		nodesSuccessfullyLoaded && !isNodeSelectionLoading;
+
+	const shareNodes = useDebouncedCallback((allDesktopAudio: boolean) => {
+		if (!isHealthy || !isRunning || allDesktopAudio) return;
+		if (isNodeSelectionLoading) unreachable();
 		setSharingNode(Array.from(nodeSelection));
 	}, 1000);
 
@@ -299,12 +331,10 @@ export default function Popup() {
 
 	const showConnectionError = !connectorConnection || areNodesErrored;
 	const isHealthy =
-		!isHealthcheckLoading && versionMatches && !showConnectionError;
-
-	function shareNodes(allDesktopAudio) {
-		if (!isHealthy || !isRunning || allDesktopAudio) return;
-		debouncedSetSharingNodes();
-	}
+		!isHealthcheckLoading &&
+		versionMatches &&
+		nodeSelectionSuccessfullyLoaded &&
+		!isAllDesktopAudioLoading;
 
 	async function handleStartStop() {
 		if (!isRunning) {
@@ -312,6 +342,10 @@ export default function Popup() {
 			if (allDesktopAudio) {
 				setSharingNode([-1]);
 			} else {
+				if (!nodeSelectionSuccessfullyLoaded)
+					unreachable(
+						"start/stop button is clickable only after node selection is loaded",
+					);
 				setSharingNode(Array.from(nodeSelection));
 			}
 		} else {
@@ -329,9 +363,7 @@ export default function Popup() {
 						</Typography>
 					</Toolbar>
 				</AppBar>
-				{(showConnectionError ||
-					!versionMatches ||
-					(isCurrentMicIdInitialized && isRunning)) && (
+				{(showConnectionError || !versionMatches || isRunning) && (
 					<Alert
 						severity={isRunning ? "info" : "error"}
 						color={isRunning ? "info" : "error"}
@@ -342,12 +374,13 @@ export default function Popup() {
 								? `Version mismatch! Extension: ${extensionVersion}, Native: ${nativeVersion}`
 								: isRunning
 									? `Running with ID: ${micId}`
-									: console.error("unreachable")}
+									: unreachable()}
 					</Alert>
 				)}
 				{/* Content */}
-				{(areNodesInitialized || showConnectionError) &&
-					(showConnectionError || !nodes.length ? (
+				{(nodeSelectionSuccessfullyLoaded || showConnectionError) &&
+					((nodeSelectionSuccessfullyLoaded && !nodes.length) ||
+					showConnectionError ? (
 						<Paper sx={{ minHeight: 80, borderRadius: 0 }}>
 							<div></div>
 							<Typography
@@ -365,20 +398,25 @@ export default function Popup() {
 									: "No nodes available for sharing"}
 							</Typography>
 						</Paper>
-					) : (
+					) : nodeSelectionSuccessfullyLoaded ? (
 						<NodesTable
 							nodes={nodes}
 							nodeSelection={nodeSelection}
 							toggleNodes={(serials) => {
+								if (!isHealthy)
+									unreachable(
+										"inner interactions are disabled while !isHealthy, so this wont be called",
+									);
 								toggleNodes(serials);
 								shareNodes(allDesktopAudio);
 							}}
-							hasError={!isHealthy}
-							allDesktopAudio={allDesktopAudio}
+							disableInteraction={!isHealthy || allDesktopAudio}
 						/>
+					) : (
+						unreachable()
 					))}
 				<Paper sx={{ borderRadius: "0", padding: 1 }}>
-					<Grid container justify="space-between">
+					<Grid container>
 						<span
 							title={isChromium() ? "Not supported on Chromium browsers" : ""}
 						>
@@ -386,6 +424,8 @@ export default function Popup() {
 								control={
 									<Switch
 										onChange={() => {
+											if (isAllDesktopAudioLoading)
+												unreachable("switch is disabled while loading");
 											const currentAllDesktopAudio = !allDesktopAudio;
 											setAllDesktopAudio(currentAllDesktopAudio);
 
@@ -400,7 +440,12 @@ export default function Popup() {
 								sx={{ marginLeft: 0 }}
 								label="All Desktop Audio"
 								checked={allDesktopAudio}
-								disabled={!isHealthy || isAllDesktopAudioLoading || isChromium() || isIncognito()}
+								disabled={
+									!isHealthy ||
+									isAllDesktopAudioLoading ||
+									isChromium() ||
+									isIncognito()
+								}
 							/>
 						</span>
 						<Button

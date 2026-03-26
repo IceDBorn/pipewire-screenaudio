@@ -2,7 +2,8 @@
 	"name": "pipewire-screenaudio",
 	"version": "0.4.2",
 	"scripts": {
-		"build": "vite build extension/react"
+		"build": "vite build extension/react",
+		"lint": "tsc -p jsconfig.json"
 	},
 	"dependencies": {
 		"@emotion/react": "^11.11.1",
@@ -16,11 +17,16 @@
 		"use-debounce": "^9.0.4"
 	},
 	"devDependencies": {
+		"@types/chrome": "^0.1.38",
+		"@types/firefox-webext-browser": "^143.0.0",
+		"@types/react": "^18.2.0",
+		"@types/react-dom": "^18.2.0",
 		"@vitejs/plugin-react": "^4.0.4",
 		"eslint": "^8.47.0",
 		"eslint-plugin-react": "^7.33.2",
 		"nodemon": "^3.0.1",
 		"prettier": "^3.0.1",
+		"typescript": "^5.9.3",
 		"vite": "^4.4.9"
 	}
 }

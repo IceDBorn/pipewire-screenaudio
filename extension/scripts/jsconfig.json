@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+	"allowJs": true,
+    "checkJs": true,   /* Enable error reporting in type-checked JavaScript files. */
+    "noEmit": true,    /* Only perform type checking and don't output files. */
+    "esModuleInterop": false, /* Enables compatibility for default imports (optional, but recommended). */
+    "target": "ESNext", /* Specify the JavaScript language version for emitted JavaScript and include compatible library declarations. */
+    "module": "ESNext", /* Specify the module code generation method. Use "ESNext" for modern browser environments. */
+    "moduleResolution": "bundler", /* Resolve modules using Node.js style resolution. */
+	"moduleDetection": "force",
+    "lib": ["ESNext", "DOM"], /* Specify a set of bundled library declaration files that describe the target runtime environment. */
+    "strictNullChecks": true
+  },
+  "include": [
+    "*" /* Specify which files to include in the project. */
+  ]
+}
+
