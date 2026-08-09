@@ -129,6 +129,7 @@
               pipewire
               pkg-config
               rust-analyzer
+              cargo-audit
               rustc
               rustfmt
               yarn
