@@ -10,11 +10,20 @@ export const EVENT_MIC_ID_REMOVED = "onMicIdRemoved";
 
 let isStopping = false;
 
-function enqueueCommandToBackground(command) {
+import * as NativeMessaging from "./nativeMessageTypes";
+import * as BackendTypes from "./backendTypes";
+import { MicIdUpdatedEvent } from "./types";
+
+function enqueueCommandToBackground<Command extends NativeMessaging.Commands>(
+	command: BackendTypes.BackgroundCommand<Command>,
+) {
 	sendMessage("enqueue-command", command);
 }
 
-async function sendNativeMessage(command, args) {
+async function sendNativeMessage<Command extends NativeMessaging.Commands>(
+	command: Command,
+	args: NativeMessaging.Requests[Command],
+): Promise<NativeMessaging.Responses[Command]> {
 	console.log("Sent native message", { command, args });
 
 	const response = await chrome.runtime.sendNativeMessage(MESSAGE_NAME, {
@@ -33,7 +42,7 @@ async function sendNativeMessage(command, args) {
 	return response.response;
 }
 
-async function sendMessage(message, command) {
+async function sendMessage(message: string, command: any) {
 	console.log("Sent message", { command, message });
 
 	try {
@@ -50,28 +59,19 @@ async function sendMessage(message, command) {
 	}
 }
 
-function matchVersion(a, b) {
+function matchVersion(a: string, b: string) {
 	const aSplit = a.split(".");
 	const bSplit = b.split(".");
 	return aSplit[0] === bSplit[0] && aSplit[1] === bSplit[1];
 }
 
-function getNewPromise() {
-	let resolvePromise, rejectPromise;
-	const promise = new Promise((resolve, reject) => {
-		resolvePromise = resolve;
-		rejectPromise = reject;
-	});
-
-	return { promise, resolvePromise, rejectPromise };
-}
-
-function handleMessage(message) {
+function handleMessage(message: string) {
 	console.log({ message });
 
 	if (message === EVENT_MIC_ID_UPDATED) {
-		readLocalStorage(MIC_ID).then((micId) => {
-			const event = new CustomEvent(EVENT_MIC_ID_UPDATED, {
+		readLocalStorage(MIC_ID).then((micId: number) => {
+			if (micId === null) return;
+			const event: MicIdUpdatedEvent = new CustomEvent(EVENT_MIC_ID_UPDATED, {
 				detail: { micId },
 			});
 			document.dispatchEvent(event);
@@ -87,7 +87,10 @@ function handleMessage(message) {
 chrome.runtime.onMessage.addListener(handleMessage);
 
 export async function healthCheck() {
-	const { version: nativeVersion } = await sendNativeMessage("GetVersion");
+	const { version: nativeVersion } = await sendNativeMessage(
+		"GetVersion",
+		undefined,
+	);
 
 	if (!matchVersion(nativeVersion, EXT_VERSION)) {
 		throw new Error(ERROR_VERSION_MISMATCH, {
@@ -102,10 +105,10 @@ export async function healthCheck() {
 }
 
 export async function getNodes() {
-	return await sendNativeMessage("GetNodes");
+	return await sendNativeMessage("GetNodes", undefined);
 }
 
-export async function isPipewireScreenAudioRunning(micId) {
+export async function isPipewireScreenAudioRunning(micId: number) {
 	return (await sendNativeMessage("IsPipewireScreenAudioRunning", { micId }))
 		.isRunning;
 }
@@ -114,12 +117,13 @@ export function startPipewireScreenAudio() {
 	isStopping = false;
 	enqueueCommandToBackground({
 		cmd: "StartPipewireScreenAudio",
+		args: undefined,
 		maps: { outMap: [[MIC_ID, "micId"]] }, // Set the `micId` in LocalStorage to the incoming `micId`
 		event: EVENT_MIC_ID_UPDATED,
 	});
 }
 
-export function stopPipewireScreenAudio(micId) {
+export function stopPipewireScreenAudio(micId: number) {
 	isStopping = true;
 	enqueueCommandToBackground({
 		cmd: "StopPipewireScreenAudio",
@@ -129,7 +133,7 @@ export function stopPipewireScreenAudio(micId) {
 	});
 }
 
-export function setSharingNode(nodeSerials) {
+export function setSharingNode(nodeSerials: number[]) {
 	enqueueCommandToBackground({
 		cmd: "SetSharingNode",
 		args: { nodes: nodeSerials },
@@ -145,4 +149,4 @@ export const isIncognito = () => {
 	}
 
 	return !!browser?.extension.inIncognitoContext;
-}
+};

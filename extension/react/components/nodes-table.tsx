@@ -9,13 +9,18 @@ import TableCell from "@mui/material/TableCell";
 
 import Paper from "@mui/material/Paper";
 import Checkbox from "@mui/material/Checkbox";
+import type { PwNode } from "../lib/types";
 
 export default function NodesTable({
-	hasError,
-	allDesktopAudio,
+	disableInteraction,
 	nodes,
 	nodeSelection,
 	toggleNodes,
+}: {
+	disableInteraction: boolean;
+	nodes: PwNode[];
+	nodeSelection: Set<number>;
+	toggleNodes: (serials: number[] | null) => void;
 }) {
 	const allChecked = nodes.every((node) => nodeSelection.has(node.serial));
 
@@ -28,10 +33,7 @@ export default function NodesTable({
 				borderRadius: 0,
 			}}
 		>
-			<Table
-				size="small"
-				disabled={hasError}
-			>
+			<Table size="small">
 				<TableHead
 					sx={{
 						position: "sticky",
@@ -45,7 +47,7 @@ export default function NodesTable({
 					<TableRow>
 						<TableCell>
 							<Checkbox
-								disabled={allDesktopAudio || hasError}
+								disabled={disableInteraction}
 								onChange={(event) => toggleNodes(null)}
 								checked={allChecked}
 							/>
@@ -63,7 +65,7 @@ export default function NodesTable({
 							<TableCell>
 								<Checkbox
 									onChange={(event) => toggleNodes([node.serial])}
-									disabled={allDesktopAudio || hasError}
+									disabled={disableInteraction}
 									checked={nodeSelection.has(node.serial)}
 								/>
 							</TableCell>

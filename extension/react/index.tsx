@@ -1,3 +1,4 @@
+import React from "react";
 import { createRoot } from "react-dom/client";
 import {
 	createBrowserRouter,
@@ -14,6 +15,7 @@ import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 
 import Popup from "./routes/popup";
+import { unreachable } from "./lib/utils";
 
 const darkTheme = createTheme({
 	palette: {
@@ -41,11 +43,12 @@ function App() {
 	return (
 		<ThemeProvider theme={darkTheme}>
 			<CssBaseline />
-			<RouterProvider router={router} basename="/react/dist/index.html" />
+			<RouterProvider router={router} />
 		</ThemeProvider>
 	);
 }
 
 const rootEl = document.getElementById("root");
+if (rootEl === null) unreachable("root element must exist");
 const root = createRoot(rootEl);
 root.render(<App />);
