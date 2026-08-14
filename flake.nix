@@ -1,5 +1,9 @@
 {
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+  inputs.flake-compat = {
+    url = "git+https://git.lix.systems/lix-project/flake-compat?ref=main";
+    flake = false;
+  };
   description = "The native part of the Pipewire Screenaudio extension";
 
   outputs =
